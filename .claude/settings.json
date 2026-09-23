@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 scripts/raam.py:*)",
+      "Bash(python scripts/raam.py:*)",
+      "Bash(bash scripts/alpaca.sh:*)",
+      "Bash(bash scripts/perplexity.sh:*)",
+      "Bash(bash scripts/whatsapp.sh:*)",
+      "Bash(python3 -m pytest:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(pip install -r requirements.txt)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git pull:*)",
+      "Bash(git push origin HEAD:main)"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git reset --hard:*)",
+      "Read(./.env)",
+      "Edit(./.env)"
+    ]
+  }
+}

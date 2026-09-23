@@ -1,0 +1,10 @@
+{
+  "high_water_mark": null,
+  "circuit_breaker": {
+    "tripped": false,
+    "reason": null,
+    "tripped_on": null
+  },
+  "last_health": null,
+  "equity_history": []
+}

@@ -1,0 +1,68 @@
+{
+  "_comment": "RAAM parameters. Items under 'ambiguities' are interpretations of the paper that are still open - see memory/TRADING-STRATEGY.md before changing them.",
+
+  "universe": {
+    "risk_assets": ["VV", "IJH", "IJR", "EFA", "EEM", "RWR", "DBC", "VAW", "AGG", "TIP", "IGOV"],
+    "cash": "SHY",
+    "asset_class": {
+      "VV": "US Equities", "IJH": "US Equities", "IJR": "US Equities",
+      "EFA": "International Equities", "EEM": "International Equities",
+      "RWR": "Real Estate",
+      "DBC": "Commodities", "VAW": "Commodities",
+      "AGG": "US Bonds", "TIP": "US Bonds",
+      "IGOV": "International Bonds",
+      "SHY": "Cash"
+    }
+  },
+
+  "lookbacks": {
+    "momentum_days": 84,
+    "correlation_days": 84,
+    "ewma_lambda": 0.94,
+    "vol_smooth_days": 10,
+    "atr_days": 42,
+    "upper_band_close_days": 63,
+    "lower_band_low_days": 105,
+    "history_calendar_days": 800
+  },
+
+  "ranking": {
+    "top_n": 5,
+    "w_momentum": 0.3333,
+    "w_volatility": 0.3333,
+    "w_correlation": 0.3334,
+    "tiebreak_x": 1000
+  },
+
+  "ambiguities": {
+    "rank_convention": "1_is_best",
+    "tiebreak_sign": -1,
+    "vol_estimator": "close",
+    "lower_band": "hhv_low_minus_atr",
+    "trend_signal_lag_days": 1
+  },
+
+  "data": {
+    "feed": "sip",
+    "fallback_feed": "iex",
+    "adjustment": "all",
+    "max_bar_age_days": 4
+  },
+
+  "execution": {
+    "min_trade_usd": 25,
+    "cash_buffer_pct": 0.5,
+    "max_order_pct_equity_risk_asset": 25,
+    "max_order_pct_equity_cash": 101,
+    "fill_wait_seconds": 90,
+    "require_approval": false
+  },
+
+  "guardrails": {
+    "weights_sum_tolerance_pct": 0.5,
+    "circuit_breaker_drawdown_pct": 15,
+    "circuit_breaker_daily_loss_pct": 5
+  },
+
+  "benchmarks": ["SPY"]
+}

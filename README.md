@@ -1,0 +1,59 @@
+# 24/7 RAAM Trading Bot
+
+An autonomous implementation of the **Ranked Asset Allocation Model**, from Gioele Giordano's 2018 Charles H. Dow Award paper:
+- It trades the 12-ETF 7Twelve universe on an **Alpaca paper account**.
+- It is run by **Claude Code cloud routines**.
+- This repo is the bot's persistent disk: code, config and memory. Each routine run clones it, acts, and pushes its memory back.
+
+Each month the bot ranks 11 ETFs on momentum, volatility and correlation, adjusts for an ATR trend filter, and holds the top 5 at 20% each. Any of those 5 with negative momentum is swapped for SHY. It rebalances once a month and holds; there are no stops. The full rules and open questions are in [memory/TRADING-STRATEGY.md](memory/TRADING-STRATEGY.md).
+
+## Layout
+| Path | Purpose |
+|---|---|
+| `CLAUDE.md` | Always-loaded operating instructions for the agent |
+| `config/raam.json` | Model parameters and guardrail thresholds |
+| `scripts/raam.py` | Deterministic engine: calendar, signal, rebalance, health, review |
+| `scripts/alpaca.sh` | Thin curl wrapper for Alpaca (ad-hoc and manual use) |
+| `scripts/perplexity.sh` | Perplexity research (context only) |
+| `scripts/whatsapp.sh` | WhatsApp notifications (CallMeBot, Twilio or console) |
+| `.claude/commands/` | `/health` `/signal` `/rebalance` `/monthly-review` `/research` `/portfolio` `/trade` |
+| `memory/` | Strategy, logs, signals (`signals/*.json`) and `state.json` (high-water mark, circuit breaker) |
+| `tests/` | pytest unit tests for the indicators, ranking and order planning |
+
+## Schedule (US/Eastern, Mon–Fri)
+| Routine | Time | Runs |
+|---|---|---|
+| **RAAM – Morning** | 09:45 | `/rebalance`. It acts only on the first trading day of the month, or when the circuit breaker is tripped. |
+| **RAAM – Close** | 16:30 | `/health` every day. Then `/signal` on the last trading day of the month, and `/monthly-review` on the first trading day. |
+
+## Local quickstart
+```bash
+pip install -r requirements.txt
+cp env.template .env          # fill in Alpaca paper keys etc.
+python -m pytest -q            # unit tests, no network
+python scripts/raam.py calendar
+python scripts/raam.py health --dry-run
+python scripts/raam.py signal --force --dry-run     # compute today's ranks without saving
+python scripts/raam.py rebalance --force --dry-run  # show the orders it would place
+bash scripts/whatsapp.sh "RAAM test"
+```
+
+## Cloud routine setup
+1. **Cloud environment.** Set this up at claude.ai/code, in the environment settings:
+   - **Credentials / env vars:** everything in `env.template`, with real values. Keep `PAPER_TRADING=true`.
+   - **Network access:** Custom. Allow `paper-api.alpaca.markets`, `data.alpaca.markets`, `api.perplexity.ai` and `api.callmebot.com` (add `api.twilio.com` if you use Twilio), and tick "include default package managers".
+   - **Setup script:** `pip install -r requirements.txt`
+2. **Routines.** Create them with `/schedule` or at claude.ai/code/routines:
+   - repo `musu-codes/24.7-RAAM-Trading`;
+   - the environment above;
+   - connectors: none.
+
+   Use these prompts:
+   - Morning, weekdays 09:45 ET: `Follow CLAUDE.md. Run /rebalance with any options from the routine-fire-payload (dry_run, force_date=...).`
+   - Close, weekdays 16:30 ET: `Follow CLAUDE.md. Run /health, then /signal, then /monthly-review, passing any options from the routine-fire-payload (dry_run, force, force_date=...). Send one combined WhatsApp message.`
+3. **First runs.** Click **Run now** with the text `dry_run` and read the transcript. A green status only means the run didn't crash.
+
+## Safety
+- Paper only, unless both `PAPER_TRADING=false` and `LIVE_CONFIRM=yes` are set.
+- A circuit breaker (−15% from peak, or −5% in one day) moves the portfolio to 100% SHY until it is reset manually in `memory/state.json`.
+- Research never changes the allocation. Claude may halt and alert, but never improvises trades.
