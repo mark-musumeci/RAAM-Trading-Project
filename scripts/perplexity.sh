@@ -6,7 +6,8 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-if [[ -f "$ROOT/.env" ]]; then set -a; source "$ROOT/.env"; set +a; fi
+source "$ROOT/scripts/_env.sh"
+load_env "$ROOT"
 
 q="${1:?usage: perplexity.sh \"question\" [day|week|month]}"
 recency="${2:-}"

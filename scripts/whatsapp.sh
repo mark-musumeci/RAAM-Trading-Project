@@ -8,7 +8,8 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-if [[ -f "$ROOT/.env" ]]; then set -a; source "$ROOT/.env"; set +a; fi
+source "$ROOT/scripts/_env.sh"
+load_env "$ROOT"
 
 msg="${1:-}"
 [[ -z "$msg" && ! -t 0 ]] && msg="$(cat)"

@@ -47,6 +47,10 @@ class Halt(Exception):
 # Environment / config / state
 # --------------------------------------------------------------------------
 def load_env() -> None:
+    """API keys come from environment variables. In cloud routines (CLAUDE_CODE_REMOTE=true)
+    .env is never read; locally it only fills variables that are not already set."""
+    if os.environ.get("CLAUDE_CODE_REMOTE") == "true":
+        return
     env_file = ROOT / ".env"
     if not env_file.exists():
         return
@@ -331,8 +335,10 @@ class Alpaca:
         self.secret = os.environ.get("ALPACA_SECRET_KEY", "")
         self.base = os.environ.get("ALPACA_BASE_URL", "https://paper-api.alpaca.markets").rstrip("/")
         self.data = os.environ.get("ALPACA_DATA_URL", "https://data.alpaca.markets").rstrip("/")
-        if not self.key or not self.secret:
-            raise Halt("ALPACA_API_KEY / ALPACA_SECRET_KEY not set")
+        missing = [v for v in ("ALPACA_API_KEY", "ALPACA_SECRET_KEY") if not os.environ.get(v)]
+        if missing:
+            raise Halt(f"missing environment variable(s) {missing} - set them in the cloud "
+                       "environment's Environment variables (or local .env for local testing)")
         paper = os.environ.get("PAPER_TRADING", "true").lower() != "false"
         if "paper-api" not in self.base:
             if paper or os.environ.get("LIVE_CONFIRM", "no").lower() != "yes":

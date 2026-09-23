@@ -12,12 +12,12 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-if [[ -f "$ROOT/.env" ]]; then set -a; source "$ROOT/.env"; set +a; fi
+source "$ROOT/scripts/_env.sh"
+load_env "$ROOT"
+require_env ALPACA_API_KEY ALPACA_SECRET_KEY
 
 BASE="${ALPACA_BASE_URL:-https://paper-api.alpaca.markets}"
 DATA="${ALPACA_DATA_URL:-https://data.alpaca.markets}"
-: "${ALPACA_API_KEY:?ALPACA_API_KEY not set}"
-: "${ALPACA_SECRET_KEY:?ALPACA_SECRET_KEY not set}"
 
 if [[ "$BASE" != *paper-api* ]]; then
   if [[ "${PAPER_TRADING:-true}" != "false" || "${LIVE_CONFIRM:-no}" != "yes" ]]; then

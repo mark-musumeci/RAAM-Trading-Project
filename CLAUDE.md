@@ -49,5 +49,9 @@ A routine's run text may contain `dry_run`, `force` or `force_date=YYYY-MM-DD`. 
 
 **Never** combine `force` with a real (non-dry-run) rebalance unless the text also says `confirm_live_force`.
 
-## Secrets
-Keys come from environment variables: the cloud environment when in the cloud, `.env` when local. Never print, log or commit them. `.env` is gitignored.
+## Secrets: environment variables only
+- In a routine, every API key comes from the **environment variables of the cloud environment** the routine runs in. The scripts read them straight from the process environment.
+- In the cloud (`CLAUDE_CODE_REMOTE=true`) the scripts **never read a `.env` file**. Never create, write or look for a `.env` in a routine run, and never paste keys into files, commands, commit messages or WhatsApp texts.
+- If a script reports `missing environment variable(s) ...`, do not try to work around it. Halt and send `RAAM ⚠️ missing env var <NAME> in cloud environment`.
+- `.env` exists only for the owner's local testing on their own PC. It is gitignored, and real env vars always take precedence over it.
+- To check that a variable is present without revealing it: `[ -n "$ALPACA_API_KEY" ] && echo set || echo missing`.

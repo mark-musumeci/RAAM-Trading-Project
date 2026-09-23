@@ -40,7 +40,9 @@ bash scripts/whatsapp.sh "RAAM test"
 
 ## Cloud routine setup
 1. **Cloud environment.** Set this up at claude.ai/code, in the environment settings:
-   - **Credentials / env vars:** everything in `env.template`, with real values. Keep `PAPER_TRADING=true`.
+   - **Environment variables:** paste in everything from `env.template` with real values, in the same `KEY=value` format. Keep `PAPER_TRADING=true`.
+     - This is the **only** place routines get keys from; the scripts never read a `.env` file in the cloud.
+     - Do not use the "API credentials" section. Those keys are injected by a proxy and are never visible to the scripts.
    - **Network access:** Custom. Allow `paper-api.alpaca.markets`, `data.alpaca.markets`, `api.perplexity.ai` and `api.callmebot.com` (add `api.twilio.com` if you use Twilio), and tick "include default package managers".
    - **Setup script:** `pip install -r requirements.txt`
 2. **Routines.** Create them with `/schedule` or at claude.ai/code/routines:
