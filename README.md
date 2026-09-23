@@ -50,9 +50,9 @@ bash scripts/whatsapp.sh "RAAM test"
    - the environment above;
    - connectors: none.
 
-   Use these prompts:
-   - Morning, weekdays 09:45 ET: `Follow CLAUDE.md. Run /rebalance with any options from the routine-fire-payload (dry_run, force_date=...).`
-   - Close, weekdays 16:30 ET: `Follow CLAUDE.md. Run /health, then /signal, then /monthly-review, passing any options from the routine-fire-payload (dry_run, force, force_date=...). Send one combined WhatsApp message.`
+   The paste-ready prompts and settings are in [routines/](routines/):
+   - [routines/morning.md](routines/morning.md) runs weekdays at 09:45 ET.
+   - [routines/close.md](routines/close.md) runs weekdays at 16:30 ET.
 3. **First runs.** Click **Run now** with the text `dry_run` and read the transcript. A green status only means the run didn't crash.
 
 ## Safety
