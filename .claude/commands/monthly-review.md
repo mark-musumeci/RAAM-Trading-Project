@@ -17,4 +17,4 @@ Monthly review (runs on the first trading day of the month, after the close). Fo
    - Include "Open questions" only if something relates to the ambiguities A1–A7 in TRADING-STRATEGY.md.
    - Plain facts. No strategy changes.
 3. Update the milestone checkboxes in `memory/PROJECT-STATUS.md` if any were reached.
-4. WhatsApp: `RAAM <month> review: RAAM X% vs SPY Y% vs 7Twelve Z% | best <ETF>, worst <ETF>`.
+4. Discord: `RAAM <month> review: RAAM X% vs SPY Y% vs 7Twelve Z% | best <ETF>, worst <ETF>`.

@@ -2,7 +2,7 @@
 
 ## Current state
 - Mode: **PAPER** (Alpaca paper account)
-- Phase: setup — awaiting API keys (Alpaca, Perplexity, CallMeBot) and first routine runs
+- Phase: setup — awaiting Alpaca keys + Discord webhook in cloud env and first routine runs
 - Circuit breaker: not tripped (source of truth: `memory/state.json`)
 
 ## Latest health

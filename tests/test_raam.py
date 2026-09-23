@@ -182,17 +182,17 @@ def test_month_helpers():
 
 # ---------------------------------------------------------------- env handling
 def test_env_vars_win_and_dotenv_ignored_in_cloud(tmp_path, monkeypatch):
-    (tmp_path / ".env").write_text("ALPACA_API_KEY=from_file\nPERPLEXITY_API_KEY=file_only\n")
+    (tmp_path / ".env").write_text("ALPACA_API_KEY=from_file\nDISCORD_WEBHOOK_URL=file_only\n")
     monkeypatch.setattr(raam, "ROOT", tmp_path)
-    monkeypatch.delenv("PERPLEXITY_API_KEY", raising=False)
+    monkeypatch.delenv("DISCORD_WEBHOOK_URL", raising=False)
     monkeypatch.setenv("ALPACA_API_KEY", "from_env")
 
     monkeypatch.setenv("CLAUDE_CODE_REMOTE", "true")
     raam.load_env()
-    assert "PERPLEXITY_API_KEY" not in os.environ   # cloud: .env never read
+    assert "DISCORD_WEBHOOK_URL" not in os.environ   # cloud: .env never read
 
     monkeypatch.delenv("CLAUDE_CODE_REMOTE")
     raam.load_env()
     env = os.environ
     assert env["ALPACA_API_KEY"] == "from_env"                      # real env var wins
-    assert env["PERPLEXITY_API_KEY"] == "file_only"                 # local .env fills gaps
+    assert env["DISCORD_WEBHOOK_URL"] == "file_only"                 # local .env fills gaps

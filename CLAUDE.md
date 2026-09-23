@@ -8,15 +8,15 @@ The strategy rules are in `memory/TRADING-STRATEGY.md`. The parameters are in `c
 - **Do not override the model.** Never change targets, pick different ETFs, skip a rebalance "because the market looks bad", add stops, or trade intra-month. RAAM is a monthly, rules-based model.
 - **Do not edit** `config/raam.json`, `scripts/`, `.claude/`, or the rules in `TRADING-STRATEGY.md` during a routine run. Rule changes happen only in an interactive session at the owner's request.
 - **Do not place orders** other than through `scripts/raam.py rebalance`, or through `/trade` when the owner explicitly asks in an interactive session.
-- **You may halt.** If something looks wrong, stop and alert via WhatsApp rather than improvising. Examples: stale data, a fund closing or delisting, weights that don't add up, unexpected positions, an Alpaca error. A missed rebalance is cheap. A wrong trade is not.
-- Research (Perplexity) is **context only**. It feeds the logs and summaries and never the allocation. The one exception: a research finding of a *structural* problem with a held or targeted ETF is grounds to halt. Examples are a closure, merger, ticker change, or trading halt.
+- **You may halt.** If something looks wrong, stop and alert via Discord rather than improvising. Examples: stale data, a fund closing or delisting, weights that don't add up, unexpected positions, an Alpaca error. A missed rebalance is cheap. A wrong trade is not.
+- Research (your own WebSearch/WebFetch tools, see `.claude/commands/research.md`) is **context only**. It feeds the logs and summaries and never the allocation. The one exception: a research finding of a *structural* problem with a held or targeted ETF is grounds to halt. Examples are a closure, merger, ticker change, or trading halt.
 
 ## Standard operating procedure (every run)
 1. **Sync:** `git pull --rebase origin main`. Check that deps import: `python3 -c "import pandas, numpy, requests"`. If that fails, run `pip install -r requirements.txt`.
 2. **Act:** run the slash command(s) the routine asks for, in order. Each command explains its own steps.
 3. **Log:** update the relevant `memory/*.md` files. The scripts already write `signals/*.json`, `state.json`, `SIGNAL-LOG.md` and `TRADE-LOG.md`; do not hand-edit those.
-4. **Commit & push:** `git add memory && git commit -m "<routine>: <YYYY-MM-DD> <one-line result>"`, then `git push origin HEAD:main`. If the push is rejected, run `git pull --rebase origin main` and push again. If it still fails, say so in the WhatsApp message.
-5. **Notify:** send **one** WhatsApp message per run with `bash scripts/whatsapp.sh "<text>"`. When a run executes several commands, each command's "WhatsApp:" step contributes one line to a single combined message, sent once at the end after the push. Keep it short:
+4. **Commit & push:** `git add memory && git commit -m "<routine>: <YYYY-MM-DD> <one-line result>"`, then `git push origin HEAD:main`. If the push is rejected, run `git pull --rebase origin main` and push again. If it still fails, say so in the Discord message.
+5. **Notify:** send **one** Discord message per run with `bash scripts/discord.sh "<text>"`. When a run executes several commands, each command's "Discord:" step contributes one line to a single combined message, sent once at the end after the push. Keep it short:
    - Prefix `RAAM` for normal runs and `RAAM ⚠️` for halts or errors.
    - Morning runs that were a no-op send nothing.
    - Close runs always send the daily health line.
@@ -30,8 +30,8 @@ The strategy rules are in `memory/TRADING-STRATEGY.md`. The parameters are in `c
 | Health / snapshot | `python3 scripts/raam.py health [--dry-run]` |
 | Month review numbers | `python3 scripts/raam.py review [--month YYYY-MM] [--force]` |
 | Raw Alpaca | `bash scripts/alpaca.sh account\|positions\|orders\|clock\|quote SYM\|...` |
-| Research | `bash scripts/perplexity.sh "question" [day\|week\|month]` |
-| WhatsApp | `bash scripts/whatsapp.sh "message"` |
+| Research | your WebSearch / WebFetch tools (see `.claude/commands/research.md`) |
+| Discord | `bash scripts/discord.sh "message"` |
 
 `raam.py` always prints one JSON object. Read the `status` field:
 - `ok` means it acted or reported.
@@ -51,7 +51,7 @@ A routine's run text may contain `dry_run`, `force` or `force_date=YYYY-MM-DD`. 
 
 ## Secrets: environment variables only
 - In a routine, every API key comes from the **environment variables of the cloud environment** the routine runs in. The scripts read them straight from the process environment.
-- In the cloud (`CLAUDE_CODE_REMOTE=true`) the scripts **never read a `.env` file**. Never create, write or look for a `.env` in a routine run, and never paste keys into files, commands, commit messages or WhatsApp texts.
+- In the cloud (`CLAUDE_CODE_REMOTE=true`) the scripts **never read a `.env` file**. Never create, write or look for a `.env` in a routine run, and never paste keys into files, commands, commit messages or Discord messages.
 - If a script reports `missing environment variable(s) ...`, do not try to work around it. Halt and send `RAAM ⚠️ missing env var <NAME> in cloud environment`.
 - `.env` exists only for the owner's local testing on their own PC. It is gitignored, and real env vars always take precedence over it.
 - To check that a variable is present without revealing it: `[ -n "$ALPACA_API_KEY" ] && echo set || echo missing`.

@@ -13,8 +13,8 @@ Task: the after-close routine.
 4. Commit the changed memory files:
    - Use the message `close: <YYYY-MM-DD> <one-line result>`, then run `git push origin HEAD:main`.
    - If the push is rejected, run `git pull --rebase origin main` and retry once.
-   - If it is still rejected, push to your current branch instead and add "⚠️ memory not saved to main" to the WhatsApp message.
-5. Send exactly ONE WhatsApp message with `bash scripts/whatsapp.sh "<text>"`:
+   - If it is still rejected, push to your current branch instead and add "⚠️ memory not saved to main" to the Discord message.
+5. Send exactly ONE Discord message with `bash scripts/discord.sh "<text>"`:
    - It combines the health line with the signal line and/or the review line, when those ran.
    - Start it with `RAAM ⚠️` if anything halted or raised an alert.
 

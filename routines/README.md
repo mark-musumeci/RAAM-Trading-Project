@@ -29,7 +29,7 @@ Schedule times are in your local time zone. Your PC is on US Eastern, so no conv
 
 ## Cloud environment (set this up first)
 - **Environment variables:** paste in everything from `env.template` with real values. This is the only place routines get API keys from. Don't use "API credentials".
-- **Network access:** Custom. Allow `paper-api.alpaca.markets`, `data.alpaca.markets`, `api.perplexity.ai` and `api.callmebot.com`, and tick "include default package managers".
+- **Network access:** Custom. Allow `paper-api.alpaca.markets`, `data.alpaca.markets` and `discord.com`, and tick "include default package managers".
 - **Setup script:** `pip install -r requirements.txt`
 
 ## First runs

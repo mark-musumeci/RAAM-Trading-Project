@@ -14,8 +14,7 @@ Each month the bot ranks 11 ETFs on momentum, volatility and correlation, adjust
 | `config/raam.json` | Model parameters and guardrail thresholds |
 | `scripts/raam.py` | Deterministic engine: calendar, signal, rebalance, health, review |
 | `scripts/alpaca.sh` | Thin curl wrapper for Alpaca (ad-hoc and manual use) |
-| `scripts/perplexity.sh` | Perplexity research (context only) |
-| `scripts/whatsapp.sh` | WhatsApp notifications (CallMeBot, Twilio or console) |
+| `scripts/discord.sh` | Discord notifications via channel webhook (`DISCORD_WEBHOOK_URL`) |
 | `.claude/commands/` | `/health` `/signal` `/rebalance` `/monthly-review` `/research` `/portfolio` `/trade` |
 | `memory/` | Strategy, logs, signals (`signals/*.json`) and `state.json` (high-water mark, circuit breaker) |
 | `tests/` | pytest unit tests for the indicators, ranking and order planning |
@@ -35,7 +34,7 @@ python scripts/raam.py calendar
 python scripts/raam.py health --dry-run
 python scripts/raam.py signal --force --dry-run     # compute today's ranks without saving
 python scripts/raam.py rebalance --force --dry-run  # show the orders it would place
-bash scripts/whatsapp.sh "RAAM test"
+bash scripts/discord.sh "RAAM test"
 ```
 
 ## Cloud routine setup
@@ -43,7 +42,7 @@ bash scripts/whatsapp.sh "RAAM test"
    - **Environment variables:** paste in everything from `env.template` with real values, in the same `KEY=value` format. Keep `PAPER_TRADING=true`.
      - This is the **only** place routines get keys from; the scripts never read a `.env` file in the cloud.
      - Do not use the "API credentials" section. Those keys are injected by a proxy and are never visible to the scripts.
-   - **Network access:** Custom. Allow `paper-api.alpaca.markets`, `data.alpaca.markets`, `api.perplexity.ai` and `api.callmebot.com` (add `api.twilio.com` if you use Twilio), and tick "include default package managers".
+   - **Network access:** Custom. Allow `paper-api.alpaca.markets`, `data.alpaca.markets` and `discord.com`, and tick "include default package managers".
    - **Setup script:** `pip install -r requirements.txt`
 2. **Routines.** Create them with `/schedule` or at claude.ai/code/routines:
    - repo `musu-codes/24.7-RAAM-Trading`;
