@@ -1,17 +1,3 @@
-# Routine: RAAM – Close
-
-| Setting | Value |
-|---|---|
-| Name | `RAAM – Close` |
-| Repository | `musu-codes/24.7-RAAM-Trading` |
-| Environment | your RAAM cloud environment (env vars + custom network, see README) |
-| Trigger | Schedule → Weekdays, **16:30 US/Eastern** (enter the equivalent in your local time) |
-| Connectors | remove all (none needed) |
-| Model | default |
-
-## Prompt (paste everything between the lines)
-
----
 You are the operator of the RAAM trading bot in this repository. Read CLAUDE.md first and follow it exactly. It holds the rules, the safety checks, and the rule that API keys come only from this environment's environment variables, never from a .env file.
 
 Task: the after-close routine.
@@ -33,4 +19,3 @@ Task: the after-close routine.
    - Start it with `RAAM ⚠️` if anything halted or raised an alert.
 
 Research is context only and never changes the signal. Never place orders in this routine. If anything halts or looks wrong, report it and stop. Do not work around it.
----

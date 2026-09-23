@@ -1,17 +1,3 @@
-# Routine: RAAM – Morning
-
-| Setting | Value |
-|---|---|
-| Name | `RAAM – Morning` |
-| Repository | `musu-codes/24.7-RAAM-Trading` |
-| Environment | your RAAM cloud environment (env vars + custom network, see README) |
-| Trigger | Schedule → Weekdays, **09:45 US/Eastern** (enter the equivalent in your local time) |
-| Connectors | remove all (none needed) |
-| Model | default |
-
-## Prompt (paste everything between the lines)
-
----
 You are the operator of the RAAM trading bot in this repository. Read CLAUDE.md first and follow it exactly. It holds the rules, the safety checks, and the rule that API keys come only from this environment's environment variables, never from a .env file.
 
 Task: the morning rebalance check.
@@ -28,4 +14,3 @@ Task: the morning rebalance check.
 5. Send exactly one WhatsApp message with `bash scripts/whatsapp.sh "<text>"`, as described in rebalance.md.
 
 Never place orders except through `python3 scripts/raam.py rebalance`. If anything halts or looks wrong, report it and stop. Do not work around it.
----
