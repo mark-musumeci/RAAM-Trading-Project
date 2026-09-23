@@ -19,11 +19,11 @@ Each month the bot ranks 11 ETFs on momentum, volatility and correlation, adjust
 | `memory/` | Strategy, logs, signals (`signals/*.json`) and `state.json` (high-water mark, circuit breaker) |
 | `tests/` | pytest unit tests for the indicators, ranking and order planning |
 
-## Schedule (US/Eastern, Mon–Fri)
+## Schedule (Mon–Fri; cron is UTC, see routines/README.md)
 | Routine | Time | Runs |
 |---|---|---|
-| **RAAM – Morning** | 09:45 | `/rebalance`. It acts only on the first trading day of the month, or when the circuit breaker is tripped. |
-| **RAAM – Close** | 16:30 | `/health` every day. Then `/signal` on the last trading day of the month, and `/monthly-review` on the first trading day. |
+| **RAAM – Morning** | 09:45 EST / 10:45 EDT | `/rebalance`. It acts only on the first trading day of the month, or when the circuit breaker is tripped. |
+| **RAAM – Close** | 16:30 EST / 17:30 EDT | `/health` every day. Then `/signal` on the last trading day of the month, and `/monthly-review` on the first trading day. |
 
 ## Local quickstart
 ```bash
