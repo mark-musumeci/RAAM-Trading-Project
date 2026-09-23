@@ -13,7 +13,7 @@ Month-end signal. Follow the SOP in CLAUDE.md.
    - 11 rows;
    - 5 selected;
    - target weights sum to 100%;
-   - every non-zero weight is 20% or a multiple of 20% (SHY).
+   - every non-zero weight is 20%, or a multiple of 20% for the cash asset BIL.
 
    If anything fails, send ⚠️ and stop.
 5. In `memory/SIGNAL-LOG.md`, under the section the script just wrote, add a 2–4 line **"Context"** note:

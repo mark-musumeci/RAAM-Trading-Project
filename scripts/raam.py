@@ -37,6 +37,7 @@ STATE_PATH = MEMORY / "state.json"
 SIGNAL_LOG = MEMORY / "SIGNAL-LOG.md"
 TRADE_LOG = MEMORY / "TRADE-LOG.md"
 ET = ZoneInfo("America/New_York")
+SEVEN_TWELVE_CASH = "SHY"   # benchmark only; RAAM's own cash asset comes from config
 
 
 class Halt(Exception):
@@ -180,8 +181,13 @@ def atr_trend_series(bars: pd.DataFrame, atr_days: int, up_days: int, low_days: 
     return pd.Series(out, index=bars.index).shift(lag).fillna(0).astype(int)
 
 
-def rank_assets(M: pd.Series, V: pd.Series, C: pd.Series, T: pd.Series, cfg: dict):
-    """Returns (table DataFrame sorted by score, target weights dict incl. cash)."""
+def rank_assets(M: pd.Series, V: pd.Series, C: pd.Series, T: pd.Series, cfg: dict,
+                hurdle: float = 0.0):
+    """Returns (table DataFrame sorted by score, target weights dict incl. cash).
+
+    A selected asset keeps its slot only if its momentum beats `hurdle` (the cash asset's
+    own momentum when ranking.momentum_hurdle == 'cash', else 0); otherwise the slot goes to cash.
+    """
     amb, rk = cfg["ambiguities"], cfg["ranking"]
     if amb["rank_convention"] != "1_is_best":
         raise ValueError("only rank_convention '1_is_best' is implemented")
@@ -205,7 +211,7 @@ def rank_assets(M: pd.Series, V: pd.Series, C: pd.Series, T: pd.Series, cfg: dic
     weights[cash] = 0.0
     df["weight"] = 0.0
     for sym in df.index[:top_n]:
-        if df.at[sym, "M"] > 0:
+        if df.at[sym, "M"] > hurdle:
             weights[sym] += slot
             df.at[sym, "weight"] = slot
         else:
@@ -243,7 +249,17 @@ def compute_signal(bars: dict[str, pd.DataFrame], cfg: dict, as_of: dt.date) -> 
         bad = [s for s, v in series.items() if v is None or not np.isfinite(v)]
         if bad:
             raise Halt(f"non-finite {name} for {bad}")
-    table, weights = rank_assets(pd.Series(M), pd.Series(V), C.loc[risk], pd.Series(T), cfg)
+    hurdle_mode = cfg["ranking"].get("momentum_hurdle", "zero")
+    if hurdle_mode == "cash":
+        hurdle = momentum(trimmed[cash]["c"], lb["momentum_days"])
+    elif hurdle_mode == "zero":
+        hurdle = 0.0
+    else:
+        raise ValueError(f"unknown momentum_hurdle {hurdle_mode!r}")
+    if not np.isfinite(hurdle):
+        raise Halt(f"non-finite momentum for cash asset {cash}")
+    table, weights = rank_assets(pd.Series(M), pd.Series(V), C.loc[risk], pd.Series(T), cfg,
+                                 hurdle=hurdle)
     rows = []
     for sym, r in table.iterrows():
         rows.append({
@@ -259,6 +275,8 @@ def compute_signal(bars: dict[str, pd.DataFrame], cfg: dict, as_of: dt.date) -> 
         "effective_month": next_month_key(as_of),
         "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "params": {"lookbacks": lb, "ranking": cfg["ranking"], "ambiguities": amb},
+        "momentum_hurdle": {"mode": hurdle_mode, "value_pct": round(float(hurdle), 3),
+                            "cash_asset": cash},
         "table": rows,
         "targets": weights,
         "executed": None,
@@ -470,7 +488,11 @@ def write_signal_log(sig: dict) -> None:
                      f"{r['vol_pct']:.2f} | {r['avg_corr']:.3f} | {r['trend']:+d} | {r['rank_M']:g} | "
                      f"{r['rank_V']:g} | {r['rank_C']:g} | {r['score']:.3f} | {r['weight'] * 100:.0f}% |")
     alloc = ", ".join(f"{s} {w * 100:.0f}%" for s, w in sig["targets"].items() if w > 0)
-    lines += ["", f"**Target allocation:** {alloc}", ""]
+    h = sig.get("momentum_hurdle")
+    hurdle = (f"**Momentum hurdle:** {h['value_pct']:.2f}% ({h['cash_asset']} 4-month momentum); "
+              f"selected ETFs at or below it gave their slot to {h['cash_asset']}."
+              if h and h["mode"] == "cash" else "**Momentum hurdle:** 0%")
+    lines += ["", hurdle, "", f"**Target allocation:** {alloc}", ""]
     SIGNAL_LOG.write_text(text.rstrip("\n") + "\n" + "\n".join(lines), encoding="utf-8")
 
 
@@ -591,9 +613,20 @@ def cmd_rebalance(args, cfg):
     d = _resolve_date(args.date)
     info = calendar_info(client, d)
     breaker = state["circuit_breaker"]["tripped"]
-    sig, path = None, None
+    sig, path, reenter = None, None, False
     if breaker:
         targets, reason = {cfg["universe"]["cash"]: 1.0}, "circuit breaker: move to cash"
+        # Auto re-entry: at the first monthly rebalance after the trip, follow the fresh signal.
+        auto = cfg["guardrails"].get("circuit_breaker_reset", "manual") == "next_rebalance"
+        if auto and info["is_trading_day"] and (info["is_first_trading_day"] or args.force):
+            cand = signal_path(prev_month_key(d))
+            tripped_on = state["circuit_breaker"].get("tripped_on") or "0000-00-00"
+            if cand.exists():
+                s = json.loads(cand.read_text(encoding="utf-8"))
+                if not s.get("executed") and s["as_of"] >= tripped_on:
+                    sig, path, reenter = s, cand, True
+                    targets = s["targets"]
+                    reason = f"circuit breaker auto re-entry ({s['month']} signal)"
     else:
         if not info["is_trading_day"]:
             return {"status": "noop", "reason": f"{d} is not a trading day"}
@@ -617,8 +650,8 @@ def cmd_rebalance(args, cfg):
         prices.update(client.latest_prices(need))
     plan = plan_orders(targets, equity, positions, prices, cfg)
     result = {"status": "ok", "reason": reason, "targets": targets, "plan": plan,
-              "dry_run": args.dry_run}
-    if breaker and not plan["orders"]:
+              "dry_run": args.dry_run, "breaker_reentry": reenter}
+    if breaker and not reenter and not plan["orders"]:
         return {**result, "status": "noop", "reason": "circuit breaker tripped; already in cash"}
     if args.dry_run:
         return result
@@ -634,6 +667,13 @@ def cmd_rebalance(args, cfg):
         path.write_text(json.dumps(sig, indent=2) + "\n", encoding="utf-8")
     if fills:
         append_trade_log(d.isoformat(), fills, reason)
+    if reenter:
+        # re-base the high-water mark so the old peak can't immediately re-trip the breaker
+        state["circuit_breaker"] = {"tripped": False, "reason": None, "tripped_on": None,
+                                    "last_reset": {"on": d.isoformat(), "mode": "auto",
+                                                   "previous": state["circuit_breaker"]}}
+        state["high_water_mark"] = round(equity, 2)
+        save_state(state)
     bad = [f for f in fills if f["status"] != "filled"]
     result.update({"fills": fills, "unfilled": bad})
     if bad:
@@ -662,7 +702,12 @@ def cmd_health(args, cfg):
         if why:
             state["circuit_breaker"] = {"tripped": True, "reason": why,
                                         "tripped_on": today_et().isoformat()}
-            alerts.append(f"CIRCUIT BREAKER TRIPPED: {why}. Next morning run moves to 100% SHY.")
+            cash = cfg["universe"]["cash"]
+            reentry = ("re-enters automatically at the next monthly rebalance"
+                       if g.get("circuit_breaker_reset") == "next_rebalance"
+                       else "stays in cash until manually reset in memory/state.json")
+            alerts.append(f"CIRCUIT BREAKER TRIPPED: {why}. Next morning run moves to 100% {cash}; "
+                          f"it {reentry}.")
     targets, target_src = _current_targets(state, cfg)
     universe = set(cfg["universe"]["risk_assets"]) | {cfg["universe"]["cash"]}
     rows = []
@@ -721,11 +766,14 @@ def cmd_review(args, cfg):
     eq = eq[eq > 0]
     raam_ret = _period_return(eq, start, end)
     uni = cfg["universe"]
-    syms = uni["risk_assets"] + [uni["cash"]] + cfg["benchmarks"]
+    # the 7Twelve benchmark keeps its original cash fund (SHY) even though RAAM now uses BIL
+    ew_assets = uni["risk_assets"] + [SEVEN_TWELVE_CASH]
+    syms = list(dict.fromkeys(uni["risk_assets"] + [uni["cash"], SEVEN_TWELVE_CASH] + cfg["benchmarks"]))
     bars, _ = fetch_bars(client, syms, end, {**cfg, "lookbacks": {**cfg["lookbacks"],
                                                                   "history_calendar_days": 45}})
     etf_rets = {s: _period_return(bars[s]["c"], start, end) for s in uni["risk_assets"] + [uni["cash"]]}
-    valid = [v for v in etf_rets.values() if v is not None]
+    ew = [_period_return(bars[s]["c"], start, end) for s in ew_assets]
+    valid = [v for v in ew if v is not None]
     bench = {s: _period_return(bars[s]["c"], start, end) for s in cfg["benchmarks"]}
     sig_path = signal_path(prev_month_key(m_first))
     held = json.loads(sig_path.read_text(encoding="utf-8"))["targets"] if sig_path.exists() else None

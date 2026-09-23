@@ -15,7 +15,7 @@ only when the owner decides them, and they are recorded in the change log at the
 | Commodities / Natural Resources | DBC, VAW |
 | US Bonds / Inflation-protected | AGG, TIP |
 | International Bonds | IGOV |
-| Cash | SHY (not ranked; receives weight from excluded slots) |
+| Cash | **BIL**, 1–3 month T-bills (not ranked; receives weight from excluded slots). The paper and 7Twelve use SHY; replaced by Tier 1 upgrade U2. |
 
 ## Factors
 Computed daily from Alpaca daily bars (split- and dividend-adjusted). The ranking uses only the value from the **last trading day of the month**.
@@ -38,7 +38,7 @@ Bands:
    - The `−T` term rewards up-trends.
    - The `−M/x` term only breaks ties, in favour of higher momentum.
 3. Take the **5 lowest scores**. Each gets **20%**.
-4. Any of those 5 with **momentum ≤ 0** has its 20% moved to **SHY**. If all 5 are negative, the portfolio is 100% SHY.
+4. **Cash hurdle (Tier 1 upgrade U1):** each of those 5 keeps its 20% only if its momentum **beats the cash asset's own 4-month momentum**. Otherwise its 20% moves to **BIL**. If none beat cash, the portfolio is 100% BIL. The paper's rule was momentum > 0%.
 5. **Timing:** the signal is computed after the close on the last trading day of month *m*. It is executed at about 09:45 ET on the first trading day of month *m+1*. It is held all month; there are no stops and no intra-month trading.
 
 ## Open ambiguities in the paper (defaults in use)
@@ -56,10 +56,15 @@ Bands:
 ## Guardrails (not part of the paper)
 - **Paper trading only**, unless `PAPER_TRADING=false` **and** `LIVE_CONFIRM=yes`.
 - Target weights must sum to 100% ±0.5%. Only universe tickers may be traded, and a single risk-asset buy is capped at 25% of equity.
-- **Circuit breaker:** it trips on a −15% drawdown from the high-water mark, or a −5% single day. The next morning run moves the portfolio to 100% SHY and it stays there until the owner resets it by setting `circuit_breaker.tripped` to `false` in `memory/state.json`.
+- **Circuit breaker (Tier 1 upgrade U3):**
+  - It trips on a **−20%** drawdown from the high-water mark, or a −5% single day. The next morning run moves the portfolio to 100% BIL.
+  - It **re-enters automatically** at the next monthly rebalance, following a signal computed after the trip, and re-bases the high-water mark at that point.
+  - Setting `circuit_breaker_reset` to `manual` in config restores the old behaviour: stay in cash until the owner resets `memory/state.json`.
+  - In the 2009–2026 backtest it never tripped, so it is a tail-risk safety net rather than part of the strategy. The old −15% level would have tripped at the March 2020 low and cost return.
 - Stale or missing data for any ETF halts the signal. There is no guessing.
 
 ## Change log
 | Date | Change | Decided by |
 |---|---|---|
 | 2026-09-23 | Initial setup with the defaults above | owner |
+| 2026-09-23 | **Tier 1 upgrades:** U1 cash-momentum hurdle (was >0%); U2 BIL replaces SHY as cash; U3 breaker −20% with auto re-entry (was −15%, manual reset). Backtest in `memory/BACKTEST-SUMMARY.md`. | owner |

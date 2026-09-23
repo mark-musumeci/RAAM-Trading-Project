@@ -1,5 +1,5 @@
 ---
-description: Execute last month-end's RAAM signal on the first trading day (also handles circuit breaker → SHY)
+description: Execute last month-end's RAAM signal on the first trading day (also handles circuit breaker → BIL and its auto re-entry)
 argument-hint: "[dry_run] [force] [force_date=YYYY-MM-DD] [confirm_live_force]"
 ---
 Monthly rebalance. Follow the SOP in CLAUDE.md.

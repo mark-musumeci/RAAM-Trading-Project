@@ -196,3 +196,20 @@ def test_env_vars_win_and_dotenv_ignored_in_cloud(tmp_path, monkeypatch):
     env = os.environ
     assert env["ALPACA_API_KEY"] == "from_env"                      # real env var wins
     assert env["DISCORD_WEBHOOK_URL"] == "file_only"                 # local .env fills gaps
+
+
+def test_cash_hurdle_sends_weak_momentum_to_cash():
+    M, V, C, T = _factors(range(1, 12))              # top-5 momenta are 11, 10, 9, 8, 7
+    _, w = raam.rank_assets(M, V, C, T, CFG, hurdle=8.5)
+    assert w["IGOV"] == pytest.approx(0.2) and w["TIP"] == pytest.approx(0.2) and w["AGG"] == pytest.approx(0.2)
+    assert w["VAW"] == 0.0 and w["DBC"] == 0.0       # 8 and 7 do not beat the 8.5% hurdle
+    assert w[CASH] == pytest.approx(0.4)
+
+
+def test_compute_signal_uses_cash_momentum_as_hurdle():
+    rng = np.random.default_rng(9)
+    bars = {s: make_bars(100 * np.cumprod(1 + rng.normal(0.0005, 0.01, 400))) for s in RISK}
+    bars[CASH] = make_bars(100 * np.cumprod(np.full(400, 1.004)), spread=0.0001)  # ~40% in 84d
+    sig = raam.compute_signal(bars, CFG, bars["VV"].index[-1])
+    assert sig["momentum_hurdle"]["value_pct"] > 30
+    assert sig["targets"][CASH] == pytest.approx(1.0)  # nothing beats a 40% hurdle

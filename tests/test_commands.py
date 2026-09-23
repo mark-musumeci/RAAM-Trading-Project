@@ -13,7 +13,8 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "scripts
 import raam  # noqa: E402
 
 CFG = raam.load_config()
-SYMS = CFG["universe"]["risk_assets"] + [CFG["universe"]["cash"]]
+CASH = CFG["universe"]["cash"]
+SYMS = CFG["universe"]["risk_assets"] + [CASH]
 # Sept 2026: last trading day Wed 30th; Oct 2026: first trading day Thu 1st
 SEPT_DAYS = [d.date() for d in pd.bdate_range("2026-09-01", "2026-09-30") if d.day != 7]  # Labor Day
 OCT_DAYS = [d.date() for d in pd.bdate_range("2026-10-01", "2026-10-31")]
@@ -135,11 +136,63 @@ def test_rebalance_halts_when_market_closed(env):
 def test_health_trips_breaker_then_rebalance_goes_to_cash(env):
     env.fake._positions = {"VV": {"qty": 400, "market_value": 40_000}}
     raam.cmd_health(args(), CFG)                       # HWM = 100k
-    env.fake.equity = 80_000                           # -20% from peak
+    env.fake.equity = 79_000                           # -21% from peak (breaker at -20%)
     env.fake._positions = {"VV": {"qty": 400, "market_value": 20_000}}
     h = raam.cmd_health(args(), CFG)
     assert h["circuit_breaker"]["tripped"] and h["alerts"]
     out = raam.cmd_rebalance(args(date="2026-10-05"), CFG)   # any day
     syms = {(o["symbol"], o["side"]) for o in env.fake.submitted}
-    assert ("VV", "sell") in syms and ("SHY", "buy") in syms
+    assert ("VV", "sell") in syms and (CASH, "buy") in syms
     assert out["reason"].startswith("circuit breaker")
+
+
+def _trip(env, on="2026-09-15"):
+    state = raam.load_state()
+    state["circuit_breaker"] = {"tripped": True, "reason": "test", "tripped_on": on}
+    state["high_water_mark"] = 150_000.0
+    raam.save_state(state)
+
+
+def test_breaker_stays_in_cash_until_next_rebalance(env):
+    _trip(env)
+    out = raam.cmd_rebalance(args(date="2026-10-05"), CFG)       # not a rebalance day
+    assert out["targets"] == {CASH: 1.0} and not out["breaker_reentry"]
+    assert raam.load_state()["circuit_breaker"]["tripped"]
+
+
+def test_breaker_auto_reentry_with_fresh_signal(env):
+    _trip(env, on="2026-09-15")
+    raam.cmd_signal(args(date="2026-09-30"), CFG)                 # signal after the trip
+    out = raam.cmd_rebalance(args(date="2026-10-01"), CFG)
+    assert out["breaker_reentry"] and out["reason"].startswith("circuit breaker auto re-entry")
+    assert out["targets"] == json.loads((env.mem / "signals" / "2026-09.json").read_text())["targets"]
+    state = raam.load_state()
+    assert not state["circuit_breaker"]["tripped"]
+    assert state["circuit_breaker"]["last_reset"]["mode"] == "auto"
+    assert state["high_water_mark"] == 100_000.0                  # re-based, not the old 150k peak
+
+
+def test_breaker_dry_run_reentry_changes_nothing(env):
+    _trip(env)
+    raam.cmd_signal(args(date="2026-09-30"), CFG)
+    out = raam.cmd_rebalance(args(date="2026-10-01", dry_run=True), CFG)
+    assert out["breaker_reentry"] and not env.fake.submitted
+    assert raam.load_state()["circuit_breaker"]["tripped"]
+
+
+def test_breaker_manual_mode_never_reenters(env):
+    _trip(env)
+    raam.cmd_signal(args(date="2026-09-30"), CFG)
+    cfg = json.loads(json.dumps(CFG))
+    cfg["guardrails"]["circuit_breaker_reset"] = "manual"
+    out = raam.cmd_rebalance(args(date="2026-10-01"), cfg)
+    assert out["targets"] == {CASH: 1.0} and not out["breaker_reentry"]
+
+
+def test_signal_records_cash_hurdle(env):
+    out = raam.cmd_signal(args(date="2026-09-30", dry_run=True), CFG)
+    h = out["momentum_hurdle"]
+    assert h["mode"] == "cash" and h["cash_asset"] == CASH
+    for row in out["table"]:
+        if row["selected"] and row["weight"] > 0:
+            assert row["momentum_pct"] > h["value_pct"]

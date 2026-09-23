@@ -5,7 +5,7 @@ An autonomous implementation of the **Ranked Asset Allocation Model**, from Gioe
 - It is run by **Claude Code cloud routines**.
 - This repo is the bot's persistent disk: code, config and memory. Each routine run clones it, acts, and pushes its memory back.
 
-Each month the bot ranks 11 ETFs on momentum, volatility and correlation, adjusts for an ATR trend filter, and holds the top 5 at 20% each. Any of those 5 with negative momentum is swapped for SHY. It rebalances once a month and holds; there are no stops. The full rules and open questions are in [memory/TRADING-STRATEGY.md](memory/TRADING-STRATEGY.md).
+Each month the bot ranks 11 ETFs on momentum, volatility and correlation, adjusts for an ATR trend filter, and holds the top 5 at 20% each. Any of those 5 whose momentum does not beat cash's own momentum is swapped for BIL (T-bills). It rebalances once a month and holds; there are no stops. The full rules and open questions are in [memory/TRADING-STRATEGY.md](memory/TRADING-STRATEGY.md).
 
 ## Layout
 | Path | Purpose |
@@ -56,5 +56,5 @@ bash scripts/discord.sh "RAAM test"
 
 ## Safety
 - Paper only, unless both `PAPER_TRADING=false` and `LIVE_CONFIRM=yes` are set.
-- A circuit breaker (−15% from peak, or −5% in one day) moves the portfolio to 100% SHY until it is reset manually in `memory/state.json`.
+- A circuit breaker (−20% from peak, or −5% in one day) moves the portfolio to 100% BIL; it re-enters automatically at the next monthly rebalance with the fresh signal.
 - Research never changes the allocation. Claude may halt and alert, but never improvises trades.
