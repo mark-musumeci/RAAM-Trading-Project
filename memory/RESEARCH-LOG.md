@@ -3,6 +3,28 @@
 Findings from Claude web research (WebSearch/WebFetch), newest first. Context only: research never changes RAAM signals or weights.
 Format per entry: `## YYYY-MM-DD — topic`, question asked, 3–6 bullet summary, flags (if any), sources.
 
+## 2026-09-24 — month-end scan (effective month 2026-09, close-routine dry-run)
+
+Searched: structural news for all 12 universe ETFs grouped by issuer (iShares: IJH, IJR, EFA, EEM, AGG, TIP, IGOV; Vanguard: VV, VAW; SPDR/State Street: RWR, BIL; Invesco: DBC), plus macro backdrop for US/international equities, REITs, commodities and Treasuries.
+
+- iShares: iBonds term-maturity ETFs (Dec 2026 Term $ Corp UCITS, Oct 2026 Term TIPS) and the Evolved US ETF lineup are being wound down — none of these are RAAM tickers.
+- State Street: liquidating three SPDR/Nuveen niche ETFs (SIMS, HAIL, MBND) — RWR and BIL unaffected.
+- Vanguard (VV, VAW) and Invesco (DBC) show no closure, merger or ticker-change news.
+- Macro: 10Y Treasury yield near 4.75%, its highest since January, pressuring equity valuations even as Q2 S&P 500 earnings growth ran ~50% blended; September historically a weak seasonal month for equities.
+- Commodities: Brent above $96 on renewed US–Iran tensions, gold near record highs (~$4,520/oz) — supportive backdrop for DBC-type exposure.
+- Outlook is described as "constructive but selective," favoring quality and diversification over aggressive risk-taking.
+
+**Flags:** none
+
+Sources:
+- https://finance.yahoo.com/markets/options/articles/ishares-ibonds-etf-near-final-203400711.html
+- https://www.investing.com/news/company-news/ishares-to-close-ibonds-dec-2026-term--corp-ucits-etf-93CH-4910354
+- https://www.ishares.com/us/products/closed-funds/updates
+- https://investors.statestreet.com/investor-news-events/press-releases/news-details/2026/State-Street-Investment-Management-Announces-Changes-to-ETF-Lineup/default.aspx
+- https://ffnews.com/news/state-street-investment-management-to-liquidate-three-spdr-etfs-in-portfolio-realignment
+- https://am.gs.com/en-us/advisors/insights/article/market-pulse
+- https://www.investing.com/analysis/september-trading-outlook-2026-the-warning-traders-shouldnt-ignore-200687241
+
 ## 2026-09-24 — month-end scan (effective month 2026-08, dry-run re-check)
 
 Searched: structural news (past ~45 days) for all 12 universe ETFs grouped by issuer (iShares: IJH, IJR, EFA, EEM, AGG, TIP, IGOV; Vanguard: VV, VAW; SPDR/State Street: RWR, BIL; Invesco: DBC), plus macro backdrop for US/international equities, REITs, commodities, Treasuries/TIPS and international govt bonds.
