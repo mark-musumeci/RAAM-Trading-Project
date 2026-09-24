@@ -1,4 +1,5 @@
 import datetime as dt
+import json
 import os
 import pathlib
 import sys
@@ -105,11 +106,24 @@ def test_all_negative_is_100pct_cash():
     assert w[CASH] == pytest.approx(1.0)
 
 
-def test_trend_long_improves_rank():
+def test_trend_long_improves_rank_when_weighted():
+    cfg = json.loads(json.dumps(CFG))
+    cfg["ranking"]["w_trend"] = 1
     M, V, C, T = _factors([5.0] * 11)
     T["VV"] = 2
-    table, _ = raam.rank_assets(M, V, C, T, CFG)
+    table, _ = raam.rank_assets(M, V, C, T, cfg)
     assert table.index[0] == "VV"
+
+
+def test_trend_ignored_when_weight_zero():
+    cfg = json.loads(json.dumps(CFG))
+    cfg["ranking"]["w_trend"] = 0
+    M, V, C, T = _factors(range(1, 12))
+    base, _ = raam.rank_assets(M, V, C, T, cfg)
+    T["VV"] = 2          # VV has the lowest momentum; trend must not lift it
+    T["IGOV"] = -2
+    withT, _ = raam.rank_assets(M, V, C, T, cfg)
+    assert list(base.index) == list(withT.index)
 
 
 def test_low_vol_and_low_corr_rank_best():

@@ -21,5 +21,5 @@ Month-end signal. Follow the SOP in CLAUDE.md.
    - which factor drove each change;
    - one line of macro backdrop from the research.
 
-   The script writes the table; you only add the note.
+   The script writes the table; you only add the note. The **Trend** column is informational only (`w_trend` = 0). Never describe it as driving a selection.
 6. Discord: `RAAM signal <month> → <effective month>: VV 20%, EFA 20%, ... | changes: +X -Y | executes next trading day 09:45 ET`.

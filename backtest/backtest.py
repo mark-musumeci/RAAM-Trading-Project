@@ -38,6 +38,7 @@ OUT = ROOT / "backtest" / "results"
 SYMS = ["VV", "IJH", "IJR", "EFA", "EEM", "RWR", "DBC", "VAW", "AGG", "TIP", "IGOV",
         "SHY", "BIL", "SPY", "BWX"]
 IS_END = dt.date(2019, 12, 31)          # in-sample / out-of-sample split
+LIVE = "**LIVE: Tier 1 + trend filter off (A)**"
 EW_BENCH = ["VV", "IJH", "IJR", "EFA", "EEM", "RWR", "DBC", "VAW", "AGG", "TIP", "IGOV", "SHY"]
 
 
@@ -227,24 +228,23 @@ def variants(live: dict) -> dict[str, tuple[dict, bool, dict | None]]:
             sect, key = path.split("__")
             c[sect][key] = val
         return c
-    v1 = v(universe__cash="SHY", ranking__momentum_hurdle="zero")
+    v1 = v(universe__cash="SHY", ranking__momentum_hurdle="zero", ranking__w_trend=1)
     brk = breaker_from_cfg(live)
+    trend_on = v(ranking__w_trend=1)
     return {
-        "v1 original (SHY, 0% hurdle, no breaker)": (v1, False, None),
-        "+ BIL as cash only": (v(ranking__momentum_hurdle="zero"), False, None),
-        "+ cash hurdle only (SHY)": (v(universe__cash="SHY"), False, None),
-        "Tier 1 signals (BIL + cash hurdle)": (live, False, None),
-        "Tier 1 + breaker -15% auto": (live, False, {"dd": -15.0, "day": -5.0}),
-        "**LIVE: Tier 1 + breaker -20% auto**": (live, False, brk),
-        "Live + no ATR trend filter": (live, True, brk),
-        "Live + A3 lower band literal": (v(ambiguities__lower_band="hhv_low_plus_atr"), False, brk),
+        "v1 original (SHY, 0% hurdle, trend on, no breaker)": (v1, False, None),
+        "Tier 1 (BIL + cash hurdle + breaker), trend on": (trend_on, False, brk),
+        "Tier 1, trend on, breaker -15%": (trend_on, False, {"dd": -15.0, "day": -5.0}),
+        LIVE: (live, False, brk),
+        "Live + A3 lower band literal, trend on": (v(ranking__w_trend=1,
+                                                      ambiguities__lower_band="hhv_low_plus_atr"), False, brk),
         "Live + momentum-heavy 50/25/25": (v(ranking__w_momentum=0.5, ranking__w_volatility=0.25,
                                              ranking__w_correlation=0.25), False, brk),
+        "Live + SHY as cash": (v(universe__cash="SHY"), False, brk),
     }
 
 
-LIVE = "**LIVE: Tier 1 + breaker -20% auto**"
-V1 = "v1 original (SHY, 0% hurdle, no breaker)"
+V1 = "v1 original (SHY, 0% hurdle, trend on, no breaker)"
 
 
 # --------------------------------------------------------------------------- report
@@ -271,7 +271,7 @@ def main() -> None:
         return s[s.index <= IS_END], s[s.index > IS_END]
 
     head = {}
-    for label, p, col in (("RAAM live (Tier 1)", pa, "ret"), ("RAAM v1 original", v1["periods"], "ret"),
+    for label, p, col in (("RAAM live (Tier 1 + A)", pa, "ret"), ("RAAM v1 original", v1["periods"], "ret"),
                           ("SPY", pa, "spy"), ("Equal-weight 7Twelve", pa, "ew7twelve")):
         s_all = p.set_index("entry")
         parts = {"full": s_all, "2009-2019": s_all[s_all.index <= IS_END],
@@ -298,7 +298,7 @@ def main() -> None:
         var_oos[name] = so
 
     crisis_rows = {}
-    for label, p in (("RAAM live (Tier 1)", live_b["periods"]), ("RAAM v1 original", v1_b["periods"])):
+    for label, p in (("RAAM live (Tier 1 + A)", live_b["periods"]), ("RAAM v1 original", v1_b["periods"])):
         c = p[(p["entry"] >= dt.date(2008, 6, 1)) & (p["entry"] <= dt.date(2009, 6, 30))]
         crisis_rows[label] = stats(c["ret"])
     c = live_b["periods"]
@@ -325,7 +325,7 @@ def main() -> None:
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots(2, 1, figsize=(11, 7), sharex=True, gridspec_kw={"height_ratios": [3, 1]})
         x = pd.to_datetime(pa["exit"])
-        for series, lab in ((pa["ret"], "RAAM live (Tier 1)"), (v1["periods"]["ret"], "RAAM v1 original"),
+        for series, lab in ((pa["ret"], "RAAM live (Tier 1 + A)"), (v1["periods"]["ret"], "RAAM v1 original"),
                             (pa["spy"], "SPY"), (pa["ew7twelve"], "Equal-weight 7Twelve")):
             eq = (1 + series.values).cumprod()
             ax[0].plot(x, eq, label=lab)
@@ -346,7 +346,7 @@ def main() -> None:
     report = f"""# RAAM Backtest Report
 
 Generated {dt.date.today().isoformat()} by `backtest/backtest.py`. Costs: {args.cost_bps:g} bps per side on turnover.
-Engine: the live `scripts/raam.py compute_signal()` with `config/raam.json` (**Tier 1: BIL cash, cash-momentum hurdle, −20% breaker with auto re-entry**).
+Engine: the live `scripts/raam.py compute_signal()` with `config/raam.json` (**Tier 1: BIL cash, cash-momentum hurdle, −20% breaker with auto re-entry; improvement A: trend term off**).
 Signal at the month-end close, fill at the next open. The breaker is simulated on the daily path.
 Data: Yahoo Finance adjusted daily OHLC. Past results do not guarantee future results.
 

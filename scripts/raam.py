@@ -198,7 +198,7 @@ def rank_assets(M: pd.Series, V: pd.Series, C: pd.Series, T: pd.Series, cfg: dic
     df["rank_V"] = df["V"].rank(ascending=True, method="average")
     df["rank_C"] = df["C"].rank(ascending=True, method="average")
     df["score"] = (rk["w_momentum"] * df["rank_M"] + rk["w_volatility"] * df["rank_V"]
-                   + rk["w_correlation"] * df["rank_C"] - df["T"]
+                   + rk["w_correlation"] * df["rank_C"] - rk.get("w_trend", 1.0) * df["T"]
                    + amb["tiebreak_sign"] * df["M"] / rk["tiebreak_x"])
     df["_pos"] = range(len(df))
     df = df.sort_values(["score", "_pos"], kind="mergesort").drop(columns="_pos")

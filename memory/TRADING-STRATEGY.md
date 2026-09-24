@@ -25,7 +25,7 @@ Computed daily from Alpaca daily bars (split- and dividend-adjusted). The rankin
 | **M**: Absolute Momentum | 4-month (84 sessions) rate of change, % | highest momentum |
 | **V**: Volatility Model | RiskMetrics EWMA volatility, λ = 0.94, annualized, with a 10-day SMA smoothing | lowest volatility |
 | **C**: Average Relative Correlation | mean pairwise correlation of daily returns with the other 10 ETFs over 84 sessions | lowest correlation |
-| **T**: ATR Trend/Breakout | +2 after the high breaks the upper band, −2 after the low breaks the lower band. It changes the session *after* the break | — |
+| **T**: ATR Trend/Breakout | +2 after the high breaks the upper band, −2 after the low breaks the lower band. It changes the session *after* the break. **Informational only: not scored since improvement A (`w_trend` = 0)** | — |
 
 Bands:
 - Upper = highest close(63) + ATR(42).
@@ -33,9 +33,9 @@ Bands:
 
 ## Ranking and allocation
 1. Rank the 11 non-cash ETFs from 1 to 11 on each of M, V and C.
-2. `Score = wM·Rank(M) + wV·Rank(V) + wC·Rank(C) − T − M/x`
+2. `Score = wM·Rank(M) + wV·Rank(V) + wC·Rank(C) − w_trend·T − M/x`
    - Lower is better.
-   - The `−T` term rewards up-trends.
+   - **`w_trend` = 0 (improvement A):** the paper's `−T` trend bonus is switched off. T is still computed and shown in the signal log. Setting `w_trend` to 1 restores the paper's rule.
    - The `−M/x` term only breaks ties, in favour of higher momentum.
 3. Take the **5 lowest scores**. Each gets **20%**.
 4. **Cash hurdle (Tier 1 upgrade U1):** each of those 5 keeps its 20% only if its momentum **beats the cash asset's own 4-month momentum**. Otherwise its 20% moves to **BIL**. If none beat cash, the portfolio is 100% BIL. The paper's rule was momentum > 0%.
@@ -68,3 +68,4 @@ Bands:
 |---|---|---|
 | 2026-09-23 | Initial setup with the defaults above | owner |
 | 2026-09-23 | **Tier 1 upgrades:** U1 cash-momentum hurdle (was >0%); U2 BIL replaces SHY as cash; U3 breaker −20% with auto re-entry (was −15%, manual reset). Backtest in `memory/BACKTEST-SUMMARY.md`. | owner |
+| 2026-09-23 | **Improvement A:** ATR trend term removed from the score (`w_trend` 0). Three separate backtests agreed. 2009–26: CAGR 4.1% → 4.7%, daily max DD −16.2% → −12.0%, down capture 30% → 24%. It improved both 2009–19 and 2020–now. | owner |
