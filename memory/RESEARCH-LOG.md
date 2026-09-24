@@ -3,6 +3,27 @@
 Findings from Claude web research (WebSearch/WebFetch), newest first. Context only: research never changes RAAM signals or weights.
 Format per entry: `## YYYY-MM-DD — topic`, question asked, 3–6 bullet summary, flags (if any), sources.
 
+## 2026-09-24 — month-end scan (effective month 2026-08, dry-run re-check)
+
+Searched: structural news (past ~45 days) for all 12 universe ETFs grouped by issuer (iShares: IJH, IJR, EFA, EEM, AGG, TIP, IGOV; Vanguard: VV, VAW; SPDR/State Street: RWR, BIL; Invesco: DBC), plus macro backdrop for US/international equities, REITs, commodities, Treasuries/TIPS and international govt bonds.
+
+- No closures, mergers, ticker changes or trading halts found for any of the 12 universe ETFs. State Street announced closures of LQIG, ESIX, NZUS and MBNE in August 2026 — none of these are RAAM tickers (RWR, BIL unaffected).
+- Vanguard (VV, VAW), iShares (IJH, IJR, EFA, EEM, AGG, TIP, IGOV) and Invesco (DBC) all trading normally with no structural news.
+- Macro: 10Y Treasury yield climbed back toward its highest levels since January on a weak fiscal backdrop; flat risk-asset markets expected through year-end as higher yields pressure equity valuations.
+- REITs (RWR) faced headwinds from rising rate expectations in August but declared a normal Sept 21 dividend; trading several valuation turns below broad equities.
+- EM equities outlook remains constructive (~17% 2026 earnings growth consensus, semiconductor/AI demand); international developed equities (EFA) show attractive valuations with a supportive policy backdrop.
+- International government bonds (IGOV): UK Gilts and JGBs viewed as offering good relative value; EM local-currency debt case still intact.
+
+**Flags:** none
+
+Sources:
+- https://www.ishares.com/us/products/closed-funds/updates
+- https://investors.statestreet.com/investor-news-events/press-releases/news-details/2025/State-Street-Investment-Management-Announces-Changes-to-ETF-Lineup/default.aspx
+- https://am.gs.com/en-us/advisors/insights/article/market-pulse
+- https://www.ishares.com/us/insights/inside-the-market/investment-directions-market-outlook
+- https://research-center.amundi.com/article/global-investment-views-september-2026
+- https://www.gurufocus.com/news/9090408/rwr-looks-01-undervalued-on-gf-value-with-dividend-yield-near-35
+
 ## 2026-09-23 — month-end scan (effective month 2026-08)
 
 Searched: structural news (past ~45 days) for all 12 universe ETFs grouped by issuer (iShares: IJH, IJR, EFA, EEM, AGG, TIP, IGOV, SHY; Vanguard: VV, VAW; SPDR/State Street: RWR; Invesco: DBC), plus macro backdrop for US/international equities, REITs, commodities, Treasuries/TIPS and international govt bonds.
