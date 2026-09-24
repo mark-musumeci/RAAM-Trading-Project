@@ -52,6 +52,9 @@ def test_metrics_only_keys_and_benchmarks(renv, capsys):
         assert k in m
     assert m["benchmarks_month_pct"]["60/40"] is not None
     assert m["holdings"] == []                 # nothing executed yet: first month
+    assert m["invested"] is False and m["inception"] is None
+    assert m["month_return_pct"] is None and m["vs_6040_month_pct"] is None   # no fake "beat 60/40"
+    assert m["checks"][0]["status"] == "na"
     assert len(m["checks"]) == 4
     assert not (raam.ROOT / "reports").exists()
 
@@ -74,12 +77,13 @@ def test_full_report_is_one_page_pdf_with_next_allocation(renv, capsys, tmp_path
 def test_holdings_after_executed_rebalance(renv, capsys):
     raam.cmd_signal(args(date="2026-09-30"), CFG)
     raam.cmd_rebalance(args(date="2026-10-01"), CFG)
+    renv.mp.setattr(raam, "today_et", lambda: dt.date(2026, 10, 30))
     code, out = run(["--month", "2026-10", "--metrics-only"], capsys)
     assert code == 0, out
     rows = {r["symbol"]: r for r in out["metrics"]["holdings"]}
     assert rows["SPY"]["sleeve"] in ("Core", "Core + Shield")
     assert sum(r["weight_pct"] for r in rows.values()) == pytest.approx(100.0, abs=0.5)
-    assert out["metrics"]["inception"] is not None
+    assert out["metrics"]["inception"] == "2026-10-01" and out["metrics"]["invested"] is True
 
 
 def test_missing_notes_file_still_renders(renv, capsys):

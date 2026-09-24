@@ -708,7 +708,7 @@ def cmd_rebalance(args, cfg):
     fills = execute_plan(client, plan, cfg) if plan["orders"] else []
     now = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
     if sig is not None:
-        sig["executed"] = {"at": now, "fills": fills}
+        sig["executed"] = {"at": now, "date": d.isoformat(), "fills": fills}
         path.write_text(json.dumps(sig, indent=2) + "\n", encoding="utf-8")
     if fills:
         append_trade_log(d.isoformat(), fills, reason)

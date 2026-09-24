@@ -46,16 +46,13 @@ def month_bounds(month: str) -> tuple[dt.date, dt.date]:
 
 
 def inception_date() -> dt.date | None:
-    """First executed rebalance; else the first health snapshot; else None."""
+    """Date of the first executed rebalance (when money was first invested); None before that."""
     dates = []
     for p in sorted(raam.SIGNALS_DIR.glob("*.json")):
         ex = json.loads(p.read_text(encoding="utf-8")).get("executed")
-        if ex and ex.get("at"):
-            dates.append(dt.date.fromisoformat(ex["at"][:10]))
-    if dates:
-        return min(dates)
-    hist = raam.load_state().get("equity_history") or []
-    return dt.date.fromisoformat(hist[0]["date"]) if hist else None
+        if ex and (ex.get("date") or ex.get("at")):
+            dates.append(dt.date.fromisoformat((ex.get("date") or ex["at"])[:10]))
+    return min(dates) if dates else None
 
 
 def equity_series(client, start: dt.date, end: dt.date) -> pd.Series:
@@ -112,11 +109,17 @@ def build(client, cfg: dict, month: str, as_of: dt.date) -> tuple[dict, dict]:
         v = raam._period_return(series, a, b)
         return None if v is None else round(v, 3)
 
-    month_ret = pr(eq, start, end)
+    invested = inc is not None and inc <= end
     b_month = {k: pr(v, start, end) for k, v in bench.items()}
-    since = round((eq.iloc[-1] / eq.iloc[0] - 1) * 100, 3) if len(eq) >= 2 else None
-    b_since = {k: pr(v, eq.index[0], end) if len(eq) >= 2 else None for k, v in bench.items()}
-    max_dd = round(float((eq / eq.cummax() - 1).min() * 100), 3) if len(eq) >= 2 else None
+    if invested:
+        eq = eq[eq.index >= min(start, inc - dt.timedelta(days=1))]
+        month_ret = pr(eq, start, end)
+        since = round((eq.iloc[-1] / eq.iloc[0] - 1) * 100, 3) if len(eq) >= 2 else None
+        b_since = {k: pr(v, eq.index[0], end) if len(eq) >= 2 else None for k, v in bench.items()}
+        max_dd = round(float((eq / eq.cummax() - 1).min() * 100), 3) if len(eq) >= 2 else None
+    else:                                    # still all cash: comparisons would be meaningless
+        month_ret, since, max_dd = None, None, None
+        b_since = {k: None for k in bench}
 
     rows = []
     for s, w in sorted(held.items(), key=lambda kv: -kv[1]):
@@ -139,7 +142,9 @@ def build(client, cfg: dict, month: str, as_of: dt.date) -> tuple[dict, dict]:
     checks = []
     lo, hi = norms.get("month_return_pct", [-3, 3])
     xlo, xhi = norms.get("month_return_extreme_pct", [-5.7, 6.0])
-    if month_ret is None:
+    if not invested:
+        checks.append(("Monthly return", "n/a", "na", "not invested yet: first rebalance pending"))
+    elif month_ret is None:
         checks.append(("Monthly return", "n/a", "na", "no equity data for the month"))
     else:
         st = "normal" if lo <= month_ret <= hi else ("unusual" if xlo <= month_ret <= xhi else "outside")
@@ -177,7 +182,8 @@ def build(client, cfg: dict, month: str, as_of: dt.date) -> tuple[dict, dict]:
         "next_month": next_sig["effective_month"] if next_sig else None,
         "checks": [{"check": c[0], "value": c[1], "status": c[2], "reference": c[3]} for c in checks],
     }
-    series = {"equity": eq, "bench": bench}
+    metrics["invested"] = invested
+    series = {"equity": eq if invested else eq.iloc[0:0], "bench": bench}
     return metrics, series
 
 
@@ -237,7 +243,8 @@ def render(metrics: dict, series: dict, notes: list[str], path: pathlib.Path) ->
     diff = metrics["vs_6040_month_pct"]
     eqv = metrics["equity_end"]
     tiles = [
-        ("Month return", fmt_pct(metrics["month_return_pct"]), f"60/40 {fmt_pct(b.get('60/40'))}", None),
+        ("Month return", fmt_pct(metrics["month_return_pct"]) if metrics["invested"] else "Not invested",
+         f"60/40 {fmt_pct(b.get('60/40'))}" if metrics["invested"] else "first rebalance pending", None),
         ("Versus 60/40 this month", "n/a" if diff is None else f"{diff:+.2f} pp",
          "percentage points (pp)", diff),
         ("Equity", "n/a" if eqv is None else f"${eqv:,.0f}", "paper account", None),
