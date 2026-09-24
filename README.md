@@ -1,11 +1,14 @@
-# 24/7 RAAM Trading Bot
+# 24/7 RAAM Trading Bot — Core & Shield
 
-An autonomous implementation of the **Ranked Asset Allocation Model**, from Gioele Giordano's 2018 Charles H. Dow Award paper:
-- It trades the 12-ETF 7Twelve universe on an **Alpaca paper account**.
-- It is run by **Claude Code cloud routines**.
-- This repo is the bot's persistent disk: code, config and memory. Each routine run clones it, acts, and pushes its memory back.
+An autonomous **Core & Shield** portfolio on an **Alpaca paper account**, run by **Claude Code cloud routines**:
+- **Core, 50%:** a fixed 60/40, 30% SPY + 20% AGG, reset monthly. It does the growing.
+- **Shield, 50%:** the **Ranked Asset Allocation Model**, from Gioele Giordano's 2018 Charles H. Dow Award paper. It does the defending.
+  - Each month it ranks 11 of the 7Twelve ETFs on momentum, volatility and correlation, and holds the top 5.
+  - Any pick whose momentum doesn't beat cash is swapped for BIL (T-bills).
 
-Each month the bot ranks 11 ETFs on momentum, volatility and correlation, adjusts for an ATR trend filter, and holds the top 5 at 20% each. Any of those 5 whose momentum does not beat cash's own momentum is swapped for BIL (T-bills). It rebalances once a month and holds; there are no stops. The full rules and open questions are in [memory/TRADING-STRATEGY.md](memory/TRADING-STRATEGY.md).
+It rebalances once a month and holds; there are no stops. This repo is the bot's persistent disk: code, config and memory. Each routine run clones it, acts, and pushes its memory back.
+
+Backtest, 2009–2026: 7.5%/yr at a Sharpe of about 1.1, the same as 60/40, but with about 40% smaller drawdowns. 2022 was −7.8% vs 60/40's −15.2%. The rules are in [memory/TRADING-STRATEGY.md](memory/TRADING-STRATEGY.md) and the evidence is in [memory/BACKTEST-SUMMARY.md](memory/BACKTEST-SUMMARY.md).
 
 ## Layout
 | Path | Purpose |
@@ -22,7 +25,7 @@ Each month the bot ranks 11 ETFs on momentum, volatility and correlation, adjust
 ## Schedule (Mon–Fri; cron is UTC, see routines/README.md)
 | Routine | Time | Runs |
 |---|---|---|
-| **RAAM – Morning** | 09:45 EST / 10:45 EDT | `/rebalance`. It acts only on the first trading day of the month, or when the circuit breaker is tripped. |
+| **RAAM – Morning** | 09:45 EST / 10:45 EDT | `/rebalance` (Core and Shield together). It acts only on the first trading day of the month, or when the circuit breaker is tripped. |
 | **RAAM – Close** | 16:30 EST / 17:30 EDT | `/health` every day. Then `/signal` on the last trading day of the month, and `/monthly-review` on the first trading day. |
 
 ## Local quickstart

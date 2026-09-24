@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""RAAM engine - Ranked Asset Allocation Model (Giordano, 2018 Dow Award).
+"""RAAM engine - Core & Shield: a fixed 60/40 Core plus the Ranked Asset Allocation Model
+(Giordano, 2018 Dow Award) as the Shield.
 
 Deterministic core used by the Claude Code routines. Claude orchestrates; this
 script does all math, guardrail checks and order execution.
@@ -9,7 +10,7 @@ Subcommands (all print a single JSON object to stdout):
   signal     [--date D] [--force] [--dry-run]   month-end factors, ranks, target weights
   rebalance  [--date D] [--force] [--dry-run]   execute last month's signal (1st trading day)
   health     [--dry-run]                    equity, drawdown, circuit breaker, drift
-  review     [--month YYYY-MM] [--force]    month performance vs SPY and equal-weight 7Twelve
+  review     [--month YYYY-MM] [--force]    month performance vs 60/40, 30/70, SPY and equal-weight 7Twelve
 
 Exit codes: 0 = ok/noop, 2 = halted by a guard (see "reason"), 1 = unexpected error.
 """
@@ -103,6 +104,37 @@ def prev_month_key(d: dt.date) -> str:
 
 def next_month_key(d: dt.date) -> str:
     return month_key((d.replace(day=28) + dt.timedelta(days=4)).replace(day=1))
+
+
+# --------------------------------------------------------------------------
+# Portfolio structure (Core & Shield)
+# --------------------------------------------------------------------------
+def portfolio_parts(cfg: dict) -> tuple[dict, float]:
+    """(core weights, shield weight). Without a 'portfolio' section the bot is RAAM alone."""
+    pf = cfg.get("portfolio") or {}
+    core = {k: float(v) for k, v in (pf.get("core") or {}).items() if float(v) > 0}
+    shield = float(pf.get("shield_weight", 1.0))
+    if shield < 0 or any(v < 0 for v in core.values()) or abs(sum(core.values()) + shield - 1) > 1e-6:
+        raise ValueError(f"portfolio core {core} + shield_weight {shield} must sum to 1")
+    return core, shield
+
+
+def tradable_symbols(cfg: dict) -> list[str]:
+    """Every symbol the bot may hold: RAAM universe, its cash asset and the Core."""
+    uni = cfg["universe"]
+    core, _ = portfolio_parts(cfg)
+    return list(dict.fromkeys(uni["risk_assets"] + [uni["cash"]] + list(core)))
+
+
+def combine_targets(shield_targets: dict, cfg: dict) -> dict:
+    """Portfolio targets = Core weights + shield_weight x RAAM (Shield) weights."""
+    core, shield = portfolio_parts(cfg)
+    out = {s: 0.0 for s in tradable_symbols(cfg)}
+    for s, w in core.items():
+        out[s] += w
+    for s, w in shield_targets.items():
+        out[s] = out.get(s, 0.0) + shield * w
+    return {k: round(v, 6) for k, v in out.items()}
 
 
 # --------------------------------------------------------------------------
@@ -225,7 +257,7 @@ def compute_signal(bars: dict[str, pd.DataFrame], cfg: dict, as_of: dt.date) -> 
     risk, cash = uni["risk_assets"], uni["cash"]
     lb, amb = cfg["lookbacks"], cfg["ambiguities"]
     trimmed = {}
-    for sym in risk + [cash]:
+    for sym in tradable_symbols(cfg):
         b = bars.get(sym)
         if b is None or b.empty:
             raise Halt(f"no bars for {sym}")
@@ -269,16 +301,20 @@ def compute_signal(bars: dict[str, pd.DataFrame], cfg: dict, as_of: dt.date) -> 
             "rank_C": float(r["rank_C"]), "score": round(float(r["score"]), 4),
             "selected": bool(r["selected"]), "weight": round(float(r["weight"]), 4),
         })
+    core, shield = portfolio_parts(cfg)
     return {
         "as_of": as_of.isoformat(),
         "month": month_key(as_of),
         "effective_month": next_month_key(as_of),
         "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "params": {"lookbacks": lb, "ranking": cfg["ranking"], "ambiguities": amb},
+        "portfolio": {"name": (cfg.get("portfolio") or {}).get("name", "RAAM"),
+                      "core": core, "shield_weight": shield},
+        "shield_targets": weights,
         "momentum_hurdle": {"mode": hurdle_mode, "value_pct": round(float(hurdle), 3),
                             "cash_asset": cash},
         "table": rows,
-        "targets": weights,
+        "targets": combine_targets(weights, cfg),
         "executed": None,
     }
 
@@ -287,7 +323,7 @@ def compute_signal(bars: dict[str, pd.DataFrame], cfg: dict, as_of: dt.date) -> 
 # Order planning (pure - unit tested)
 # --------------------------------------------------------------------------
 def validate_targets(targets: dict, cfg: dict) -> None:
-    uni = set(cfg["universe"]["risk_assets"]) | {cfg["universe"]["cash"]}
+    uni = set(tradable_symbols(cfg))
     extra = [s for s, w in targets.items() if w > 0 and s not in uni]
     if extra:
         raise Halt(f"targets contain non-universe symbols {extra}")
@@ -304,7 +340,7 @@ def plan_orders(targets: dict, equity: float, positions: dict, prices: dict, cfg
     validate_targets(targets, cfg)
     ex = cfg["execution"]
     uni = cfg["universe"]
-    universe = set(uni["risk_assets"]) | {uni["cash"]}
+    universe = set(tradable_symbols(cfg))
     investable = equity * (1.0 - ex["cash_buffer_pct"] / 100.0)
     sells, buys, warnings = [], [], []
     for sym in sorted(set(targets) | set(positions)):
@@ -492,7 +528,16 @@ def write_signal_log(sig: dict) -> None:
     hurdle = (f"**Momentum hurdle:** {h['value_pct']:.2f}% ({h['cash_asset']} 4-month momentum); "
               f"selected ETFs at or below it gave their slot to {h['cash_asset']}."
               if h and h["mode"] == "cash" else "**Momentum hurdle:** 0%")
-    lines += ["", hurdle, "", f"**Target allocation:** {alloc}", ""]
+    pf = sig.get("portfolio") or {}
+    if pf.get("core"):
+        shield = ", ".join(f"{s} {w * 100:.0f}%" for s, w in sig["shield_targets"].items() if w > 0)
+        core = ", ".join(f"{s} {w * 100:.0f}%" for s, w in pf["core"].items())
+        lines += ["", hurdle, "",
+                  f"**Shield (RAAM, {pf['shield_weight'] * 100:.0f}% of portfolio):** {shield}",
+                  f"**Core (fixed):** {core}", "",
+                  f"**{pf.get('name', 'Portfolio')} target allocation:** {alloc}", ""]
+    else:
+        lines += ["", hurdle, "", f"**Target allocation:** {alloc}", ""]
     SIGNAL_LOG.write_text(text.rstrip("\n") + "\n" + "\n".join(lines), encoding="utf-8")
 
 
@@ -585,7 +630,7 @@ def cmd_signal(args, cfg):
         if existing.get("executed"):
             return {"status": "noop", "reason": f"signal {path.name} already executed"}
     uni = cfg["universe"]
-    bars, feed = fetch_bars(client, uni["risk_assets"] + [uni["cash"]], d, cfg)
+    bars, feed = fetch_bars(client, tradable_symbols(cfg), d, cfg)
     sig = compute_signal(bars, cfg, d)
     sig["data_feed"] = feed
     if not args.dry_run:
@@ -709,7 +754,7 @@ def cmd_health(args, cfg):
             alerts.append(f"CIRCUIT BREAKER TRIPPED: {why}. Next morning run moves to 100% {cash}; "
                           f"it {reentry}.")
     targets, target_src = _current_targets(state, cfg)
-    universe = set(cfg["universe"]["risk_assets"]) | {cfg["universe"]["cash"]}
+    universe = set(tradable_symbols(cfg))
     rows = []
     for sym in sorted(set(positions) | set(k for k, v in (targets or {}).items() if v > 0)):
         p = positions.get(sym, {"qty": 0.0, "market_value": 0.0})
@@ -764,23 +809,45 @@ def cmd_review(args, cfg):
         dt.datetime.fromtimestamp(t, ET).date() for t in (hist.get("timestamp") or [])],
         dtype=float).dropna()
     eq = eq[eq > 0]
-    raam_ret = _period_return(eq, start, end)
+    port_ret = _period_return(eq, start, end)
     uni = cfg["universe"]
+    mixes = cfg.get("benchmark_mixes", {})
     # the 7Twelve benchmark keeps its original cash fund (SHY) even though RAAM now uses BIL
     ew_assets = uni["risk_assets"] + [SEVEN_TWELVE_CASH]
-    syms = list(dict.fromkeys(uni["risk_assets"] + [uni["cash"], SEVEN_TWELVE_CASH] + cfg["benchmarks"]))
+    mix_syms = [s for m in mixes.values() for s in m]
+    syms = list(dict.fromkeys(tradable_symbols(cfg) + [SEVEN_TWELVE_CASH] + cfg["benchmarks"] + mix_syms))
     bars, _ = fetch_bars(client, syms, end, {**cfg, "lookbacks": {**cfg["lookbacks"],
                                                                   "history_calendar_days": 45}})
-    etf_rets = {s: _period_return(bars[s]["c"], start, end) for s in uni["risk_assets"] + [uni["cash"]]}
+    etf_rets = {s: _period_return(bars[s]["c"], start, end) for s in tradable_symbols(cfg)}
     ew = [_period_return(bars[s]["c"], start, end) for s in ew_assets]
     valid = [v for v in ew if v is not None]
     bench = {s: _period_return(bars[s]["c"], start, end) for s in cfg["benchmarks"]}
+    all_rets = {s: _period_return(bars[s]["c"], start, end) for s in syms}
+    mix_rets = {}
+    for name, w in mixes.items():
+        vals = [all_rets.get(s) for s in w]
+        mix_rets[name] = None if None in vals else sum(w[s] * all_rets[s] for s in w)
     sig_path = signal_path(prev_month_key(m_first))
-    held = json.loads(sig_path.read_text(encoding="utf-8"))["targets"] if sig_path.exists() else None
+    sig = json.loads(sig_path.read_text(encoding="utf-8")) if sig_path.exists() else None
+    held = sig["targets"] if sig else None
+    core, shield_w = portfolio_parts(cfg)
+
+    def sleeve(weights):
+        if not weights:
+            return None
+        vals = {s: all_rets.get(s) for s, w in weights.items() if w > 0}
+        return None if None in vals.values() else sum(weights[s] * vals[s] for s in vals)
+    shield_est = sleeve(sig.get("shield_targets", sig["targets"])) if sig else None
+    core_est = sleeve({s: w / sum(core.values()) for s, w in core.items()}) if core else None
+
     def r(x):
         return None if x is None else round(x, 3)
     return {"status": "ok", "month": month, "period": [start.isoformat(), end.isoformat()],
-            "raam_return_pct": r(raam_ret), "equity_start": r(float(eq.iloc[0])) if len(eq) else None,
+            "portfolio": (cfg.get("portfolio") or {}).get("name", "RAAM"),
+            "portfolio_return_pct": r(port_ret),
+            "core_return_est_pct": r(core_est), "shield_return_est_pct": r(shield_est),
+            "benchmark_mixes_pct": {k: r(v) for k, v in mix_rets.items()},
+            "equity_start": r(float(eq.iloc[0])) if len(eq) else None,
             "equity_end": r(float(eq.iloc[-1])) if len(eq) else None,
             "benchmarks_pct": {k: r(v) for k, v in bench.items()},
             "equal_weight_7twelve_pct": r(sum(valid) / len(valid)) if valid else None,

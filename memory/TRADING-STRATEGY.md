@@ -1,11 +1,25 @@
-# Trading Strategy — Ranked Asset Allocation Model (RAAM)
+# Trading Strategy — Core & Shield
 
-Source: Gioele Giordano, *Ranked Asset Allocation Model*, 2018 Charles H. Dow Award (CMT Association).
+The portfolio has two halves:
+- **Core**, 50%: a fixed 60/40 (30% SPY + 20% AGG) that does the growing.
+- **Shield**, 50%: the Ranked Asset Allocation Model (RAAM), which does the defending.
+
+RAAM source: Gioele Giordano, *Ranked Asset Allocation Model*, 2018 Charles H. Dow Award (CMT Association).
 Parameters live in [`config/raam.json`](../config/raam.json); the engine is [`scripts/raam.py`](../scripts/raam.py).
 **This file describes the rules. Claude never changes the rules during a routine run.** Changes happen
 only when the owner decides them, and they are recorded in the change log at the bottom.
 
-## Universe (7Twelve portfolio, 12 ETFs)
+## Portfolio structure: Core & Shield
+| Half | Weight | Holdings | Rule |
+|---|---|---|---|
+| **Core** | 50% | **SPY 30% + AGG 20%** | Fixed, and reset to these weights at every monthly rebalance |
+| **Shield** | 50% | RAAM: 5 slots of **10% of the portfolio** each, from the 11 ETFs below, with BIL for failed slots | RAAM rules below; the monthly signal decides it |
+
+- Portfolio targets = Core weights + 0.5 × RAAM (Shield) weights. For example, if RAAM picks AGG, total AGG is 20% + 10% = 30%.
+- Configured in `config/raam.json → portfolio`. Setting `core: {}` and `shield_weight: 1.0` runs RAAM alone.
+- Why: RAAM alone is a strong defender but lags badly in bull markets. The Core supplies growth, and the Shield roughly halves the damage in slow bear markets. See `memory/BACKTEST-SUMMARY.md`.
+
+## Shield universe (7Twelve portfolio, 12 ETFs)
 
 | Asset class | ETFs |
 |---|---|
@@ -37,8 +51,8 @@ Bands:
    - Lower is better.
    - **`w_trend` = 0 (improvement A):** the paper's `−T` trend bonus is switched off. T is still computed and shown in the signal log. Setting `w_trend` to 1 restores the paper's rule.
    - The `−M/x` term only breaks ties, in favour of higher momentum.
-3. Take the **5 lowest scores**. Each gets **20%**.
-4. **Cash hurdle (Tier 1 upgrade U1):** each of those 5 keeps its 20% only if its momentum **beats the cash asset's own 4-month momentum**. Otherwise its 20% moves to **BIL**. If none beat cash, the portfolio is 100% BIL. The paper's rule was momentum > 0%.
+3. Take the **5 lowest scores**. Each gets **20% of the Shield**, which is 10% of the portfolio.
+4. **Cash hurdle (Tier 1 upgrade U1):** each of those 5 keeps its 20% only if its momentum **beats the cash asset's own 4-month momentum**. Otherwise its slot moves to **BIL**. If none beat cash, the whole Shield is BIL (50% of the portfolio) while the Core stays invested. The paper's rule was momentum > 0%.
 5. **Timing:** the signal is computed after the close on the last trading day of month *m*. It is executed at about 09:45 ET on the first trading day of month *m+1*. It is held all month; there are no stops and no intra-month trading.
 
 ## Open ambiguities in the paper (defaults in use)
@@ -55,12 +69,12 @@ Bands:
 
 ## Guardrails (not part of the paper)
 - **Paper trading only**, unless `PAPER_TRADING=false` **and** `LIVE_CONFIRM=yes`.
-- Target weights must sum to 100% ±0.5%. Only universe tickers may be traded, and a single risk-asset buy is capped at 25% of equity.
+- Target weights must sum to 100% ±0.5%. Only universe tickers may be traded, and a single non-cash buy is capped at **35%** of equity. It was 25%; it was raised because Core positions reach 30% (SPY, or AGG when RAAM also picks it).
 - **Circuit breaker (Tier 1 upgrade U3):**
-  - It trips on a **−20%** drawdown from the high-water mark, or a −5% single day. The next morning run moves the portfolio to 100% BIL.
+  - It trips on a **−20%** drawdown of the **whole portfolio** from its high-water mark, or a −5% single day. The next morning run moves the whole portfolio, Core included, to 100% BIL.
   - It **re-enters automatically** at the next monthly rebalance, following a signal computed after the trip, and re-bases the high-water mark at that point.
   - Setting `circuit_breaker_reset` to `manual` in config restores the old behaviour: stay in cash until the owner resets `memory/state.json`.
-  - In the 2009–2026 backtest it never tripped, so it is a tail-risk safety net rather than part of the strategy. The old −15% level would have tripped at the March 2020 low and cost return.
+  - Backtest behaviour: Core & Shield never tripped it in 2009–2026 (worst −14.6%). In the 2008 stress test it tripped once, on 2009-02-23 at −20.2%, and re-entered at the March rebalance. It is a tail-risk safety net.
 - Stale or missing data for any ETF halts the signal. There is no guessing.
 
 ## Change log
@@ -69,3 +83,4 @@ Bands:
 | 2026-09-23 | Initial setup with the defaults above | owner |
 | 2026-09-23 | **Tier 1 upgrades:** U1 cash-momentum hurdle (was >0%); U2 BIL replaces SHY as cash; U3 breaker −20% with auto re-entry (was −15%, manual reset). Backtest in `memory/BACKTEST-SUMMARY.md`. | owner |
 | 2026-09-23 | **Improvement A:** ATR trend term removed from the score (`w_trend` 0). Three separate backtests agreed. 2009–26: CAGR 4.1% → 4.7%, daily max DD −16.2% → −12.0%, down capture 30% → 24%. It improved both 2009–19 and 2020–now. | owner |
+| 2026-09-24 | **Core & Shield:** 50% fixed 60/40 Core (30% SPY + 20% AGG) + 50% RAAM Shield. Per-order cap raised 25% → 35%. 2009–26 backtest: CAGR 7.5%, Sharpe 1.11 (60/40 1.09), max DD −11.1% month-end / −14.6% daily (60/40 −19.2% month-end), 2022 −7.8% (60/40 −15.2%). | owner |

@@ -37,7 +37,7 @@ api() {  # api METHOD URL [JSON_BODY]
 
 universe() {
   local py; py="$(command -v python3 || command -v python)"
-  "$py" -c "import json,sys; c=json.load(open(sys.argv[1])); print(' '.join(c['universe']['risk_assets']+[c['universe']['cash']]))" "$ROOT/config/raam.json"
+  "$py" -c "import json,sys; c=json.load(open(sys.argv[1])); s=c['universe']['risk_assets']+[c['universe']['cash']]+list((c.get('portfolio') or {}).get('core',{})); print(' '.join(dict.fromkeys(s)))" "$ROOT/config/raam.json"
 }
 
 cmd="${1:-}"; shift || true

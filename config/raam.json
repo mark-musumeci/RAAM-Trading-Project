@@ -1,5 +1,14 @@
 {
   "_comment": "RAAM parameters. Items under 'ambiguities' are interpretations of the paper that are still open - see memory/TRADING-STRATEGY.md before changing them.",
+  "portfolio": {
+    "name": "Core & Shield",
+    "core": {
+      "SPY": 0.3,
+      "AGG": 0.2
+    },
+    "shield_weight": 0.5,
+    "_note": "Core = fixed 60/40 half (30% SPY + 20% AGG), reset monthly. Shield = RAAM on shield_weight of the portfolio. Set core {} and shield_weight 1.0 for RAAM alone."
+  },
   "universe": {
     "risk_assets": [
       "VV",
@@ -65,7 +74,7 @@
   "execution": {
     "min_trade_usd": 25,
     "cash_buffer_pct": 0.5,
-    "max_order_pct_equity_risk_asset": 25,
+    "max_order_pct_equity_risk_asset": 35,
     "max_order_pct_equity_cash": 101,
     "fill_wait_seconds": 90,
     "require_approval": false
@@ -80,5 +89,16 @@
     "SPY"
   ],
   "_tier1": "2026-09-23 Tier 1 upgrades: cash=BIL (was SHY), momentum hurdle = cash momentum (was 0), breaker -20% with auto re-entry at next monthly rebalance (was -15% manual reset).",
-  "_improvement_A": "2026-09-23 improvement A: ATR trend term removed from the score (w_trend 0); trend still computed and logged. Set w_trend 1 to restore the paper's rule."
+  "_improvement_A": "2026-09-23 improvement A: ATR trend term removed from the score (w_trend 0); trend still computed and logged. Set w_trend 1 to restore the paper's rule.",
+  "benchmark_mixes": {
+    "60/40": {
+      "SPY": 0.6,
+      "AGG": 0.4
+    },
+    "30/70": {
+      "SPY": 0.3,
+      "AGG": 0.7
+    }
+  },
+  "_core_and_shield": "2026-09-24 Core & Shield: 50% fixed 60/40 core (SPY/AGG) + 50% RAAM shield. Per-order cap raised 25% -> 35% because core targets reach 30%."
 }

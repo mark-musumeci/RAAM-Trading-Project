@@ -136,7 +136,7 @@ def test_low_vol_and_low_corr_rank_best():
 def test_compute_signal_end_to_end_and_stale_guard():
     rng = np.random.default_rng(7)
     bars = {s: make_bars(100 * np.cumprod(1 + rng.normal(0.0005, 0.01, 400)))
-            for s in RISK + [CASH]}
+            for s in raam.tradable_symbols(CFG)}
     as_of = bars["VV"].index[-1]
     sig = raam.compute_signal(bars, CFG, as_of)
     assert len(sig["table"]) == 11
@@ -222,8 +222,44 @@ def test_cash_hurdle_sends_weak_momentum_to_cash():
 
 def test_compute_signal_uses_cash_momentum_as_hurdle():
     rng = np.random.default_rng(9)
-    bars = {s: make_bars(100 * np.cumprod(1 + rng.normal(0.0005, 0.01, 400))) for s in RISK}
+    bars = {s: make_bars(100 * np.cumprod(1 + rng.normal(0.0005, 0.01, 400)))
+            for s in raam.tradable_symbols(CFG)}
     bars[CASH] = make_bars(100 * np.cumprod(np.full(400, 1.004)), spread=0.0001)  # ~40% in 84d
     sig = raam.compute_signal(bars, CFG, bars["VV"].index[-1])
     assert sig["momentum_hurdle"]["value_pct"] > 30
-    assert sig["targets"][CASH] == pytest.approx(1.0)  # nothing beats a 40% hurdle
+    assert sig["shield_targets"][CASH] == pytest.approx(1.0)  # nothing beats a 40% hurdle
+    _, shield = raam.portfolio_parts(CFG)
+    assert sig["targets"][CASH] == pytest.approx(shield)   # Core stays invested
+
+
+
+# ---------------------------------------------------------------- Core & Shield
+def test_combine_targets_core_plus_half_shield():
+    cfg = json.loads(json.dumps(CFG))
+    cfg["portfolio"] = {"core": {"SPY": 0.3, "AGG": 0.2}, "shield_weight": 0.5}
+    t = raam.combine_targets({"VV": 0.2, "AGG": 0.2, "EFA": 0.2, CASH: 0.4}, cfg)
+    assert t["SPY"] == pytest.approx(0.30) and t["AGG"] == pytest.approx(0.30)
+    assert t["VV"] == pytest.approx(0.10) and t[CASH] == pytest.approx(0.20)
+    assert sum(t.values()) == pytest.approx(1.0)
+
+
+def test_raam_alone_when_no_portfolio_section():
+    cfg = json.loads(json.dumps(CFG))
+    cfg.pop("portfolio")
+    assert raam.portfolio_parts(cfg) == ({}, 1.0)
+    shield = {"VV": 0.2, "EFA": 0.2, "RWR": 0.2, CASH: 0.4}
+    t = raam.combine_targets(shield, cfg)
+    assert {k: v for k, v in t.items() if v} == shield
+
+
+def test_bad_portfolio_split_rejected():
+    cfg = json.loads(json.dumps(CFG))
+    cfg["portfolio"] = {"core": {"SPY": 0.3}, "shield_weight": 0.5}
+    with pytest.raises(ValueError):
+        raam.portfolio_parts(cfg)
+
+
+def test_plan_accepts_core_targets():
+    t = raam.combine_targets({"VV": 0.2, "AGG": 0.2, "EFA": 0.2, CASH: 0.4}, CFG)
+    plan = raam.plan_orders(t, 100_000, {}, {}, CFG)
+    assert {o["symbol"] for o in plan["orders"]} >= {"SPY", "AGG"}

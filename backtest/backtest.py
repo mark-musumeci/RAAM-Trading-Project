@@ -12,6 +12,8 @@ Scenarios
   A  real data only (IGOV exists)                     -> headline result
   B  IGOV spliced with BWX before Jan-2009            -> 2008 stress test
 
+The live config is Core & Shield. 'Shield alone' is RAAM on its own with the same rules.
+
 Variants are pre-registered (Tier 1 components, the paper's ambiguities, factor checks),
 not a parameter search. Nothing here changes config/raam.json.
 
@@ -38,7 +40,7 @@ OUT = ROOT / "backtest" / "results"
 SYMS = ["VV", "IJH", "IJR", "EFA", "EEM", "RWR", "DBC", "VAW", "AGG", "TIP", "IGOV",
         "SHY", "BIL", "SPY", "BWX"]
 IS_END = dt.date(2019, 12, 31)          # in-sample / out-of-sample split
-LIVE = "**LIVE: Tier 1 + trend filter off (A)**"
+LIVE = "**LIVE: Core & Shield (50% 60/40 + 50% RAAM)**"
 EW_BENCH = ["VV", "IJH", "IJR", "EFA", "EEM", "RWR", "DBC", "VAW", "AGG", "TIP", "IGOV", "SHY"]
 
 
@@ -95,9 +97,8 @@ def breaker_from_cfg(cfg: dict) -> dict | None:
 
 def run(bars: dict, cfg: dict, cost_bps: float, no_trend: bool = False,
         breaker: dict | None = None) -> dict:
-    uni = cfg["universe"]
-    cash = uni["cash"]
-    assets = uni["risk_assets"] + [cash]
+    cash = cfg["universe"]["cash"]
+    assets = raam.tradable_symbols(cfg)
     cal = list(bars["SPY"].index)
     idx = {d: i for i, d in enumerate(cal)}
     hist_days = cfg["lookbacks"]["history_calendar_days"]
@@ -120,7 +121,7 @@ def run(bars: dict, cfg: dict, cost_bps: float, no_trend: bool = False,
     finally:
         raam.atr_trend_series = orig_trend
 
-    cols = sorted(set(assets + EW_BENCH + ["SPY"]))
+    cols = sorted(set(assets + EW_BENCH + ["SPY", "AGG"]))
     opens = pd.DataFrame({s: bars[s]["o"] for s in cols}).reindex(cal)
     closes = pd.DataFrame({s: bars[s]["c"] for s in cols}).reindex(cal)
     cost = cost_bps / 1e4
@@ -164,6 +165,8 @@ def run(bars: dict, cfg: dict, cost_bps: float, no_trend: bool = False,
         periods.append({"signal_date": t, "entry": entry, "exit": exit_,
                         "ret": value_exit / value - 1, "turnover": turnover,
                         "spy": float(rets["SPY"]), "ew7twelve": float(rets[EW_BENCH].mean()),
+                        "b6040": float(.6 * rets["SPY"] + .4 * rets["AGG"]),
+                        "b3070": float(.3 * rets["SPY"] + .7 * rets["AGG"]),
                         "cash_w": w.get(cash, 0.0), "breaker": tripped_at is not None,
                         "held": {s: x for s, x in w.items() if x > 0}})
         if tripped_at is not None:
@@ -228,23 +231,28 @@ def variants(live: dict) -> dict[str, tuple[dict, bool, dict | None]]:
             sect, key = path.split("__")
             c[sect][key] = val
         return c
-    v1 = v(universe__cash="SHY", ranking__momentum_hurdle="zero", ranking__w_trend=1)
+    alone = copy.deepcopy(live)
+    alone["portfolio"] = {"name": "RAAM alone", "core": {}, "shield_weight": 1.0}
+    v1 = v(alone, universe__cash="SHY", ranking__momentum_hurdle="zero", ranking__w_trend=1)
     brk = breaker_from_cfg(live)
-    trend_on = v(ranking__w_trend=1)
+
+    def split(core_spy, core_agg, shield):
+        c = copy.deepcopy(live)
+        c["portfolio"] = {"name": "blend", "core": {"SPY": core_spy, "AGG": core_agg}, "shield_weight": shield}
+        return c
     return {
-        "v1 original (SHY, 0% hurdle, trend on, no breaker)": (v1, False, None),
-        "Tier 1 (BIL + cash hurdle + breaker), trend on": (trend_on, False, brk),
-        "Tier 1, trend on, breaker -15%": (trend_on, False, {"dd": -15.0, "day": -5.0}),
         LIVE: (live, False, brk),
-        "Live + A3 lower band literal, trend on": (v(ranking__w_trend=1,
-                                                      ambiguities__lower_band="hhv_low_plus_atr"), False, brk),
-        "Live + momentum-heavy 50/25/25": (v(ranking__w_momentum=0.5, ranking__w_volatility=0.25,
-                                             ranking__w_correlation=0.25), False, brk),
-        "Live + SHY as cash": (v(universe__cash="SHY"), False, brk),
+        SHIELD: (alone, False, brk),
+        V1: (v1, False, None),
+        "Core & Shield 70/30 (42% SPY, 28% AGG, 30% RAAM)": (split(.42, .28, .30), False, brk),
+        "Core & Shield 30/70 (18% SPY, 12% AGG, 70% RAAM)": (split(.18, .12, .70), False, brk),
+        "Core & Shield with trend filter on": (v(ranking__w_trend=1), False, brk),
+        "Core & Shield, SHY as cash": (v(universe__cash="SHY"), False, brk),
     }
 
 
-V1 = "v1 original (SHY, 0% hurdle, trend on, no breaker)"
+V1 = "RAAM alone, original paper rules (v1)"
+SHIELD = "Shield alone (RAAM, live rules)"
 
 
 # --------------------------------------------------------------------------- report
@@ -261,7 +269,7 @@ def main() -> None:
     res = {name: run(bars_a, c, args.cost_bps, nt, br) for name, (c, nt, br) in variants(cfg).items()}
     live, v1 = res[LIVE], res[V1]
     live_b = run(bars_b, cfg, args.cost_bps, breaker=breaker_from_cfg(cfg))
-    v1_b = run(bars_b, variants(cfg)[V1][0], args.cost_bps)
+    v1_b = run(bars_b, variants(cfg)[SHIELD][0], args.cost_bps, breaker=breaker_from_cfg(cfg))
 
     pa = live["periods"]
     start_a, end_a = pa["entry"].iloc[0], pa["exit"].iloc[-1]
@@ -271,7 +279,8 @@ def main() -> None:
         return s[s.index <= IS_END], s[s.index > IS_END]
 
     head = {}
-    for label, p, col in (("RAAM live (Tier 1 + A)", pa, "ret"), ("RAAM v1 original", v1["periods"], "ret"),
+    for label, p, col in (("Core & Shield (live)", pa, "ret"), ("Shield alone (RAAM)", res[SHIELD]["periods"], "ret"),
+                          ("60/40", pa, "b6040"), ("30/70", pa, "b3070"),
                           ("SPY", pa, "spy"), ("Equal-weight 7Twelve", pa, "ew7twelve")):
         s_all = p.set_index("entry")
         parts = {"full": s_all, "2009-2019": s_all[s_all.index <= IS_END],
@@ -298,11 +307,12 @@ def main() -> None:
         var_oos[name] = so
 
     crisis_rows = {}
-    for label, p in (("RAAM live (Tier 1 + A)", live_b["periods"]), ("RAAM v1 original", v1_b["periods"])):
+    for label, p in (("Core & Shield (live)", live_b["periods"]), ("Shield alone (RAAM)", v1_b["periods"])):
         c = p[(p["entry"] >= dt.date(2008, 6, 1)) & (p["entry"] <= dt.date(2009, 6, 30))]
         crisis_rows[label] = stats(c["ret"])
     c = live_b["periods"]
     c = c[(c["entry"] >= dt.date(2008, 6, 1)) & (c["entry"] <= dt.date(2009, 6, 30))]
+    crisis_rows["60/40"] = stats(c["b6040"])
     crisis_rows["SPY"] = stats(c["spy"])
     crisis_rows["Equal-weight 7Twelve"] = stats(c["ew7twelve"])
 
@@ -311,9 +321,10 @@ def main() -> None:
         cy["year"] = [d.year for d in cy["entry"]]
         return cy.groupby("year").agg(R=("ret", lambda r: ((1 + r).prod() - 1) * 100),
                                       SPY=("spy", lambda r: ((1 + r).prod() - 1) * 100),
+                                      B64=("b6040", lambda r: ((1 + r).prod() - 1) * 100),
                                       EW7=("ew7twelve", lambda r: ((1 + r).prod() - 1) * 100),
                                       Cash=("cash_w", lambda w: w.mean() * 100))
-    ylive, yv1 = year_table(pa), year_table(v1["periods"])
+    ylive, yv1 = year_table(pa), year_table(res[SHIELD]["periods"])
     held = pd.Series([s for h in pa["held"] for s in h]).value_counts()
     freq = (held / len(pa) * 100).round(1)
     spy_d = bars_a["SPY"]["c"][bars_a["SPY"].index >= start_a]
@@ -325,8 +336,8 @@ def main() -> None:
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots(2, 1, figsize=(11, 7), sharex=True, gridspec_kw={"height_ratios": [3, 1]})
         x = pd.to_datetime(pa["exit"])
-        for series, lab in ((pa["ret"], "RAAM live (Tier 1 + A)"), (v1["periods"]["ret"], "RAAM v1 original"),
-                            (pa["spy"], "SPY"), (pa["ew7twelve"], "Equal-weight 7Twelve")):
+        for series, lab in ((pa["ret"], "Core & Shield (live)"), (res[SHIELD]["periods"]["ret"], "Shield alone (RAAM)"),
+                            (pa["b6040"], "60/40"), (pa["spy"], "SPY")):
             eq = (1 + series.values).cumprod()
             ax[0].plot(x, eq, label=lab)
             ax[1].plot(x, (eq / np.maximum.accumulate(eq) - 1) * 100, label=lab)
@@ -346,7 +357,7 @@ def main() -> None:
     report = f"""# RAAM Backtest Report
 
 Generated {dt.date.today().isoformat()} by `backtest/backtest.py`. Costs: {args.cost_bps:g} bps per side on turnover.
-Engine: the live `scripts/raam.py compute_signal()` with `config/raam.json` (**Tier 1: BIL cash, cash-momentum hurdle, −20% breaker with auto re-entry; improvement A: trend term off**).
+Engine: the live `scripts/raam.py compute_signal()` with `config/raam.json` (**Core & Shield: fixed Core of 30% SPY + 20% AGG, plus 50% RAAM Shield with Tier 1 rules and the trend term off; −20% breaker on the whole portfolio**).
 Signal at the month-end close, fill at the next open. The breaker is simulated on the daily path.
 Data: Yahoo Finance adjusted daily OHLC. Past results do not guarantee future results.
 
@@ -370,11 +381,11 @@ The Sharpe uses rf = 0.
 Scenario B live-config breaker trips: {live_b['trips'] or 'none'}.
 
 ## 4. Calendar years (Scenario A)
-| Year | RAAM live % | RAAM v1 % | SPY % | EW 7Twelve % | Live avg cash % |
-|---|---|---|---|---|---|
-""" + "".join(f"| {y} | {r.R:.1f} | {yv1.loc[y].R:.1f} | {r.SPY:.1f} | {r.EW7:.1f} | {r.Cash:.0f} |\n"
+| Year | Core & Shield % | Shield alone % | 60/40 % | SPY % | EW 7Twelve % | C&S avg cash % |
+|---|---|---|---|---|---|---|
+""" + "".join(f"| {y} | {r.R:.1f} | {yv1.loc[y].R:.1f} | {r.B64:.1f} | {r.SPY:.1f} | {r.EW7:.1f} | {r.Cash:.0f} |\n"
               for y, r in ylive.iterrows()) + f"""
-## 5. How often each ETF was held, live config (% of months)
+## 5. How often each ETF was held, live config (% of months; SPY and AGG are always held via the Core)
 """ + " · ".join(f"{s} {v:g}%" for s, v in freq.items()) + """
 
 ![equity](equity_curve.png)

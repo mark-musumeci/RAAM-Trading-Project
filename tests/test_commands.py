@@ -14,7 +14,7 @@ import raam  # noqa: E402
 
 CFG = raam.load_config()
 CASH = CFG["universe"]["cash"]
-SYMS = CFG["universe"]["risk_assets"] + [CASH]
+SYMS = raam.tradable_symbols(CFG)
 # Sept 2026: last trading day Wed 30th; Oct 2026: first trading day Thu 1st
 SEPT_DAYS = [d.date() for d in pd.bdate_range("2026-09-01", "2026-09-30") if d.day != 7]  # Labor Day
 OCT_DAYS = [d.date() for d in pd.bdate_range("2026-10-01", "2026-10-31")]
@@ -196,3 +196,21 @@ def test_signal_records_cash_hurdle(env):
     for row in out["table"]:
         if row["selected"] and row["weight"] > 0:
             assert row["momentum_pct"] > h["value_pct"]
+
+
+def test_signal_combines_core_and_shield(env):
+    out = raam.cmd_signal(args(date="2026-09-30", dry_run=True), CFG)
+    t, sh = out["targets"], out["shield_targets"]
+    core, shield = raam.portfolio_parts(CFG)
+    assert sum(t.values()) == pytest.approx(1.0) and sum(sh.values()) == pytest.approx(1.0)
+    for s in raam.tradable_symbols(CFG):
+        assert t[s] == pytest.approx(core.get(s, 0.0) + shield * sh.get(s, 0.0))
+    assert t["SPY"] >= 0.30 - 1e-9
+
+
+def test_first_rebalance_buys_core_within_caps(env):
+    raam.cmd_signal(args(date="2026-09-30"), CFG)
+    out = raam.cmd_rebalance(args(date="2026-10-01"), CFG)
+    assert out["status"] == "ok", out
+    bought = {o["symbol"] for o in env.fake.submitted}
+    assert {"SPY", "AGG"} <= bought

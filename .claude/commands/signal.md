@@ -1,5 +1,5 @@
 ---
-description: Month-end RAAM signal — factors, ranks, next month's target allocation
+description: Month-end Core & Shield signal — RAAM factors and ranks for the Shield, plus the fixed Core, giving next month's targets
 argument-hint: "[dry_run] [force] [force_date=YYYY-MM-DD]"
 ---
 Month-end signal. Follow the SOP in CLAUDE.md.
@@ -10,10 +10,10 @@ Month-end signal. Follow the SOP in CLAUDE.md.
 3. Run `python3 scripts/raam.py signal`. Add `--dry-run`, `--force` and `--date` as the arguments request.
 4. Check the output:
    - `status` is `ok`;
-   - 11 rows;
-   - 5 selected;
-   - target weights sum to 100%;
-   - every non-zero weight is 20%, or a multiple of 20% for the cash asset BIL.
+   - 11 rows, 5 selected;
+   - `shield_targets` (RAAM) sum to 100%, and every non-zero Shield weight is 20%, or a multiple of 20% for BIL;
+   - `targets` (the whole portfolio) sum to 100%;
+   - each target equals the Core weight plus 0.5 × its Shield weight. In particular SPY is at least 30% and AGG at least 20%.
 
    If anything fails, send ⚠️ and stop.
 5. In `memory/SIGNAL-LOG.md`, under the section the script just wrote, add a 2–4 line **"Context"** note:
@@ -22,4 +22,4 @@ Month-end signal. Follow the SOP in CLAUDE.md.
    - one line of macro backdrop from the research.
 
    The script writes the table; you only add the note. The **Trend** column is informational only (`w_trend` = 0). Never describe it as driving a selection.
-6. Discord: `RAAM signal <month> → <effective month>: VV 20%, EFA 20%, ... | changes: +X -Y | executes next trading day 09:45 ET`.
+6. Discord: `RAAM signal <month> → <effective month> | Shield: VV, EFA, RWR + BIL 40% | Portfolio: SPY 30%, AGG 20%, VV 10%, ... | changes: +X -Y | executes next trading day ~09:45–10:45 ET`.
