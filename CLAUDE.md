@@ -35,7 +35,8 @@ The strategy rules are in `memory/TRADING-STRATEGY.md`. The parameters are in `c
 | Month review numbers | `python3 scripts/raam.py review [--month YYYY-MM] [--force]` |
 | Raw Alpaca | `bash scripts/alpaca.sh account\|positions\|orders\|clock\|quote SYM\|...` |
 | Research | your WebSearch / WebFetch tools (see `.claude/commands/research.md`) |
-| Discord | `bash scripts/discord.sh "message"` |
+| Discord | `bash scripts/discord.sh "message"` or `bash scripts/discord.sh --file <path> "message"` |
+| Monthly PDF report | `python3 scripts/report.py [--metrics-only] [--month YYYY-MM] [--date D] [--force] [--notes-file F]` |
 
 `raam.py` always prints one JSON object. Read the `status` field:
 - `ok` means it acted or reported.

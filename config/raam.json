@@ -100,5 +100,19 @@
       "AGG": 0.7
     }
   },
-  "_core_and_shield": "2026-09-24 Core & Shield: 50% fixed 60/40 core (SPY/AGG) + 50% RAAM shield. Per-order cap raised 25% -> 35% because core targets reach 30%."
+  "_core_and_shield": "2026-09-24 Core & Shield: 50% fixed 60/40 core (SPY/AGG) + 50% RAAM shield. Per-order cap raised 25% -> 35% because core targets reach 30%.",
+  "report_norms": {
+    "_note": "Core & Shield normal ranges from the 2009-2026 backtest (memory/BACKTEST-SUMMARY.md); used by scripts/report.py only.",
+    "month_return_pct": [
+      -3,
+      3
+    ],
+    "month_return_extreme_pct": [
+      -5.7,
+      6.0
+    ],
+    "cash_pct_max": 50,
+    "max_drawdown_pct": -14.6,
+    "down_capture_vs_6040_pct": 70
+  }
 }

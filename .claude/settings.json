@@ -3,6 +3,8 @@
     "allow": [
       "Bash(python3 scripts/raam.py:*)",
       "Bash(python scripts/raam.py:*)",
+      "Bash(python scripts/report.py:*)",
+      "Bash(python3 scripts/report.py:*)",
       "Bash(bash scripts/alpaca.sh:*)",
       "Bash(bash scripts/discord.sh:*)",
       "Bash(python3 -m pytest:*)",

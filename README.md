@@ -17,16 +17,19 @@ Backtest, 2009–2026: 7.5%/yr at a Sharpe of about 1.1, the same as 60/40, but 
 | `config/raam.json` | Model parameters and guardrail thresholds |
 | `scripts/raam.py` | Deterministic engine: calendar, signal, rebalance, health, review |
 | `scripts/alpaca.sh` | Thin curl wrapper for Alpaca (ad-hoc and manual use) |
-| `scripts/discord.sh` | Discord notifications via channel webhook (`DISCORD_WEBHOOK_URL`) |
-| `.claude/commands/` | `/health` `/signal` `/rebalance` `/monthly-review` `/research` `/portfolio` `/trade` |
+| `scripts/discord.sh` | Discord notifications via channel webhook (`DISCORD_WEBHOOK_URL`), with optional file attachment (`--file`) |
+| `scripts/report.py` | One-page monthly PDF report: Core & Shield vs 60/40, holdings, next allocation, backtest checks |
+| `reports/` | Archive of the monthly PDF reports and their commentary notes |
+| `.claude/commands/` | `/health` `/signal` `/rebalance` `/monthly-review` `/report` `/research` `/portfolio` `/trade` |
 | `memory/` | Strategy, logs, signals (`signals/*.json`) and `state.json` (high-water mark, circuit breaker) |
-| `tests/` | pytest unit tests for the indicators, ranking and order planning |
+| `tests/` | pytest unit tests for the indicators, ranking, order planning, commands and report |
 
-## Schedule (Mon–Fri; cron is UTC, see routines/README.md)
+## Schedule (cron is UTC, see routines/README.md)
 | Routine | Time | Runs |
 |---|---|---|
 | **RAAM – Morning** | 09:45 EST / 10:45 EDT | `/rebalance` (Core and Shield together). It acts only on the first trading day of the month, or when the circuit breaker is tripped. |
 | **RAAM – Close** | 16:30 EST / 17:30 EDT | `/health` every day. Then `/signal` on the last trading day of the month, and `/monthly-review` on the first trading day. |
+| **RAAM – Monthly Report** | 18:00 EST / 19:00 EDT, days 28–31 | `/report` on the last trading day of the month only: a one-page PDF posted to Discord. |
 
 ## Local quickstart
 ```bash
