@@ -1,0 +1,3 @@
+- No holdings and 0.00% return this month; both Core and Shield are flat since inception on 2026-09-23, with nothing yet deployed.
+- Core & Shield beat 60/40 by 0.72 points this month (0.00% vs -0.72%); since inception C&S is at 0.00% vs 60/40's -1.02%.
+- All checks within normal backtest ranges.
