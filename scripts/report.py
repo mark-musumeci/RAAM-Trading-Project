@@ -30,6 +30,10 @@ SURFACE, INK, INK2, MUTED = "#fcfcfb", "#0b0b0b", "#52514e", "#898781"
 GRID, BASELINE = "#e1e0d9", "#c3c2b7"
 SERIES = {"Core & Shield": "#2a78d6", "60/40": "#eb6834", "SPY": "#1baf7a"}
 GOOD_TEXT, BAD_TEXT = "#006300", "#d03b3b"
+ACCOUNT = "#1baf7a"                 # account line/area (reference palette slot 3; labelled directly)
+BENCH = "#898781"                   # 60/40 comparison line: neutral, recessive
+PILL_BG, CARD_BG = "#f0efec", "#f5f5f2"
+UP_ARROW, DOWN_ARROW = "#0ca30c", "#d03b3b"
 STATUS = {"normal": ("#0ca30c", "Normal"), "unusual": ("#fab219", "Unusual"),
           "outside": ("#d03b3b", "Outside backtest range"), "na": (MUTED, "n/a")}
 
@@ -121,6 +125,21 @@ def build(client, cfg: dict, month: str, as_of: dt.date) -> tuple[dict, dict]:
         month_ret, since, max_dd = None, None, None
         b_since = {k: None for k in bench}
 
+    def trailing(months: int):
+        if not invested or len(eq) < 2:
+            return None
+        anchor = (pd.Timestamp(end) - pd.DateOffset(months=months)).date()
+        if anchor < eq.index[0]:
+            return None
+        base = eq[eq.index <= anchor].iloc[-1]
+        return round(float(eq.iloc[-1] / base - 1) * 100, 3)
+    period_returns = {"1 mo": month_ret, "3 mo": trailing(3), "6 mo": trailing(6),
+                      "1 yr": trailing(12), "All": since}
+    equity_end = round(float(eq.iloc[-1]), 2) if len(eq) else None
+    contributions = round(float(eq.iloc[0]), 2) if invested and len(eq) else equity_end
+    return_usd = (round(equity_end - contributions, 2)
+                  if invested and equity_end is not None and contributions is not None else None)
+
     rows = []
     for s, w in sorted(held.items(), key=lambda kv: -kv[1]):
         c = core.get(s, 0.0)
@@ -149,7 +168,7 @@ def build(client, cfg: dict, month: str, as_of: dt.date) -> tuple[dict, dict]:
     else:
         st = "normal" if lo <= month_ret <= hi else ("unusual" if xlo <= month_ret <= xhi else "outside")
         checks.append(("Monthly return", fmt_pct(month_ret), st,
-                       f"87% of backtest months were {lo:+g}% to {hi:+g}%"))
+                       f"most backtest months were {lo:+g}% to {hi:+g}%"))
     cash_pct = round(held.get(cash, 0.0) * 100, 1) if held else None
     cmax = norms.get("cash_pct_max", 50)
     checks.append(("Cash (BIL) held", "n/a" if cash_pct is None else f"{cash_pct:.0f}%",
@@ -173,7 +192,8 @@ def build(client, cfg: dict, month: str, as_of: dt.date) -> tuple[dict, dict]:
         "portfolio": (cfg.get("portfolio") or {}).get("name", "RAAM"),
         "month": month, "period": [start.isoformat(), end.isoformat()],
         "as_of": end.isoformat(), "inception": inc.isoformat() if inc else None,
-        "equity_end": round(float(eq.iloc[-1]), 2) if len(eq) else None,
+        "equity_end": equity_end, "contributions": contributions, "return_usd": return_usd,
+        "period_returns": period_returns,
         "month_return_pct": month_ret, "benchmarks_month_pct": b_month,
         "vs_6040_month_pct": None if month_ret is None or b64 is None else round(month_ret - b64, 3),
         "since_inception_pct": since, "benchmarks_since_inception_pct": b_since,
@@ -221,132 +241,184 @@ def _table(ax, header, rows, col_w, aligns):
             cell.get_text().set_fontweight("bold")
 
 
+def _money(x) -> str:
+    if x is None:
+        return "n/a"
+    return f"−${abs(x):,.2f}" if x < 0 else f"${x:,.2f}"
+
+
+def _gradient_area(ax, x, y, color, floor):
+    """Line with a soft vertical gradient fill down to `floor` (app-style area chart)."""
+    import matplotlib.colors as mcolors
+    import matplotlib.dates as mdates
+    from matplotlib.patches import Polygon
+    xn = mdates.date2num(x)
+    rgb = mcolors.to_rgb(color)
+    grad = np.zeros((120, 1, 4))
+    grad[:, :, :3] = rgb
+    grad[:, 0, 3] = np.linspace(0.0, 0.22, 120)
+    im = ax.imshow(grad, aspect="auto", origin="lower", zorder=1,
+                   extent=[xn[0], xn[-1], floor, float(np.max(y))])
+    poly = Polygon(np.vstack([[xn[0], floor], np.column_stack([xn, y]), [xn[-1], floor]]),
+                   closed=True, facecolor="none", edgecolor="none")
+    ax.add_patch(poly)
+    im.set_clip_path(poly)
+    ax.plot(x, y, color=color, linewidth=1.8, zorder=3, solid_capstyle="round")
+
+
 def render(metrics: dict, series: dict, notes: list[str], path: pathlib.Path) -> None:
     import matplotlib
     matplotlib.use("Agg")
+    import matplotlib.dates as mdates
     import matplotlib.pyplot as plt
+    from matplotlib.patches import FancyBboxPatch
 
     plt.rcParams.update({"font.family": "DejaVu Sans", "text.color": INK})
     fig = plt.figure(figsize=(8.27, 11.69), facecolor=SURFACE)
+    renderer = fig.canvas.get_renderer()
     m_label = dt.date.fromisoformat(metrics["month"] + "-01").strftime("%B %Y")
+    as_of = dt.date.fromisoformat(metrics["as_of"]).strftime("%d %b %Y")
+    invested = metrics["invested"]
+    L, R = 0.06, 0.94
 
-    # header
-    fig.text(0.05, 0.965, f"{metrics['portfolio']} — Monthly Report — {m_label}",
-             fontsize=15, fontweight="bold", color=INK)
-    fig.text(0.05, 0.947, f"Alpaca paper account · as of {metrics['as_of']} close · "
-             f"inception {metrics['inception'] or 'not yet traded'} · "
-             "Core 30% SPY + 20% AGG · Shield 50% RAAM (IBIT ≤ 5%)", fontsize=8, color=INK2)
+    def box(x, y, w, h, color, radius=0.012):
+        fig.patches.append(FancyBboxPatch((x, y), w, h, boxstyle=f"round,pad=0,rounding_size={radius}",
+                                          transform=fig.transFigure, facecolor=color, edgecolor="none",
+                                          zorder=0))
 
-    # KPI tiles (2 rows x 3)
-    b = metrics["benchmarks_month_pct"]
-    bs = metrics["benchmarks_since_inception_pct"]
-    diff = metrics["vs_6040_month_pct"]
-    eqv = metrics["equity_end"]
-    tiles = [
-        ("Month return", fmt_pct(metrics["month_return_pct"]) if metrics["invested"] else "Not invested",
-         f"60/40 {fmt_pct(b.get('60/40'))}" if metrics["invested"] else "first rebalance pending", None),
-        ("Versus 60/40 this month", "n/a" if diff is None else f"{diff:+.2f} pp",
-         "percentage points (pp)", diff),
-        ("Equity", "n/a" if eqv is None else f"${eqv:,.0f}", "paper account", None),
-        ("Since inception", fmt_pct(metrics["since_inception_pct"]),
-         f"60/40 {fmt_pct(bs.get('60/40'))} · SPY {fmt_pct(bs.get('SPY'))}", None),
-        ("Max drawdown since inception", fmt_pct(metrics["max_drawdown_pct"], signed=False),
-         "backtest worst −14.1%", None),
-        ("Cash (BIL) held this month", "n/a" if metrics["cash_held_pct"] is None
-         else f"{metrics['cash_held_pct']:.0f}%", "of the whole portfolio", None),
-    ]
-    for i, (label, value, sub, delta) in enumerate(tiles):
-        x = 0.05 + (i % 3) * 0.31
-        y = 0.895 - (i // 3) * 0.062
-        fig.patches.append(plt.Rectangle((x - 0.008, y - 0.022), 0.29, 0.056, transform=fig.transFigure,
-                                         facecolor="white", edgecolor=GRID, linewidth=0.8))
-        fig.text(x, y + 0.02, label, fontsize=7.5, color=INK2)
-        color = INK if delta is None else (GOOD_TEXT if delta >= 0 else BAD_TEXT)
-        fig.text(x, y - 0.002, value, fontsize=14, fontweight="bold", color=color)
-        fig.text(x, y - 0.016, sub, fontsize=6.5, color=MUTED)
+    # ---------- header strip
+    fig.text(L, 0.968, f"{metrics['portfolio']} · Monthly report · {m_label}", fontsize=8.5, color=MUTED)
+    started = f"started {metrics['inception']}" if metrics["inception"] else "not yet invested"
+    fig.text(R, 0.968, f"Alpaca paper account · {started}", fontsize=8.5, color=MUTED, ha="right")
 
-    # equity chart + drawdown panel
-    eq = series["equity"]
-    ax1 = fig.add_axes([0.08, 0.545, 0.74, 0.225])
-    ax2 = fig.add_axes([0.08, 0.465, 0.74, 0.06], sharex=ax1)
-    for ax in (ax1, ax2):
-        _style_axes(ax)
-    fig.text(0.05, 0.79, "Growth since inception (indexed to 100)", fontsize=9, fontweight="bold")
-    if len(eq) >= 2:
-        idx = pd.to_datetime(list(eq.index))
-        lines = {"Core & Shield": eq / eq.iloc[0] * 100}
-        for name in ("60/40", "SPY"):
-            bser = series["bench"][name].reindex(eq.index).ffill()
-            lines[name] = bser / bser.iloc[0] * 100
-        for name, s in lines.items():
-            ax1.plot(idx, s.values, color=SERIES[name], linewidth=1.6, label=name,
-                     zorder=3 if name == "Core & Shield" else 2)
-            dd = (s / s.cummax() - 1) * 100
-            if name != "SPY":
-                ax2.plot(idx, dd.values, color=SERIES[name], linewidth=1.2)
-        # direct end labels, nudged apart so they never collide
-        ends = sorted(((s.iloc[-1], name) for name, s in lines.items()))
-        lo_v = min(float(s.min()) for s in lines.values())
-        hi_v = max(float(s.max()) for s in lines.values())
-        gap = max(hi_v - lo_v, 0.5) * 0.07
-        placed = []
-        for v, name in ends:
-            y = v if not placed or v - placed[-1] >= gap else placed[-1] + gap
-            placed.append(y)
-            ax1.annotate(f"{name} {v:.1f}", (idx[-1], y), xytext=(5, 0), textcoords="offset points",
-                         fontsize=7, color=INK2, va="center", annotation_clip=False)
-        ax1.legend(loc="lower right", bbox_to_anchor=(1.0, 1.0), ncol=3, fontsize=7, frameon=False,
-                   labelcolor=INK2, handlelength=1.6)
-        ax2.set_ylabel("Drawdown %", fontsize=7, color=MUTED)
-        ax1.margins(x=0.01)
-        import matplotlib.dates as mdates
-        loc = mdates.AutoDateLocator(minticks=3, maxticks=7)
-        ax2.xaxis.set_major_locator(loc)
-        ax2.xaxis.set_major_formatter(mdates.ConciseDateFormatter(loc, show_offset=False))
+    # ---------- hero: account value, contributions, return
+    fig.text(L, 0.932, "Account value", fontsize=10.5, color=INK2)
+    fig.text(0.575, 0.932, f"Values on {as_of}", fontsize=10.5, color=INK2, ha="right")
+    fig.text(L, 0.878, _money(metrics["equity_end"]), fontsize=30, fontweight="bold", color=INK)
+    fig.text(L, 0.845, "Net contributions", fontsize=10, color=INK2)
+    fig.text(L, 0.822, _money(metrics["contributions"]), fontsize=13, fontweight="bold", color=INK)
+    fig.text(L, 0.792, "Return", fontsize=10, color=INK2)
+    if invested and metrics["return_usd"] is not None:
+        ret, pct = metrics["return_usd"], metrics["since_inception_pct"] or 0.0
+        t = fig.text(L, 0.769, f"{_money(ret)}   {pct:+.2f}%", fontsize=13, fontweight="bold", color=INK)
+        bb = t.get_window_extent(renderer).transformed(fig.transFigure.inverted())
+        fig.text(bb.x1 + 0.008, 0.771, "▲" if pct >= 0 else "▼", fontsize=11,
+                 color=UP_ARROW if pct >= 0 else DOWN_ARROW)
     else:
-        ax1.text(0.5, 0.5, "Not enough history yet: the chart starts after the first trading month.",
-                 ha="center", va="center", fontsize=8, color=MUTED, transform=ax1.transAxes)
-        ax1.set_xticks([]); ax1.set_yticks([]); ax2.set_xticks([]); ax2.set_yticks([])
-    plt.setp(ax1.get_xticklabels(), visible=False)
+        fig.text(L, 0.769, "Not invested yet · first rebalance pending", fontsize=12, color=MUTED)
 
-    # holdings + next month
-    fig.text(0.05, 0.43, "Held this month", fontsize=9, fontweight="bold")
+    # ---------- right card: this month vs 60/40
+    box(0.60, 0.768, R - 0.60, 0.172, CARD_BG)
+    b = metrics["benchmarks_month_pct"]
+    diff = metrics["vs_6040_month_pct"]
+    fig.text(0.625, 0.915, f"This month · {m_label}", fontsize=9, color=INK2)
+    card = [("Core & Shield", fmt_pct(metrics["month_return_pct"]) if invested else "not invested", INK),
+            ("60/40 benchmark", fmt_pct(b.get("60/40")), INK),
+            ("Difference", "n/a" if diff is None else f"{diff:+.2f} pp",
+             INK if diff is None else (GOOD_TEXT if diff >= 0 else BAD_TEXT)),
+            ("Cash (BIL) held", "n/a" if metrics["cash_held_pct"] is None
+             else f"{metrics['cash_held_pct']:.0f}%", INK),
+            ("Max drawdown", fmt_pct(metrics["max_drawdown_pct"], signed=False), INK)]
+    for i, (k, v, col) in enumerate(card):
+        y = 0.889 - i * 0.025
+        fig.text(0.625, y, k, fontsize=9, color=INK2, va="center")
+        fig.text(R - 0.022, y, v, fontsize=9.5, fontweight="bold", color=col, va="center", ha="right")
+
+    # ---------- period selector strip (returns per period; "All" shown as the selected pill)
+    pr = metrics["period_returns"]
+    box(L, 0.702, R - L, 0.046, PILL_BG, radius=0.023)
+    keys = ["1 mo", "3 mo", "6 mo", "1 yr", "All"]
+    seg = (R - L) / len(keys)
+    for i, k in enumerate(keys):
+        cx = L + seg * (i + 0.5)
+        sel = k == "All"
+        if sel:
+            box(L + seg * i + 0.006, 0.706, seg - 0.012, 0.038, INK, radius=0.019)
+        v = pr.get(k)
+        fig.text(cx, 0.731, k, fontsize=9.5, ha="center", va="center",
+                 color="white" if sel else INK, fontweight="bold" if sel else "normal")
+        fig.text(cx, 0.715, "n/a" if v is None else f"{v:+.2f}%", fontsize=8, ha="center", va="center",
+                 color="white" if sel else (MUTED if v is None else INK2))
+
+    # ---------- area chart: account value (with 60/40 on the same starting value)
+    ax = fig.add_axes([L, 0.43, 0.80, 0.25])
+    ax.set_facecolor(SURFACE)
+    for side in ax.spines.values():
+        side.set_visible(False)
+    ax.tick_params(length=0, colors=MUTED, labelsize=8)
+    eq = series["equity"]
+    if invested and len(eq) >= 2:
+        idx = pd.to_datetime(list(eq.index))
+        acct = eq.values.astype(float)
+        bser = series["bench"]["60/40"].reindex(eq.index).ffill().bfill()
+        bench = (bser / bser.iloc[0] * acct[0]).values
+        lo = float(min(acct.min(), bench.min()))
+        hi = float(max(acct.max(), bench.max()))
+        pad = max(hi - lo, hi * 0.01) * 0.08
+        floor, top = lo - pad, hi + pad
+        ax.set_ylim(floor, top)
+        ax.set_xlim(idx[0], idx[-1])
+        ax.plot(idx, bench, color=BENCH, linewidth=1.1, zorder=2, label="60/40 (same starting value)")
+        _gradient_area(ax, idx, acct, ACCOUNT, floor)
+        ax.plot([], [], color=ACCOUNT, linewidth=1.8, label="Core & Shield account")
+        ticks = [floor + (top - floor) * f for f in (0.08, 0.5, 0.92)]
+        ax.set_yticks(ticks)
+        ax.yaxis.tick_right()
+        ax.set_yticklabels([f"${v:,.2f}" for v in ticks], fontsize=8, color=MUTED)
+        ax.grid(axis="y", color=GRID, linewidth=0.8)
+        ax.set_axisbelow(True)
+        n = 4 if len(idx) > 4 else len(idx)
+        xt = [idx[int(round(j))] for j in np.linspace(0, len(idx) - 1, n)]
+        ax.set_xticks(xt)
+        ax.set_xticklabels([d.strftime("%d/%m/%Y") for d in xt], fontsize=8, color=MUTED)
+        ax.legend(loc="upper left", fontsize=7.5, frameon=False, labelcolor=INK2, handlelength=1.6)
+    else:
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.axhline(0.5, color=GRID, linewidth=0.8)
+        ax.text(0.5, 0.62, "The account chart starts after the first rebalance.",
+                ha="center", va="center", fontsize=9, color=MUTED, transform=ax.transAxes)
+
+    # ---------- held / planned
+    fig.text(L, 0.385, f"Held in {m_label}", fontsize=10, fontweight="bold")
     hrows = [[r["symbol"], r["sleeve"], f"{r['weight_pct']:.0f}%", fmt_pct(r["return_pct"]),
               fmt_pct(r["contribution_pct"])] for r in metrics["holdings"]]
-    _table(fig.add_axes([0.05, 0.255, 0.5, 0.165]),
-           ["ETF", "Sleeve", "Weight", "Month return", "Contribution"], hrows,
-           [0.14, 0.28, 0.16, 0.22, 0.22], ["left", "left", "right", "right", "right"])
-    nm = metrics["next_month"] or "next month"
-    fig.text(0.6, 0.43, f"Planned allocation for {nm}", fontsize=9, fontweight="bold")
+    _table(fig.add_axes([L, 0.215, 0.46, 0.16]),
+           ["ETF", "Sleeve", "Weight", "Return", "Contrib."], hrows,
+           [0.14, 0.30, 0.16, 0.2, 0.2], ["left", "left", "right", "right", "right"])
+    nm = metrics["next_month"]
+    nm_label = dt.date.fromisoformat(nm + "-01").strftime("%B %Y") if nm else "next month"
+    fig.text(0.58, 0.385, f"Planned for {nm_label}", fontsize=10, fontweight="bold")
     nrows = [[r["symbol"], f"{r['core_pct']:.0f}%", f"{r['shield_pct']:.0f}%", f"{r['total_pct']:.0f}%"]
              for r in metrics["next_allocation"]]
-    _table(fig.add_axes([0.6, 0.255, 0.35, 0.165]), ["ETF", "Core", "Shield", "Total"], nrows,
+    _table(fig.add_axes([0.58, 0.215, R - 0.58, 0.16]), ["ETF", "Core", "Shield", "Total"], nrows,
            [0.25, 0.25, 0.25, 0.25], ["left", "right", "right", "right"])
 
-    # versus history
-    fig.text(0.05, 0.238, "Versus the 2009–2026 backtest", fontsize=9, fontweight="bold")
-    for i, c in enumerate(metrics["checks"]):
-        y = 0.218 - i * 0.017
+    # ---------- versus backtest (2 x 2 grid)
+    fig.text(L, 0.195, "Versus the backtest", fontsize=10, fontweight="bold")
+    for i, c in enumerate(metrics["checks"][:4]):
+        x = L if i % 2 == 0 else 0.52
+        y = 0.176 - (i // 2) * 0.031
         color, word = STATUS[c["status"]]
-        fig.text(0.05, y, "●", fontsize=9, color=color, va="center")
-        fig.text(0.07, y, f"{c['check']}: {c['value']}", fontsize=7.5, color=INK, va="center")
-        fig.text(0.40, y, word, fontsize=7.5, color=INK, fontweight="bold", va="center")
-        fig.text(0.58, y, c["reference"], fontsize=7, color=MUTED, va="center")
+        fig.text(x, y, "●", fontsize=9, color=color, va="center")
+        label = f"{c['check']}: {c['value']}" + ("" if c["status"] == "na" else f" · {word}")
+        fig.text(x + 0.02, y, label, fontsize=8, color=INK, va="center")
+        fig.text(x + 0.02, y - 0.012, c["reference"], fontsize=6.8, color=MUTED, va="center")
 
-    # commentary
-    fig.text(0.05, 0.135, "Commentary", fontsize=9, fontweight="bold")
-    y = 0.117
+    # ---------- commentary
+    fig.text(L, 0.106, "Commentary", fontsize=10, fontweight="bold")
+    y = 0.091
     for note in (notes or ["No commentary was provided for this month."])[:3]:
-        for j, line in enumerate(textwrap.wrap(note, 115)[:3]):
-            fig.text(0.05, y, ("•  " if j == 0 else "    ") + line, fontsize=7.5, color=INK, va="top")
-            y -= 0.013
+        for j, line in enumerate(textwrap.wrap(note, 118)[:2]):
+            fig.text(L, y, ("•  " if j == 0 else "    ") + line, fontsize=7.8, color=INK, va="top")
+            y -= 0.0125
         y -= 0.004
 
-    fig.text(0.05, 0.028, "Paper trading, not investment advice. Past and backtested results do not "
-             "guarantee future results.", fontsize=6, color=MUTED)
-    fig.text(0.05, 0.016, "Backtest reference 2015–2026 (memory/BACKTEST-SUMMARY.md): Core & Shield + IBIT "
-             "9.3%/yr, Sharpe ~1.2, daily max DD −14.1% (60/40: 9.2%/yr, Sharpe ~0.9, month-end −19%).",
-             fontsize=6, color=MUTED)
+    fig.text(L, 0.026, "Paper trading, not investment advice. Past and backtested results do not "
+             "guarantee future results.", fontsize=6.3, color=MUTED)
+    fig.text(L, 0.014, "Backtest 2015–2026: Core & Shield + IBIT 9.3%/yr, Sharpe ~1.2, max DD −14.1% · "
+             "60/40 9.2%/yr, Sharpe ~0.9, max DD −19%.",
+             fontsize=6.3, color=MUTED)
     path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(path, format=path.suffix.lstrip(".") or "pdf", facecolor=SURFACE, dpi=110)
     plt.close(fig)
