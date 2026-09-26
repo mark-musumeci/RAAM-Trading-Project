@@ -26,6 +26,8 @@ class FakeAlpaca:
         self._positions = positions or {}
         self.is_open = is_open
         self.submitted = []
+        self.nonfrac = set()
+        self.untradable = set()
         rng = np.random.default_rng(11)
         idx = pd.bdate_range(end="2026-09-30", periods=450).date
         self._bars = {}
@@ -41,7 +43,15 @@ class FakeAlpaca:
         return {s: self._bars[s] for s in symbols}
 
     def account(self):
-        return {"equity": str(self.equity), "last_equity": str(self.equity), "cash": str(self.equity)}
+        return {"equity": str(self.equity), "last_equity": str(self.equity), "cash": str(self.equity),
+                "status": "ACTIVE", "trading_blocked": False, "account_blocked": False}
+
+    def asset(self, sym):
+        return {"symbol": sym, "tradable": sym not in self.untradable, "status": "active",
+                "fractionable": sym not in self.nonfrac}
+
+    def open_orders(self):
+        return []
 
     def positions(self):
         return [{"symbol": s, "qty": str(p["qty"]), "market_value": str(p["market_value"]),
@@ -214,3 +224,57 @@ def test_first_rebalance_buys_core_within_caps(env):
     assert out["status"] == "ok", out
     bought = {o["symbol"] for o in env.fake.submitted}
     assert {"SPY", "AGG"} <= bought
+
+
+# ---------------------------------------------------------------- preflight / execution quality
+def test_preflight_ok(env):
+    out = raam.cmd_preflight(args(), CFG)
+    assert out["status"] == "ok", out
+    assert set(out["assets"]) == set(raam.tradable_symbols(CFG))
+    assert out["next_rebalance_day"] == "2026-10-01"
+    assert out["next_signal_day"] == "2026-09-30"
+
+
+def test_preflight_warns_non_fractionable_and_halts_untradable(env):
+    env.fake.nonfrac = {"IGOV"}
+    out = raam.cmd_preflight(args(), CFG)
+    assert out["status"] == "ok" and any("IGOV" in w for w in out["warnings"])
+    env.fake.untradable = {"RWR"}
+    out = raam.cmd_preflight(args(), CFG)
+    assert out["status"] == "halt" and "RWR" in out["reason"]
+
+
+def test_rebalance_uses_whole_shares_for_non_fractionable(env):
+    env.fake.nonfrac = {"SPY"}
+    raam.cmd_signal(args(date="2026-09-30"), CFG)
+    out = raam.cmd_rebalance(args(date="2026-10-01"), CFG)
+    assert out["status"] == "ok", out
+    spy = [o for o in env.fake.submitted if o["symbol"] == "SPY"]
+    assert spy and "notional" not in spy[0] and float(spy[0]["qty"]).is_integer()
+    others = [o for o in env.fake.submitted if o["symbol"] != "SPY"]
+    assert all("notional" in o for o in others)
+    assert out["plan"]["whole_share_symbols"] == ["SPY"]
+
+
+def test_rebalance_halts_on_untradable_asset(env):
+    raam.cmd_signal(args(date="2026-09-30"), CFG)
+    env.fake.untradable = {"SPY"}
+    with pytest.raises(raam.Halt, match="not tradable"):
+        raam.cmd_rebalance(args(date="2026-10-01"), CFG)
+    assert not env.fake.submitted
+
+
+def test_slippage_recorded_in_fills_and_trade_log(env):
+    raam.cmd_signal(args(date="2026-09-30"), CFG)
+    out = raam.cmd_rebalance(args(date="2026-10-01"), CFG)
+    assert all(f["ref_price"] == 100.0 and f["slippage_bps"] == 0.0 for f in out["fills"])
+    assert out["slippage"]["avg_bps"] == 0.0
+    row = [ln for ln in (env.mem / "TRADE-LOG.md").read_text().splitlines() if "| SPY |" in ln][0]
+    assert row.count("|") == 10          # date, sym, side, qty, fill, ref, slippage, status, reason
+
+
+def test_slippage_sign_convention():
+    assert raam.slippage_bps("buy", 100, 100.1) == 10.0     # paid up = cost
+    assert raam.slippage_bps("sell", 100, 99.9) == 10.0     # sold lower = cost
+    assert raam.slippage_bps("buy", 100, 99.95) == -5.0     # price improvement
+    assert raam.slippage_bps("buy", None, 100) is None

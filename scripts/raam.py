@@ -11,6 +11,7 @@ Subcommands (all print a single JSON object to stdout):
   rebalance  [--date D] [--force] [--dry-run]   execute last month's signal (1st trading day)
   health     [--dry-run]                    equity, drawdown, circuit breaker, drift
   review     [--month YYYY-MM] [--force]    month performance vs 60/40, 30/70, SPY and equal-weight 7Twelve
+  preflight                                 account, per-ETF tradable/fractionable, data freshness, open orders
 
 Exit codes: 0 = ok/noop, 2 = halted by a guard (see "reason"), 1 = unexpected error.
 """
@@ -364,10 +365,10 @@ def plan_orders(targets: dict, equity: float, positions: dict, prices: dict, cfg
             if qty > 0:
                 sells.append({"symbol": sym, "side": "sell", "qty": round(qty, 6),
                               "est_value": round(-delta if w else pos["market_value"], 2),
-                              "close_position": w == 0})
+                              "close_position": w == 0, "ref_price": prices.get(sym)})
         else:
             buys.append({"symbol": sym, "side": "buy", "notional": round(delta, 2),
-                         "est_value": round(delta, 2)})
+                         "est_value": round(delta, 2), "ref_price": prices.get(sym)})
     for o in buys:
         cap_key = ("max_order_pct_equity_cash" if o["symbol"] == uni["cash"]
                    else "max_order_pct_equity_risk_asset")
@@ -433,6 +434,12 @@ class Alpaca:
 
     def submit_order(self, **order):
         return self._req("POST", f"{self.base}/v2/orders", json=order)
+
+    def asset(self, symbol: str):
+        return self._req("GET", f"{self.base}/v2/assets/{symbol}")
+
+    def open_orders(self):
+        return self._req("GET", f"{self.base}/v2/orders", params={"status": "open", "limit": 100})
 
     def get_order(self, order_id: str):
         return self._req("GET", f"{self.base}/v2/orders/{order_id}")
@@ -543,8 +550,11 @@ def write_signal_log(sig: dict) -> None:
 
 def append_trade_log(date: str, fills: list[dict], reason: str) -> None:
     text = TRADE_LOG.read_text(encoding="utf-8") if TRADE_LOG.exists() else ""
-    rows = [f"| {date} | {f['symbol']} | {f['side']} | {f.get('filled_qty', '')} | "
-            f"{f.get('filled_avg_price', '')} | {f.get('status', '')} | {reason} |" for f in fills]
+    def cell(v):
+        return "" if v is None else v
+    rows = [f"| {date} | {f['symbol']} | {f['side']} | {cell(f.get('filled_qty'))} | "
+            f"{cell(f.get('filled_avg_price'))} | {cell(f.get('ref_price'))} | {cell(f.get('slippage_bps'))} | "
+            f"{f.get('status', '')} | {reason} |" for f in fills]
     TRADE_LOG.write_text(text.rstrip("\n") + "\n" + "\n".join(rows) + "\n", encoding="utf-8")
 
 
@@ -566,23 +576,74 @@ def _wait(client: Alpaca, ids: list[str], seconds: int) -> dict:
     return done
 
 
-def _fill_summary(o: dict) -> dict:
+def slippage_bps(side: str, ref, fill) -> float | None:
+    """Execution cost vs the price seen when the order was planned. Positive = paid away."""
+    try:
+        ref, fill = float(ref), float(fill)
+    except (TypeError, ValueError):
+        return None
+    if ref <= 0 or fill <= 0:
+        return None
+    s = (fill / ref - 1.0) * 1e4
+    return round(s if side == "buy" else -s, 1)
+
+
+def _fill_summary(o: dict, ref=None) -> dict:
     return {"id": o["id"], "symbol": o["symbol"], "side": o["side"], "status": o["status"],
             "filled_qty": o.get("filled_qty"), "filled_avg_price": o.get("filled_avg_price"),
-            "notional": o.get("notional"), "qty": o.get("qty")}
+            "notional": o.get("notional"), "qty": o.get("qty"), "ref_price": ref,
+            "slippage_bps": slippage_bps(o["side"], ref, o.get("filled_avg_price"))}
 
 
-def execute_plan(client: Alpaca, plan: dict, cfg: dict) -> list[dict]:
+def slippage_summary(fills: list[dict]) -> dict:
+    """Value-weighted average slippage across filled orders."""
+    tot_v, tot_s, worst = 0.0, 0.0, None
+    for f in fills:
+        bps = f.get("slippage_bps")
+        try:
+            v = float(f.get("filled_qty") or 0) * float(f.get("filled_avg_price") or 0)
+        except (TypeError, ValueError):
+            v = 0.0
+        if bps is None or v <= 0:
+            continue
+        tot_v += v
+        tot_s += bps * v
+        if worst is None or bps > worst["slippage_bps"]:
+            worst = {"symbol": f["symbol"], "slippage_bps": bps}
+    return {"avg_bps": round(tot_s / tot_v, 1) if tot_v else None,
+            "cost_usd": round(tot_s * 1e-4, 2) if tot_v else None, "worst": worst}
+
+
+def whole_share_symbols(client: Alpaca, symbols) -> set[str]:
+    """Symbols that must trade in whole shares (not fractionable). Halts on untradable."""
+    out = set()
+    for sym in symbols:
+        a = client.asset(sym)
+        if not a.get("tradable") or a.get("status", "active") != "active":
+            raise Halt(f"{sym} is not tradable on Alpaca (status {a.get('status')})")
+        if not a.get("fractionable"):
+            out.add(sym)
+    return out
+
+
+def execute_plan(client: Alpaca, plan: dict, cfg: dict, whole_share: set | None = None) -> list[dict]:
     wait = cfg["execution"]["fill_wait_seconds"]
+    whole_share = whole_share or set()
+    refs = {o["symbol"]: o.get("ref_price") for o in plan["orders"]}
     sells = [o for o in plan["orders"] if o["side"] == "sell"]
     buys = [o for o in plan["orders"] if o["side"] == "buy"]
     results = []
     ids = []
     for o in sells:
-        r = client.submit_order(symbol=o["symbol"], qty=str(o["qty"]), side="sell",
+        qty = o["qty"]
+        if o["symbol"] in whole_share and not o.get("close_position"):
+            qty = math.floor(qty)
+            if qty < 1:
+                continue
+        r = client.submit_order(symbol=o["symbol"], qty=str(qty), side="sell",
                                 type="market", time_in_force="day")
         ids.append(r["id"])
-    results += [_fill_summary(o) for o in _wait(client, ids, wait).values()]
+    results += [_fill_summary(x, refs.get(x["symbol"])) for x in _wait(client, ids, wait).values()]
     if buys:
         cash = float(client.account()["cash"])
         total = sum(o["notional"] for o in buys)
@@ -592,10 +653,22 @@ def execute_plan(client: Alpaca, plan: dict, cfg: dict) -> list[dict]:
             notional = math.floor(o["notional"] * scale * 100) / 100
             if notional < 1:
                 continue
-            r = client.submit_order(symbol=o["symbol"], notional=f"{notional:.2f}", side="buy",
-                                    type="market", time_in_force="day")
+            if o["symbol"] in whole_share:
+                ref = o.get("ref_price")
+                if not ref:
+                    results.append({"symbol": o["symbol"], "side": "buy", "status": "skipped: no price",
+                                    "ref_price": None, "slippage_bps": None})
+                    continue
+                q = math.floor(notional / float(ref))
+                if q < 1:
+                    continue
+                r = client.submit_order(symbol=o["symbol"], qty=str(q), side="buy",
+                                        type="market", time_in_force="day")
+            else:
+                r = client.submit_order(symbol=o["symbol"], notional=f"{notional:.2f}", side="buy",
+                                        type="market", time_in_force="day")
             ids.append(r["id"])
-        results += [_fill_summary(o) for o in _wait(client, ids, wait).values()]
+        results += [_fill_summary(x, refs.get(x["symbol"])) for x in _wait(client, ids, wait).values()]
     return results
 
 
@@ -694,6 +767,8 @@ def cmd_rebalance(args, cfg):
     if need:
         prices.update(client.latest_prices(need))
     plan = plan_orders(targets, equity, positions, prices, cfg)
+    whole = whole_share_symbols(client, sorted({o["symbol"] for o in plan["orders"]}))
+    plan["whole_share_symbols"] = sorted(whole)
     result = {"status": "ok", "reason": reason, "targets": targets, "plan": plan,
               "dry_run": args.dry_run, "breaker_reentry": reenter}
     if breaker and not reenter and not plan["orders"]:
@@ -705,7 +780,7 @@ def cmd_rebalance(args, cfg):
     clock = client.clock()
     if not clock["is_open"]:
         raise Halt(f"market is closed (next open {clock['next_open']}); no orders submitted")
-    fills = execute_plan(client, plan, cfg) if plan["orders"] else []
+    fills = execute_plan(client, plan, cfg, whole) if plan["orders"] else []
     now = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
     if sig is not None:
         sig["executed"] = {"at": now, "date": d.isoformat(), "fills": fills}
@@ -720,7 +795,7 @@ def cmd_rebalance(args, cfg):
         state["high_water_mark"] = round(equity, 2)
         save_state(state)
     bad = [f for f in fills if f["status"] != "filled"]
-    result.update({"fills": fills, "unfilled": bad})
+    result.update({"fills": fills, "unfilled": bad, "slippage": slippage_summary(fills)})
     if bad:
         result["status"] = "halt"
         result["reason"] = f"{len(bad)} order(s) not filled - check Alpaca"
@@ -855,6 +930,56 @@ def cmd_review(args, cfg):
             "allocation_held": held}
 
 
+def cmd_preflight(args, cfg):
+    """Read-only readiness check before a rebalance. No orders, no file writes."""
+    client = Alpaca()
+    problems, warnings = [], []
+    acct = client.account()
+    if str(acct.get("status", "")).upper() != "ACTIVE":
+        problems.append(f"account status is {acct.get('status')}")
+    if acct.get("trading_blocked") or acct.get("account_blocked"):
+        problems.append("account or trading is blocked")
+    assets = {}
+    for sym in tradable_symbols(cfg):
+        a = client.asset(sym)
+        assets[sym] = {"tradable": bool(a.get("tradable")), "fractionable": bool(a.get("fractionable")),
+                       "status": a.get("status")}
+        if not a.get("tradable") or a.get("status", "active") != "active":
+            problems.append(f"{sym} is not tradable (status {a.get('status')})")
+        elif not a.get("fractionable"):
+            warnings.append(f"{sym} is not fractionable: the rebalance will use whole-share orders")
+    today = today_et()
+    days = [dt.date.fromisoformat(x["date"]) for x in client.calendar(today - dt.timedelta(days=14), today)]
+    prev = max((x for x in days if x < today), default=None)
+    bars, feed = fetch_bars(client, tradable_symbols(cfg), today,
+                            {**cfg, "lookbacks": {**cfg["lookbacks"], "history_calendar_days": 14}})
+    last_bar = {sym: (b.index[-1].isoformat() if len(b) else None) for sym, b in bars.items()}
+    stale = {sym: d for sym, d in last_bar.items()
+             if prev and (d is None or dt.date.fromisoformat(d) < prev)}
+    if stale:
+        problems.append(f"stale market data (expected a bar for {prev}): {stale}")
+    open_orders = client.open_orders() or []
+    if open_orders:
+        warnings.append(f"{len(open_orders)} open order(s) on the account")
+    positions = _positions_map(client)
+    extra = sorted(set(positions) - set(tradable_symbols(cfg)))
+    if extra:
+        warnings.append(f"non-universe positions held: {extra}")
+    nxt = (today.replace(day=28) + dt.timedelta(days=4)).replace(day=1)
+    info_now, info_next = calendar_info(client, today), calendar_info(client, nxt)
+    first_now = info_now["first_trading_day"]
+    next_rebalance = (first_now if first_now and first_now >= today.isoformat()
+                      else info_next["first_trading_day"])
+    return {"status": "halt" if problems else "ok",
+            "reason": "; ".join(problems) if problems else "ready",
+            "problems": problems, "warnings": warnings,
+            "account": {"status": acct.get("status"), "equity": acct.get("equity"),
+                        "cash": acct.get("cash")},
+            "assets": assets, "data_feed": feed, "last_bar": last_bar,
+            "positions": sorted(positions), "open_orders": len(open_orders),
+            "next_signal_day": info_now["last_trading_day"], "next_rebalance_day": next_rebalance}
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -869,10 +994,11 @@ def main(argv=None) -> int:
     sp = sub.add_parser("review")
     sp.add_argument("--month")
     sp.add_argument("--force", action="store_true")
+    sub.add_parser("preflight")
     args = p.parse_args(argv)
     cfg = load_config()
     handlers = {"calendar": cmd_calendar, "signal": cmd_signal, "rebalance": cmd_rebalance,
-                "health": cmd_health, "review": cmd_review}
+                "health": cmd_health, "review": cmd_review, "preflight": cmd_preflight}
     try:
         out = handlers[args.cmd](args, cfg)
         code = 2 if out.get("status") == "halt" else 0
