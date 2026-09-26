@@ -38,9 +38,10 @@ import raam  # noqa: E402
 CACHE = ROOT / "data" / "cache" / "yahoo_raw.pkl"
 OUT = ROOT / "backtest" / "results"
 SYMS = ["VV", "IJH", "IJR", "EFA", "EEM", "RWR", "DBC", "VAW", "AGG", "TIP", "IGOV",
-        "SHY", "BIL", "SPY", "BWX"]
+        "SHY", "BIL", "SPY", "BWX", "IBIT", "BTC-USD"]
+IBIT_FEE = 0.0025                        # IBIT expense ratio, charged on the BTC-USD stand-in
 IS_END = dt.date(2019, 12, 31)          # in-sample / out-of-sample split
-LIVE = "**LIVE: Core & Shield (50% 60/40 + 50% RAAM)**"
+LIVE = "**LIVE: Core & Shield + IBIT capped 5%**"
 EW_BENCH = ["VV", "IJH", "IJR", "EFA", "EEM", "RWR", "DBC", "VAW", "AGG", "TIP", "IGOV", "SHY"]
 
 
@@ -67,6 +68,36 @@ def to_bars(raw: pd.DataFrame) -> dict[str, pd.DataFrame]:
         d.index = [ts.date() for ts in d.index]
         bars[s] = d.astype(float)
     return bars
+
+
+def build_ibit(bars: dict, flatten_to: float | None = None) -> dict:
+    """IBIT history: BTC-USD (aligned to US trading days, minus IBIT's fee) spliced into real IBIT.
+
+    flatten_to: if set, shift the stand-in's daily log returns so its long-run CAGR equals this
+    value while keeping every swing (hindsight check: is the gain timing or just Bitcoin's rise?).
+    """
+    cal = list(bars["SPY"].index)
+    btc = bars["BTC-USD"]["c"]
+    btc = btc.reindex(sorted(set(btc.index) | set(cal))).ffill().reindex(cal).dropna()
+    real = bars["IBIT"]
+    first = real.index[0] if len(real) else None
+    proxy_c = btc[btc.index < first] if first else btc
+    lr = np.log(proxy_c).diff().fillna(0) - IBIT_FEE / 252
+    if flatten_to is not None and len(lr) > 1:
+        yrs = (pd.Timestamp(lr.index[-1]) - pd.Timestamp(lr.index[0])).days / 365.25
+        lr = lr - (lr.sum() - np.log(1 + flatten_to) * yrs) / (len(lr) - 1)
+        lr.iloc[0] = 0
+    c = np.exp(lr.cumsum())
+    if first is not None:
+        c = c * (real.at[first, "o"] / c.iloc[-1])          # continuous into real IBIT
+    d = pd.DataFrame({"c": c})
+    d["o"] = d["c"].shift(1)
+    d["h"] = d[["o", "c"]].max(axis=1)
+    d["l"] = d[["o", "c"]].min(axis=1)
+    d["v"] = 0.0
+    out = dict(bars)
+    out["IBIT"] = pd.concat([d.dropna().astype(float), real]) if first is not None else d.dropna()
+    return out
 
 
 def splice_igov(bars: dict) -> dict:
@@ -232,16 +263,27 @@ def variants(live: dict) -> dict[str, tuple[dict, bool, dict | None]]:
             c[sect][key] = val
         return c
     alone = copy.deepcopy(live)
-    alone["portfolio"] = {"name": "RAAM alone", "core": {}, "shield_weight": 1.0}
-    v1 = v(alone, universe__cash="SHY", ranking__momentum_hurdle="zero", ranking__w_trend=1)
+    alone["portfolio"] = {"name": "RAAM alone", "core": {}, "shield_weight": 1.0,
+                          "max_weight": {"IBIT": 0.10}}      # same cap as 5% of a 50/50 portfolio
+    noibit = copy.deepcopy(live)
+    noibit["universe"]["risk_assets"] = [x for x in live["universe"]["risk_assets"] if x != "IBIT"]
+    noibit["portfolio"]["max_weight"] = {}
+    uncapped = copy.deepcopy(live)
+    uncapped["portfolio"]["max_weight"] = {}
+    alone_noibit = copy.deepcopy(noibit)
+    alone_noibit["portfolio"] = {"name": "RAAM alone", "core": {}, "shield_weight": 1.0}
+    v1 = v(alone_noibit, universe__cash="SHY", ranking__momentum_hurdle="zero", ranking__w_trend=1)
     brk = breaker_from_cfg(live)
 
     def split(core_spy, core_agg, shield):
         c = copy.deepcopy(live)
-        c["portfolio"] = {"name": "blend", "core": {"SPY": core_spy, "AGG": core_agg}, "shield_weight": shield}
+        c["portfolio"] = {"name": "blend", "core": {"SPY": core_spy, "AGG": core_agg},
+                          "shield_weight": shield, "max_weight": {"IBIT": 0.05}}
         return c
     return {
         LIVE: (live, False, brk),
+        NOIBIT: (noibit, False, brk),
+        "Core & Shield + IBIT uncapped (10% slots)": (uncapped, False, brk),
         SHIELD: (alone, False, brk),
         V1: (v1, False, None),
         "Core & Shield 70/30 (42% SPY, 28% AGG, 30% RAAM)": (split(.42, .28, .30), False, brk),
@@ -251,7 +293,8 @@ def variants(live: dict) -> dict[str, tuple[dict, bool, dict | None]]:
     }
 
 
-V1 = "RAAM alone, original paper rules (v1)"
+V1 = "RAAM alone, original paper rules (v1, no IBIT)"
+NOIBIT = "Core & Shield WITHOUT IBIT (previous live)"
 SHIELD = "Shield alone (RAAM, live rules)"
 
 
@@ -263,13 +306,27 @@ def main() -> None:
     args = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
     cfg = raam.load_config()
-    bars_a = to_bars(load_raw(args.refresh))
+    base_bars = to_bars(load_raw(args.refresh))
+    bars_a = build_ibit(base_bars)
     bars_b = splice_igov(bars_a)
+    vs = variants(cfg)
 
-    res = {name: run(bars_a, c, args.cost_bps, nt, br) for name, (c, nt, br) in variants(cfg).items()}
+    res = {name: run(bars_a, c, args.cost_bps, nt, br) for name, (c, nt, br) in vs.items()}
+    res["IBIT flattened to 0%/yr (hindsight check)"] = run(build_ibit(base_bars, flatten_to=0.0), cfg,
+                                                            args.cost_bps, breaker=breaker_from_cfg(cfg))
+    # compare everything over the live config's window (IBIT stand-in data starts late 2014)
+    common = res[LIVE]["periods"]["entry"].iloc[0]
+    for r in res.values():
+        r["periods"] = r["periods"][r["periods"]["entry"] >= common].reset_index(drop=True)
+        r["daily"] = r["daily"][r["daily"].index >= common]
+        r["daily"] = r["daily"] / r["daily"].iloc[0]
+        r["trips"] = [t for t in r["trips"] if t[0] >= common.isoformat()]
     live, v1 = res[LIVE], res[V1]
-    live_b = run(bars_b, cfg, args.cost_bps, breaker=breaker_from_cfg(cfg))
-    v1_b = run(bars_b, variants(cfg)[SHIELD][0], args.cost_bps, breaker=breaker_from_cfg(cfg))
+    # 2008 stress: Bitcoin did not exist, so run the no-IBIT rules on the IGOV/BWX splice
+    live_b = run(bars_b, vs[NOIBIT][0], args.cost_bps, breaker=breaker_from_cfg(cfg))
+    alone_b = copy.deepcopy(vs[NOIBIT][0])
+    alone_b["portfolio"] = {"name": "RAAM alone", "core": {}, "shield_weight": 1.0}
+    v1_b = run(bars_b, alone_b, args.cost_bps, breaker=breaker_from_cfg(cfg))
 
     pa = live["periods"]
     start_a, end_a = pa["entry"].iloc[0], pa["exit"].iloc[-1]
@@ -283,7 +340,7 @@ def main() -> None:
                           ("60/40", pa, "b6040"), ("30/70", pa, "b3070"),
                           ("SPY", pa, "spy"), ("Equal-weight 7Twelve", pa, "ew7twelve")):
         s_all = p.set_index("entry")
-        parts = {"full": s_all, "2009-2019": s_all[s_all.index <= IS_END],
+        parts = {"full": s_all, "to 2019": s_all[s_all.index <= IS_END],
                  "2020-now": s_all[s_all.index > IS_END]}
         for tag, part in parts.items():
             st = stats(part[col])
@@ -307,7 +364,7 @@ def main() -> None:
         var_oos[name] = so
 
     crisis_rows = {}
-    for label, p in (("Core & Shield (live)", live_b["periods"]), ("Shield alone (RAAM)", v1_b["periods"])):
+    for label, p in (("Core & Shield (no IBIT)", live_b["periods"]), ("Shield alone (RAAM)", v1_b["periods"])):
         c = p[(p["entry"] >= dt.date(2008, 6, 1)) & (p["entry"] <= dt.date(2009, 6, 30))]
         crisis_rows[label] = stats(c["ret"])
     c = live_b["periods"]
@@ -357,11 +414,12 @@ def main() -> None:
     report = f"""# RAAM Backtest Report
 
 Generated {dt.date.today().isoformat()} by `backtest/backtest.py`. Costs: {args.cost_bps:g} bps per side on turnover.
-Engine: the live `scripts/raam.py compute_signal()` with `config/raam.json` (**Core & Shield: fixed Core of 30% SPY + 20% AGG, plus 50% RAAM Shield with Tier 1 rules and the trend term off; −20% breaker on the whole portfolio**).
+Engine: the live `scripts/raam.py compute_signal()` with `config/raam.json` (**Core & Shield: fixed Core of 30% SPY + 20% AGG, plus 50% RAAM Shield of 12 candidates incl. IBIT, capped at 5% of the portfolio; Tier 1 rules, trend term off, −20% breaker on the whole portfolio**).
+IBIT before its Jan-2024 launch = BTC-USD aligned to US trading days minus a 0.25%/yr fee, spliced into real IBIT. All rows share the live config's window.
 Signal at the month-end close, fill at the next open. The breaker is simulated on the daily path.
 Data: Yahoo Finance adjusted daily OHLC. Past results do not guarantee future results.
 
-## 1. Headline: Scenario A, real data only ({start_a} → {end_a})
+## 1. Headline: common window ({start_a} → {end_a})
 {fmt_table(head, ["CAGR %", "Vol %", "Sharpe", "MaxDD % (monthly)", "Worst month %", "Down capture %", "Up capture %", "Months"])}
 The Sharpe uses rf = 0.
 - **Down capture:** the average RAAM return in SPY's down months, as a % of SPY's loss. Lower is better defence.
@@ -376,7 +434,7 @@ The Sharpe uses rf = 0.
 {fmt_table(var_rows, ["CAGR %", "Vol %", "Sharpe", "MaxDD % (daily)", "Down capture %", "Up capture %", "Turnover/yr", "Avg cash %", "Breaker trips"])}
 ### The same variants, out-of-sample only (2020 → now)
 {fmt_table(var_oos, ["CAGR %", "Vol %", "Sharpe", "MaxDD % (monthly)", "Down capture %", "Up capture %"])}
-## 3. 2008 stress test: Scenario B, with IGOV spliced from BWX (entries Jun-2008 → Jun-2009)
+## 3. 2008 stress test: Scenario B, IGOV spliced from BWX (entries Jun-2008 → Jun-2009). Bitcoin did not exist, so the rows run the rules WITHOUT IBIT
 {fmt_table(crisis_rows, ["CAGR %", "Vol %", "MaxDD % (monthly)", "Worst month %", "Total %", "Months"])}
 Scenario B live-config breaker trips: {live_b['trips'] or 'none'}.
 

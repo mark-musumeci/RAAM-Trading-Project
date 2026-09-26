@@ -235,7 +235,7 @@ def render(metrics: dict, series: dict, notes: list[str], path: pathlib.Path) ->
              fontsize=15, fontweight="bold", color=INK)
     fig.text(0.05, 0.947, f"Alpaca paper account · as of {metrics['as_of']} close · "
              f"inception {metrics['inception'] or 'not yet traded'} · "
-             "Core 30% SPY + 20% AGG · Shield 50% RAAM", fontsize=8, color=INK2)
+             "Core 30% SPY + 20% AGG · Shield 50% RAAM (IBIT ≤ 5%)", fontsize=8, color=INK2)
 
     # KPI tiles (2 rows x 3)
     b = metrics["benchmarks_month_pct"]
@@ -251,7 +251,7 @@ def render(metrics: dict, series: dict, notes: list[str], path: pathlib.Path) ->
         ("Since inception", fmt_pct(metrics["since_inception_pct"]),
          f"60/40 {fmt_pct(bs.get('60/40'))} · SPY {fmt_pct(bs.get('SPY'))}", None),
         ("Max drawdown since inception", fmt_pct(metrics["max_drawdown_pct"], signed=False),
-         "backtest worst −14.6%", None),
+         "backtest worst −14.1%", None),
         ("Cash (BIL) held this month", "n/a" if metrics["cash_held_pct"] is None
          else f"{metrics['cash_held_pct']:.0f}%", "of the whole portfolio", None),
     ]
@@ -344,8 +344,8 @@ def render(metrics: dict, series: dict, notes: list[str], path: pathlib.Path) ->
 
     fig.text(0.05, 0.028, "Paper trading, not investment advice. Past and backtested results do not "
              "guarantee future results.", fontsize=6, color=MUTED)
-    fig.text(0.05, 0.016, "Backtest reference 2009–2026 (memory/BACKTEST-SUMMARY.md): Core & Shield "
-             "7.5%/yr, Sharpe ~1.1, month-end max DD −11% (60/40: 10.2%/yr, Sharpe ~1.1, −19%).",
+    fig.text(0.05, 0.016, "Backtest reference 2015–2026 (memory/BACKTEST-SUMMARY.md): Core & Shield + IBIT "
+             "9.3%/yr, Sharpe ~1.2, daily max DD −14.1% (60/40: 9.2%/yr, Sharpe ~0.9, month-end −19%).",
              fontsize=6, color=MUTED)
     path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(path, format=path.suffix.lstrip(".") or "pdf", facecolor=SURFACE, dpi=110)

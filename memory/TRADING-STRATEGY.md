@@ -19,7 +19,7 @@ only when the owner decides them, and they are recorded in the change log at the
 - Configured in `config/raam.json → portfolio`. Setting `core: {}` and `shield_weight: 1.0` runs RAAM alone.
 - Why: RAAM alone is a strong defender but lags badly in bull markets. The Core supplies growth, and the Shield roughly halves the damage in slow bear markets. See `memory/BACKTEST-SUMMARY.md`.
 
-## Shield universe (7Twelve portfolio, 12 ETFs)
+## Shield universe (7Twelve portfolio + IBIT: 12 ranked candidates, plus BIL as cash)
 
 | Asset class | ETFs |
 |---|---|
@@ -29,6 +29,7 @@ only when the owner decides them, and they are recorded in the change log at the
 | Commodities / Natural Resources | DBC, VAW |
 | US Bonds / Inflation-protected | AGG, TIP |
 | International Bonds | IGOV |
+| Crypto | **IBIT**, iShares spot-Bitcoin ETF. Added 2026-09-26. **Capped at 5% of the whole portfolio** (`portfolio.max_weight`); any excess goes to BIL. |
 | Cash | **BIL**, 1–3 month T-bills (not ranked; receives weight from excluded slots). The paper and 7Twelve use SHY; replaced by Tier 1 upgrade U2. |
 
 ## Factors
@@ -46,7 +47,7 @@ Bands:
 - Lower = highest low(105) − ATR(42). This is our interpretation; see A3.
 
 ## Ranking and allocation
-1. Rank the 11 non-cash ETFs from 1 to 11 on each of M, V and C.
+1. Rank the 12 non-cash candidates from 1 to 12 on each of M, V and C.
 2. `Score = wM·Rank(M) + wV·Rank(V) + wC·Rank(C) − w_trend·T − M/x`
    - Lower is better.
    - **`w_trend` = 0 (improvement A):** the paper's `−T` trend bonus is switched off. T is still computed and shown in the signal log. Setting `w_trend` to 1 restores the paper's rule.
@@ -83,4 +84,5 @@ Bands:
 | 2026-09-23 | Initial setup with the defaults above | owner |
 | 2026-09-23 | **Tier 1 upgrades:** U1 cash-momentum hurdle (was >0%); U2 BIL replaces SHY as cash; U3 breaker −20% with auto re-entry (was −15%, manual reset). Backtest in `memory/BACKTEST-SUMMARY.md`. | owner |
 | 2026-09-23 | **Improvement A:** ATR trend term removed from the score (`w_trend` 0). Three separate backtests agreed. 2009–26: CAGR 4.1% → 4.7%, daily max DD −16.2% → −12.0%, down capture 30% → 24%. It improved both 2009–19 and 2020–now. | owner |
+| 2026-09-26 | **IBIT added** as the 12th Shield candidate, **capped at 5% of the portfolio**. Adopted before the first trade. Evidence (2015–26, with BTC-USD as a stand-in and a 0.25% fee): CAGR 6.6% → 9.5%, Sharpe vs T-bills 0.63 → 0.95, worst drop −14.6% → −14.1%. Better in all three sub-periods. About half the gain survives with Bitcoin flattened to a 0% long-run return. Costs: 2018 −6.4% vs −3.1%. | owner |
 | 2026-09-24 | **Core & Shield:** 50% fixed 60/40 Core (30% SPY + 20% AGG) + 50% RAAM Shield. Per-order cap raised 25% → 35%. 2009–26 backtest: CAGR 7.5%, Sharpe 1.11 (60/40 1.09), max DD −11.1% month-end / −14.6% daily (60/40 −19.2% month-end), 2022 −7.8% (60/40 −15.2%). | owner |

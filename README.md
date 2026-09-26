@@ -3,7 +3,8 @@
 An autonomous **Core & Shield** portfolio on an **Alpaca paper account**, run by **Claude Code cloud routines**:
 - **Core, 50%:** a fixed 60/40, 30% SPY + 20% AGG, reset monthly. It does the growing.
 - **Shield, 50%:** the **Ranked Asset Allocation Model**, from Gioele Giordano's 2018 Charles H. Dow Award paper. It does the defending.
-  - Each month it ranks 11 of the 7Twelve ETFs on momentum, volatility and correlation, and holds the top 5.
+  - Each month it ranks 12 candidates (11 of the 7Twelve ETFs plus IBIT, a spot-Bitcoin ETF) on momentum, volatility and correlation, and holds the top 5.
+  - IBIT is capped at 5% of the whole portfolio.
   - Any pick whose momentum doesn't beat cash is swapped for BIL (T-bills).
 
 It rebalances once a month and holds; there are no stops. This repo is the bot's persistent disk: code, config and memory. Each routine run clones it, acts, and pushes its memory back.

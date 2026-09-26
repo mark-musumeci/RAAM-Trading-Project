@@ -10,10 +10,11 @@ Month-end signal. Follow the SOP in CLAUDE.md.
 3. Run `python3 scripts/raam.py signal`. Add `--dry-run`, `--force` and `--date` as the arguments request.
 4. Check the output:
    - `status` is `ok`;
-   - 11 rows, 5 selected;
+   - 12 rows (11 ETFs + IBIT), 5 selected;
    - `shield_targets` (RAAM) sum to 100%, and every non-zero Shield weight is 20%, or a multiple of 20% for BIL;
    - `targets` (the whole portfolio) sum to 100%;
-   - each target equals the Core weight plus 0.5 × its Shield weight. In particular SPY is at least 30% and AGG at least 20%.
+   - each target equals the Core weight plus 0.5 × its Shield weight, except where `caps_applied` shows a cap. In particular SPY is at least 30% and AGG at least 20%.
+   - **IBIT is at most 5% of the portfolio.** If the Shield picked it, `caps_applied.IBIT` shows the excess moved to BIL.
 
    If anything fails, send ⚠️ and stop.
 5. In `memory/SIGNAL-LOG.md`, under the section the script just wrote, add a 2–4 line **"Context"** note:

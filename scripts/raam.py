@@ -127,6 +127,20 @@ def tradable_symbols(cfg: dict) -> list[str]:
     return list(dict.fromkeys(uni["risk_assets"] + [uni["cash"]] + list(core)))
 
 
+def apply_caps(targets: dict, cfg: dict) -> tuple[dict, dict]:
+    """Cap a symbol's total portfolio weight (portfolio.max_weight); the excess goes to cash."""
+    caps = (cfg.get("portfolio") or {}).get("max_weight") or {}
+    cash = cfg["universe"]["cash"]
+    out, applied = dict(targets), {}
+    for sym, cap in caps.items():
+        w = out.get(sym, 0.0)
+        if w > cap + 1e-12:
+            out[sym] = round(cap, 6)
+            out[cash] = round(out.get(cash, 0.0) + (w - cap), 6)
+            applied[sym] = {"uncapped": round(w, 6), "cap": cap, "to_cash": round(w - cap, 6)}
+    return out, applied
+
+
 def combine_targets(shield_targets: dict, cfg: dict) -> dict:
     """Portfolio targets = Core weights + shield_weight x RAAM (Shield) weights."""
     core, shield = portfolio_parts(cfg)
@@ -303,6 +317,7 @@ def compute_signal(bars: dict[str, pd.DataFrame], cfg: dict, as_of: dt.date) -> 
             "selected": bool(r["selected"]), "weight": round(float(r["weight"]), 4),
         })
     core, shield = portfolio_parts(cfg)
+    capped, caps_applied = apply_caps(combine_targets(weights, cfg), cfg)
     return {
         "as_of": as_of.isoformat(),
         "month": month_key(as_of),
@@ -315,7 +330,8 @@ def compute_signal(bars: dict[str, pd.DataFrame], cfg: dict, as_of: dt.date) -> 
         "momentum_hurdle": {"mode": hurdle_mode, "value_pct": round(float(hurdle), 3),
                             "cash_asset": cash},
         "table": rows,
-        "targets": combine_targets(weights, cfg),
+        "targets": capped,
+        "caps_applied": caps_applied,
         "executed": None,
     }
 
@@ -536,6 +552,9 @@ def write_signal_log(sig: dict) -> None:
               f"selected ETFs at or below it gave their slot to {h['cash_asset']}."
               if h and h["mode"] == "cash" else "**Momentum hurdle:** 0%")
     pf = sig.get("portfolio") or {}
+    for sym, c in (sig.get("caps_applied") or {}).items():
+        hurdle += (f"\n\n**Cap:** {sym} capped at {c['cap'] * 100:.0f}% of the portfolio "
+                   f"(uncapped {c['uncapped'] * 100:.0f}%); {c['to_cash'] * 100:.0f}% moved to cash.")
     if pf.get("core"):
         shield = ", ".join(f"{s} {w * 100:.0f}%" for s, w in sig["shield_targets"].items() if w > 0)
         core = ", ".join(f"{s} {w * 100:.0f}%" for s, w in pf["core"].items())

@@ -13,6 +13,7 @@ import raam  # noqa: E402
 
 CFG = raam.load_config()
 RISK = CFG["universe"]["risk_assets"]
+R11 = ["VV", "IJH", "IJR", "EFA", "EEM", "RWR", "DBC", "VAW", "AGG", "TIP", "IGOV"]  # fixed set for pure ranking tests
 CASH = CFG["universe"]["cash"]
 
 
@@ -77,20 +78,20 @@ def test_atr_trend_breakout_then_crash():
 
 # ---------------------------------------------------------------- ranking
 def _factors(mom):
-    M = pd.Series(mom, index=RISK, dtype=float)
-    V = pd.Series(10.0, index=RISK)
-    C = pd.Series(0.5, index=RISK)
-    T = pd.Series(0, index=RISK)
+    M = pd.Series(mom, index=R11, dtype=float)
+    V = pd.Series(10.0, index=R11)
+    C = pd.Series(0.5, index=R11)
+    T = pd.Series(0, index=R11)
     return M, V, C, T
 
 
 def test_rank_selects_top5_by_momentum_when_other_factors_equal():
     M, V, C, T = _factors(range(1, 12))  # IGOV highest momentum
     table, w = raam.rank_assets(M, V, C, T, CFG)
-    assert list(table.index[:5]) == RISK[::-1][:5]
+    assert list(table.index[:5]) == R11[::-1][:5]
     assert sum(w.values()) == pytest.approx(1.0)
     assert w[CASH] == 0.0
-    assert all(w[s] == pytest.approx(0.2) for s in RISK[::-1][:5])
+    assert all(w[s] == pytest.approx(0.2) for s in R11[::-1][:5])
 
 
 def test_negative_momentum_goes_to_cash():
@@ -139,7 +140,7 @@ def test_compute_signal_end_to_end_and_stale_guard():
             for s in raam.tradable_symbols(CFG)}
     as_of = bars["VV"].index[-1]
     sig = raam.compute_signal(bars, CFG, as_of)
-    assert len(sig["table"]) == 11
+    assert len(sig["table"]) == len(RISK) == 12
     assert sum(sig["targets"].values()) == pytest.approx(1.0)
     assert sum(r["selected"] for r in sig["table"]) == 5
     bars["EEM"] = bars["EEM"].iloc[:-1]
@@ -263,3 +264,37 @@ def test_plan_accepts_core_targets():
     t = raam.combine_targets({"VV": 0.2, "AGG": 0.2, "EFA": 0.2, CASH: 0.4}, CFG)
     plan = raam.plan_orders(t, 100_000, {}, {}, CFG)
     assert {o["symbol"] for o in plan["orders"]} >= {"SPY", "AGG"}
+
+
+
+# ---------------------------------------------------------------- IBIT cap
+def test_ibit_is_in_universe_and_capped_in_config():
+    assert "IBIT" in RISK and CFG["portfolio"]["max_weight"]["IBIT"] == 0.05
+
+
+def test_cap_moves_excess_to_cash():
+    t = raam.combine_targets({"IBIT": 0.2, "VV": 0.2, "EFA": 0.2, "AGG": 0.2, CASH: 0.2}, CFG)
+    assert t["IBIT"] == pytest.approx(0.10)                  # 0.5 x 20% before the cap
+    capped, applied = raam.apply_caps(t, CFG)
+    assert capped["IBIT"] == pytest.approx(0.05)
+    assert capped[CASH] == pytest.approx(t[CASH] + 0.05)
+    assert sum(capped.values()) == pytest.approx(1.0)
+    assert applied["IBIT"]["to_cash"] == pytest.approx(0.05)
+
+
+def test_no_cap_when_ibit_not_selected():
+    t = raam.combine_targets({"VV": 0.2, "EFA": 0.2, "AGG": 0.2, "TIP": 0.2, CASH: 0.2}, CFG)
+    capped, applied = raam.apply_caps(t, CFG)
+    assert capped == t and applied == {}
+
+
+def test_signal_respects_ibit_cap_end_to_end():
+    rng = np.random.default_rng(21)
+    bars = {s: make_bars(100 * np.cumprod(1 + rng.normal(0.0002, 0.005, 400)))
+            for s in raam.tradable_symbols(CFG)}
+    bars["IBIT"] = make_bars(100 * np.cumprod(1 + rng.normal(0.004, 0.01, 400)))   # strong momentum
+    sig = raam.compute_signal(bars, CFG, bars["VV"].index[-1])
+    assert sig["targets"]["IBIT"] <= 0.05 + 1e-9
+    assert sum(sig["targets"].values()) == pytest.approx(1.0)
+    if sig["shield_targets"].get("IBIT", 0) > 0:
+        assert "IBIT" in sig["caps_applied"]
