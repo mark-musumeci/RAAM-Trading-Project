@@ -324,14 +324,14 @@ def render(metrics: dict, series: dict, notes: list[str], path: pathlib.Path) ->
         fig.text(0.625, y, k, fontsize=9, color=INK2, va="center")
         fig.text(R - 0.022, y, v, fontsize=9.5, fontweight="bold", color=col, va="center", ha="right")
 
-    # ---------- period selector strip (returns per period; "All" shown as the selected pill)
+    # ---------- period selector strip (returns per period; "1 mo" is selected: this is a monthly report)
     pr = metrics["period_returns"]
     box(L, 0.702, R - L, 0.046, PILL_BG, radius=0.023)
     keys = ["1 mo", "3 mo", "6 mo", "1 yr", "All"]
     seg = (R - L) / len(keys)
     for i, k in enumerate(keys):
         cx = L + seg * (i + 0.5)
-        sel = k == "All"
+        sel = k == "1 mo"
         if sel:
             box(L + seg * i + 0.006, 0.706, seg - 0.012, 0.038, INK, radius=0.019)
         v = pr.get(k)
@@ -340,13 +340,16 @@ def render(metrics: dict, series: dict, notes: list[str], path: pathlib.Path) ->
         fig.text(cx, 0.715, "n/a" if v is None else f"{v:+.2f}%", fontsize=8, ha="center", va="center",
                  color="white" if sel else (MUTED if v is None else INK2))
 
-    # ---------- area chart: account value (with 60/40 on the same starting value)
+    # ---------- area chart: account value over the report month (60/40 on the same starting value)
     ax = fig.add_axes([L, 0.43, 0.80, 0.25])
     ax.set_facecolor(SURFACE)
     for side in ax.spines.values():
         side.set_visible(False)
     ax.tick_params(length=0, colors=MUTED, labelsize=8)
     eq = series["equity"]
+    month_eq = eq[eq.index >= dt.date.fromisoformat(metrics["period"][0])]
+    if len(month_eq) >= 2:                   # prior month-end close -> last day of the report month
+        eq = month_eq
     if invested and len(eq) >= 2:
         idx = pd.to_datetime(list(eq.index))
         acct = eq.values.astype(float)
