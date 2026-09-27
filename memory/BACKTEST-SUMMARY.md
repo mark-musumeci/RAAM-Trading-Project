@@ -70,6 +70,31 @@ Sharpe uses rf = 0.
 - **Momentum-heavy weights:** trade defence for return. Not recommended.
 - **Statistical caution:** over about 11 years the standard error on Sharpe is about ±0.3, so **most differences are not statistically significant**. Changes must be deliberate owner decisions, logged in TRADING-STRATEGY.md.
 
+## Stress tests (2026-09-27, `backtest/stress.py` → [`backtest/results/STRESS.md`](../backtest/results/STRESS.md))
+Context only. These changed nothing in the strategy or the evaluation criteria.
+- **Costs:** the Sharpe edge over 60/40 survives even 50 bps per side (0.97 vs 0.93). The CAGR edge disappears above about 10 bps. Live slippage above 10 bps (O6) would therefore cost return, not the risk-adjusted case.
+- **Settings neighbourhood:** 13 of 13 nudged settings still beat 60/40's Sharpe (range 1.03–1.28). It isn't a lucky peak. Longer or shorter lookbacks are slightly worse, and nothing collapses.
+- **Late fills:** filling 2–5 days late barely changes the result (Sharpe 1.18–1.23). A missed or delayed rebalance is cheap, which supports "halt when in doubt".
+- **Any single 12 months:**
+  - C&S beat 60/40 in only **49%** of rolling windows. Median gap −0.1 pp; 1 in 10 years is worse than −5.4 pp.
+  - It had the smaller drawdown in **89%** of windows, and beat 60/40 in 93% of the windows where 60/40 lost money.
+  - Expect a coin flip on return in any year. The defence is the reliable part.
+- **Monte Carlo (5,000 10-year paths, month-end):**
+  - P(Sharpe above 60/40) 94%; P(smaller drawdown) 97%.
+  - P(month-end drawdown worse than −14.1%) 14%, worse than −20% 1.4%.
+  - Any single year: 52% chance of trailing 60/40, 14% chance of a loss.
+- **Synthetic shocks, worse than history:**
+  - **Crash day** (−20% equities and Bitcoin): about −9%, versus −16% for 60/40. The −5% daily breaker trips every time, so the portfolio sits in cash until the next rebalance and can miss a quick rebound.
+  - **Stocks and bonds falling together over 6 months:** −10% on average, versus −22% for 60/40. Stacked on top of a real crash (the 2019-07 start, which runs into Covid), it reached **−21%**, tripping the −20% breaker. That is the realistic worst case.
+  - **Stagflation:** −6%, versus −17% for 60/40.
+  - **Bitcoin −80% while IBIT is held:** about −3 pp extra, as the 5% cap intends.
+- **Failure drills (`tests/test_faults.py`):**
+  - Rejected orders, partial fills, API errors, missing or stale data and zero prices all end in a halt with no wrong trade. Buys never exceed available cash.
+  - Two open findings (xfail tests):
+    - **F1:** sells that filled before a mid-rebalance API error are not logged.
+    - **F2:** a blank (NaN) latest close is silently replaced by the previous day's close.
+  - Both are for the owner to decide on.
+
 ## How routines should use this
 - In `/monthly-review`, the headline comparison is **Core & Shield against 60/40**. Compare the month's return, cash weight and drawdown with the normal ranges. When 60/40 fell, report the share of its loss that C&S took (the norm is about 63%).
 - In months when Bitcoin moves sharply, note IBIT's contribution separately.

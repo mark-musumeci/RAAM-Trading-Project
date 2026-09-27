@@ -127,7 +127,8 @@ def breaker_from_cfg(cfg: dict) -> dict | None:
 
 
 def run(bars: dict, cfg: dict, cost_bps: float, no_trend: bool = False,
-        breaker: dict | None = None) -> dict:
+        breaker: dict | None = None, delay: int = 1) -> dict:
+    """delay: trading days from the signal close to the fill open (live = 1, the next session)."""
     cash = cfg["universe"]["cash"]
     assets = raam.tradable_symbols(cfg)
     cal = list(bars["SPY"].index)
@@ -140,7 +141,7 @@ def run(bars: dict, cfg: dict, cost_bps: float, no_trend: bool = False,
     signals = []
     try:
         for t in month_ends(cal)[:-1]:
-            if idx[t] + 1 >= len(cal):
+            if idx[t] + delay >= len(cal):
                 break
             window = {s: bars[s][(bars[s].index <= t) &
                                   (bars[s].index >= t - dt.timedelta(days=hist_days))] for s in assets}
@@ -148,7 +149,7 @@ def run(bars: dict, cfg: dict, cost_bps: float, no_trend: bool = False,
                 sig = raam.compute_signal(window, cfg, t)
             except raam.Halt:
                 continue                        # warm-up: not enough history yet
-            signals.append((t, cal[idx[t] + 1], sig["targets"]))
+            signals.append((t, cal[idx[t] + delay], sig["targets"]))
     finally:
         raam.atr_trend_series = orig_trend
 
