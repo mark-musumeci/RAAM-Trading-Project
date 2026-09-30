@@ -3,6 +3,26 @@
 Findings from Claude web research (WebSearch/WebFetch), newest first. Context only: research never changes RAAM signals or weights.
 Format per entry: `## YYYY-MM-DD — topic`, question asked, 3–6 bullet summary, flags (if any), sources.
 
+## 2026-09-30 — month-end scan (effective month 2026-10)
+
+Searched: structural news for iShares (IJH, IJR, EFA, EEM, AGG, TIP, IGOV, IBIT), Vanguard (VV, VAW), SPDR (RWR, BIL, SPY), Invesco (DBC), plus September macro recap.
+
+- iShares: August liquidations (AGRH, BELT, EAOx allocation ETFs, IEDI) and GBF→AGGM ticker change (Sept 1) involve non-universe funds; AGG itself unaffected.
+- Vanguard VV/VAW: only routine distributions, no structural news. RWR/BIL: no liquidation or index change found (RWR index change was Sept 2024).
+- IBIT: trading normally on 2026-09-30 (~$47-48); no halt or regulatory action found. DBC: none found.
+- Macro: Yields surged; 10Y at highest since 2007, 30Y at 5.613% (highest since 2002). S&P 500 about -0.4% for September, Dow about -4.3%, tech the only positive sector.
+- REITs, Materials and Financials about -7% in September on rising oil/yields; gold fell ~4% in one day; oil eased on US-Iran de-escalation hopes.
+
+**Flags:** none
+
+Sources:
+- https://mutualfundobserver.com/2026/09/ishares-closed-etfs-graveyard/
+- https://www.globenewswire.com/news-release/2026/09/11/3360474/0/en/vanguard-announces-cash-distributions-for-the-vanguard-etfs.html
+- https://etfdb.com/etf/RWR/
+- https://www.investing.com/etfs/ibit-nasdaq
+- https://www.cnbc.com/2026/09/28/stock-market-today-live-updates.html
+- https://investrade.com/market-review-september-30-2026/
+
 ## 2026-09-24 — month-end scan (effective month 2026-09, close-routine dry-run)
 
 Searched: structural news for all 12 universe ETFs grouped by issuer (iShares: IJH, IJR, EFA, EEM, AGG, TIP, IGOV; Vanguard: VV, VAW; SPDR/State Street: RWR, BIL; Invesco: DBC), plus macro backdrop for US/international equities, REITs, commodities and Treasuries.

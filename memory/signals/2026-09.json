@@ -1,0 +1,245 @@
+{
+  "as_of": "2026-09-30",
+  "month": "2026-09",
+  "effective_month": "2026-10",
+  "generated_at": "2026-09-30T21:44:52+00:00",
+  "params": {
+    "lookbacks": {
+      "momentum_days": 84,
+      "correlation_days": 84,
+      "ewma_lambda": 0.94,
+      "vol_smooth_days": 10,
+      "atr_days": 42,
+      "upper_band_close_days": 63,
+      "lower_band_low_days": 105,
+      "history_calendar_days": 800
+    },
+    "ranking": {
+      "top_n": 5,
+      "w_momentum": 0.3333,
+      "w_volatility": 0.3333,
+      "w_correlation": 0.3334,
+      "tiebreak_x": 1000,
+      "momentum_hurdle": "cash",
+      "w_trend": 0
+    },
+    "ambiguities": {
+      "rank_convention": "1_is_best",
+      "tiebreak_sign": -1,
+      "vol_estimator": "close",
+      "lower_band": "hhv_low_minus_atr",
+      "trend_signal_lag_days": 1
+    }
+  },
+  "portfolio": {
+    "name": "Core & Shield",
+    "core": {
+      "SPY": 0.3,
+      "AGG": 0.2
+    },
+    "shield_weight": 0.5
+  },
+  "shield_targets": {
+    "VV": 0.0,
+    "IJH": 0.0,
+    "IJR": 0.0,
+    "EFA": 0.0,
+    "EEM": 0.0,
+    "RWR": 0.0,
+    "DBC": 0.2,
+    "VAW": 0.0,
+    "AGG": 0.0,
+    "TIP": 0.0,
+    "IGOV": 0.0,
+    "IBIT": 0.2,
+    "BIL": 0.6
+  },
+  "momentum_hurdle": {
+    "mode": "cash",
+    "value_pct": 1.17,
+    "cash_asset": "BIL"
+  },
+  "table": [
+    {
+      "symbol": "RWR",
+      "momentum_pct": -0.757,
+      "vol_pct": 10.806,
+      "avg_corr": 0.0644,
+      "trend": -2,
+      "rank_M": 5.0,
+      "rank_V": 5.0,
+      "rank_C": 2.0,
+      "score": 4.0006,
+      "selected": true,
+      "weight": 0.0
+    },
+    {
+      "symbol": "DBC",
+      "momentum_pct": 7.769,
+      "vol_pct": 19.965,
+      "avg_corr": -0.2524,
+      "trend": -2,
+      "rank_M": 2.0,
+      "rank_V": 10.0,
+      "rank_C": 1.0,
+      "score": 4.3252,
+      "selected": true,
+      "weight": 0.2
+    },
+    {
+      "symbol": "TIP",
+      "momentum_pct": -3.774,
+      "vol_pct": 4.648,
+      "avg_corr": 0.3853,
+      "trend": -2,
+      "rank_M": 9.0,
+      "rank_V": 1.0,
+      "rank_C": 4.0,
+      "score": 4.6704,
+      "selected": true,
+      "weight": 0.0
+    },
+    {
+      "symbol": "IBIT",
+      "momentum_pct": 16.918,
+      "vol_pct": 44.225,
+      "avg_corr": 0.2308,
+      "trend": -2,
+      "rank_M": 1.0,
+      "rank_V": 12.0,
+      "rank_C": 3.0,
+      "score": 5.3162,
+      "selected": true,
+      "weight": 0.2
+    },
+    {
+      "symbol": "AGG",
+      "momentum_pct": -3.205,
+      "vol_pct": 5.03,
+      "avg_corr": 0.4399,
+      "trend": -2,
+      "rank_M": 8.0,
+      "rank_V": 2.0,
+      "rank_C": 7.0,
+      "score": 5.67,
+      "selected": true,
+      "weight": 0.0
+    },
+    {
+      "symbol": "VV",
+      "momentum_pct": 1.269,
+      "vol_pct": 10.919,
+      "avg_corr": 0.4733,
+      "trend": -2,
+      "rank_M": 3.0,
+      "rank_V": 6.0,
+      "rank_C": 9.0,
+      "score": 5.999,
+      "selected": false,
+      "weight": 0.0
+    },
+    {
+      "symbol": "IJR",
+      "momentum_pct": -1.091,
+      "vol_pct": 10.771,
+      "avg_corr": 0.4665,
+      "trend": -2,
+      "rank_M": 6.0,
+      "rank_V": 4.0,
+      "rank_C": 8.0,
+      "score": 6.0013,
+      "selected": false,
+      "weight": 0.0
+    },
+    {
+      "symbol": "EFA",
+      "momentum_pct": 1.05,
+      "vol_pct": 12.695,
+      "avg_corr": 0.5211,
+      "trend": -2,
+      "rank_M": 4.0,
+      "rank_V": 8.0,
+      "rank_C": 12.0,
+      "score": 7.9993,
+      "selected": false,
+      "weight": 0.0
+    },
+    {
+      "symbol": "IGOV",
+      "momentum_pct": -4.788,
+      "vol_pct": 7.475,
+      "avg_corr": 0.4816,
+      "trend": -2,
+      "rank_M": 11.0,
+      "rank_V": 3.0,
+      "rank_C": 10.0,
+      "score": 8.005,
+      "selected": false,
+      "weight": 0.0
+    },
+    {
+      "symbol": "IJH",
+      "momentum_pct": -2.941,
+      "vol_pct": 11.048,
+      "avg_corr": 0.491,
+      "trend": -2,
+      "rank_M": 7.0,
+      "rank_V": 7.0,
+      "rank_C": 11.0,
+      "score": 8.3365,
+      "selected": false,
+      "weight": 0.0
+    },
+    {
+      "symbol": "VAW",
+      "momentum_pct": -5.094,
+      "vol_pct": 16.442,
+      "avg_corr": 0.4172,
+      "trend": -2,
+      "rank_M": 12.0,
+      "rank_V": 9.0,
+      "rank_C": 5.0,
+      "score": 8.6714,
+      "selected": false,
+      "weight": 0.0
+    },
+    {
+      "symbol": "EEM",
+      "momentum_pct": -4.203,
+      "vol_pct": 22.742,
+      "avg_corr": 0.42,
+      "trend": -2,
+      "rank_M": 10.0,
+      "rank_V": 11.0,
+      "rank_C": 6.0,
+      "score": 9.0039,
+      "selected": false,
+      "weight": 0.0
+    }
+  ],
+  "targets": {
+    "VV": 0.0,
+    "IJH": 0.0,
+    "IJR": 0.0,
+    "EFA": 0.0,
+    "EEM": 0.0,
+    "RWR": 0.0,
+    "DBC": 0.1,
+    "VAW": 0.0,
+    "AGG": 0.2,
+    "TIP": 0.0,
+    "IGOV": 0.0,
+    "IBIT": 0.05,
+    "BIL": 0.35,
+    "SPY": 0.3
+  },
+  "caps_applied": {
+    "IBIT": {
+      "uncapped": 0.1,
+      "cap": 0.05,
+      "to_cash": 0.05
+    }
+  },
+  "executed": null,
+  "data_feed": "sip"
+}
