@@ -1,0 +1,3 @@
+- Portfolio not yet invested: equity is $100,000 equal to contributions, with no holdings; the first rebalance is pending, so there is no Core or Shield contribution.
+- No Core & Shield return is available. In September, 60/40 returned -1.24%, 30/70 -1.923% and SPY -0.329%.
+- All backtest checks are n/a because the portfolio is not invested. Next allocation: BIL 35%, SPY 30%, AGG 20%, DBC 10%, IBIT 5%.
