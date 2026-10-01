@@ -240,6 +240,71 @@
       "to_cash": 0.05
     }
   },
-  "executed": null,
+  "executed": {
+    "at": "2026-10-01T14:47:09+00:00",
+    "date": "2026-10-01",
+    "fills": [
+      {
+        "id": "bec72ea3-d221-40b5-add9-488b5088db9a",
+        "symbol": "AGG",
+        "side": "buy",
+        "status": "filled",
+        "filled_qty": "211.477045696",
+        "filled_avg_price": "94.1",
+        "notional": "19900",
+        "qty": null,
+        "ref_price": 94.115,
+        "slippage_bps": -1.6
+      },
+      {
+        "id": "8f01597a-1210-4c06-b21e-6c7aba7f6f2f",
+        "symbol": "BIL",
+        "side": "buy",
+        "status": "filled",
+        "filled_qty": "380.975713816",
+        "filled_avg_price": "91.41",
+        "notional": "34825",
+        "qty": null,
+        "ref_price": 91.405,
+        "slippage_bps": 0.5
+      },
+      {
+        "id": "6ec08ad1-bbae-4cbe-a6d9-c93d5ffd8a13",
+        "symbol": "DBC",
+        "side": "buy",
+        "status": "filled",
+        "filled_qty": "305.965252152",
+        "filled_avg_price": "32.52",
+        "notional": "9950",
+        "qty": null,
+        "ref_price": 32.5,
+        "slippage_bps": 6.2
+      },
+      {
+        "id": "d9b950af-6ea5-4a77-8339-004d304d9f53",
+        "symbol": "IBIT",
+        "side": "buy",
+        "status": "filled",
+        "filled_qty": "104.692550505",
+        "filled_avg_price": "47.52",
+        "notional": "4975",
+        "qty": null,
+        "ref_price": 47.57,
+        "slippage_bps": -10.5
+      },
+      {
+        "id": "842c48ef-17ee-47cf-acd1-2ccbc129ab8b",
+        "symbol": "SPY",
+        "side": "buy",
+        "status": "filled",
+        "filled_qty": "39.207450511",
+        "filled_avg_price": "761.334635",
+        "notional": "29850",
+        "qty": null,
+        "ref_price": 761.31,
+        "slippage_bps": 0.3
+      }
+    ]
+  },
   "data_feed": "sip"
 }
