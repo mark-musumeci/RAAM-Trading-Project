@@ -1,11 +1,11 @@
 {
-  "high_water_mark": 100270.86,
+  "high_water_mark": 100568.39,
   "circuit_breaker": {
     "tripped": false,
     "reason": null,
     "tripped_on": null
   },
-  "last_health": "2026-10-01T21:44:01+00:00",
+  "last_health": "2026-10-02T21:44:03+00:00",
   "equity_history": [
     {
       "date": "2026-09-23",
@@ -34,6 +34,10 @@
     {
       "date": "2026-10-01",
       "equity": 100270.86
+    },
+    {
+      "date": "2026-10-02",
+      "equity": 100568.39
     }
   ]
 }
