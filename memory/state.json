@@ -5,7 +5,7 @@
     "reason": null,
     "tripped_on": null
   },
-  "last_health": "2026-10-08T21:43:53+00:00",
+  "last_health": "2026-10-09T21:44:09+00:00",
   "equity_history": [
     {
       "date": "2026-09-23",
@@ -54,6 +54,10 @@
     {
       "date": "2026-10-08",
       "equity": 100602.41
+    },
+    {
+      "date": "2026-10-09",
+      "equity": 100859.06
     }
   ]
 }
