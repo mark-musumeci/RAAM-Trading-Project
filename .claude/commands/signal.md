@@ -26,4 +26,8 @@ Month-end signal. Follow the SOP in CLAUDE.md.
 6. **Pre-flight for tomorrow's rebalance:** skip this for dry runs. Run `python3 scripts/raam.py preflight`.
    - `halt` → add `⚠️ preflight: <reason>` to the Discord message. Tomorrow's rebalance would likely fail, so the owner needs to know tonight.
    - Warnings, such as an ETF that isn't fractionable and will use whole-share orders, get one short line.
-7. Discord: `RAAM signal <month> → <effective month> | Shield: VV, EFA, RWR + BIL 40% | Portfolio: SPY 30%, AGG 20%, VV 10%, ... | changes: +X -Y | executes next trading day ~09:45–10:45 ET`.
+7. **Shadow variants:** run `python3 scripts/shadow.py`. Add `--dry-run` for dry runs, and `--date D` when `force_date` is given.
+   - It records what the pre-registered variants in `config/shadow.json` would hold next month, then refreshes `memory/SHADOW-LOG.md`. Nothing is traded.
+   - Context only: never cite it as a reason for anything.
+   - If it returns `error` or `halt`, add `shadow: <reason>` to the Discord message and carry on. It never blocks the signal.
+8. Discord: `RAAM signal <month> → <effective month> | Shield: VV, EFA, RWR + BIL 40% | Portfolio: SPY 30%, AGG 20%, VV 10%, ... | changes: +X -Y | executes next trading day ~09:45–10:45 ET`.

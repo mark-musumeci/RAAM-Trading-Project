@@ -23,5 +23,11 @@ Monthly review (runs on the first trading day of the month, after the close). Fo
      - Never change the criteria. If one can't be measured, write n/a with the reason.
    - Include "Open questions" only if something relates to the ambiguities A1–A7 in TRADING-STRATEGY.md.
    - Plain facts. No strategy changes.
-3. Update the milestone checkboxes in `memory/PROJECT-STATUS.md` if any were reached.
-4. Discord: `RAAM <month> review: Core & Shield X% vs 60/40 Y% (Core A%, Shield B%) | best <ETF>, worst <ETF> | scorecard <n> pass / <m> fail`.
+3. **Shadow variants:** run `python3 scripts/shadow.py`. On the first trading day it closes last month's shadow returns and refreshes `memory/SHADOW-LOG.md`.
+   - Add a short **"Shadow variants"** part to the review section:
+     - last month's return for each variant and 60/40, plus since start;
+     - the gap *Live account − Live model*, as evidence for B4 (replication).
+   - Plain facts only. Never recommend switching variants; that is the owner's decision at a checkpoint.
+   - If the script errors, write "shadow: <reason>" and carry on.
+4. Update the milestone checkboxes in `memory/PROJECT-STATUS.md` if any were reached.
+5. Discord: `RAAM <month> review: Core & Shield X% vs 60/40 Y% (Core A%, Shield B%) | best <ETF>, worst <ETF> | scorecard <n> pass / <m> fail`.

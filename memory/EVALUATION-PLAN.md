@@ -54,6 +54,7 @@
   - swapping VV→TLT and VAW→GLD;
   - capped risk-based sizing;
   - staggered rebalancing.
+- **Shadow variants** (from October 2026): `scripts/shadow.py` tracks the variants pre-registered in `config/shadow.json` every month without trading them, in `memory/SHADOW-LOG.md`. The variants are: no Bitcoin, Core 50% SPY, Core 40/10, and Bitcoin as a separate 5% satellite. This gives live evidence for checkpoint decisions without resetting this evaluation. The *Live model* row against the live account is extra monthly evidence for B4. The variants are judged only at checkpoints, never adopted mid-month, and never added or changed because of results already seen.
 - The rating (69/100 at the start) is updated at each checkpoint using these results.
 
 ## Change log
@@ -61,3 +62,4 @@
 |---|---|---|
 | 2026-09-26 | Plan written before the first trade | owner |
 | 2026-09-26 | IBIT added (capped at 5%) **before the first trade**. B1/B3/B5 reference numbers updated from the 2015–2026 backtest, and O8 added. Criteria otherwise unchanged. | owner |
+| 2026-10-14 | Shadow tracking of 4 pre-registered variants added (`config/shadow.json`). Evidence only: criteria and the live strategy unchanged. | owner |

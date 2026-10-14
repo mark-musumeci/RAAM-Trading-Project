@@ -10,7 +10,7 @@ The strategy rules are in `memory/TRADING-STRATEGY.md`. The parameters are in `c
 
 ## Your role: operator, not strategist
 - **Do not override the model.** This covers both the Core weights and the Shield signal. Never change targets, pick different ETFs, skip a rebalance "because the market looks bad", add stops, or trade intra-month. RAAM is a monthly, rules-based model.
-- **Do not edit** `config/raam.json`, `scripts/`, `.claude/`, or the rules in `TRADING-STRATEGY.md` during a routine run. Rule changes happen only in an interactive session at the owner's request.
+- **Do not edit** `config/` (`raam.json`, `shadow.json`), `scripts/`, `.claude/`, or the rules in `TRADING-STRATEGY.md` during a routine run. Rule changes happen only in an interactive session at the owner's request.
 - **Do not place orders** other than through `scripts/raam.py rebalance`, or through `/trade` when the owner explicitly asks in an interactive session.
 - **You may halt.** If something looks wrong, stop and alert via Discord rather than improvising. Examples: stale data, a fund closing or delisting, weights that don't add up, unexpected positions, an Alpaca error. A missed rebalance is cheap. A wrong trade is not.
 - Research (your own WebSearch/WebFetch tools, see `.claude/commands/research.md`) is **context only**. It feeds the logs and summaries and never the allocation. The one exception: a research finding of a *structural* problem with a held or targeted ETF is grounds to halt. Examples are a closure, merger, ticker change, or trading halt.
@@ -18,7 +18,7 @@ The strategy rules are in `memory/TRADING-STRATEGY.md`. The parameters are in `c
 ## Standard operating procedure (every run)
 1. **Sync:** `git pull --rebase origin main`. Check that deps import: `python3 -c "import pandas, numpy, requests"`. If that fails, run `pip install -r requirements.txt`.
 2. **Act:** run the slash command(s) the routine asks for, in order. Each command explains its own steps.
-3. **Log:** update the relevant `memory/*.md` files. The scripts already write `signals/*.json`, `state.json`, `SIGNAL-LOG.md` and `TRADE-LOG.md`; do not hand-edit those.
+3. **Log:** update the relevant `memory/*.md` files. The scripts already write `signals/*.json`, `state.json`, `SIGNAL-LOG.md`, `TRADE-LOG.md`, `shadow/*.json` and `SHADOW-LOG.md`; do not hand-edit those.
 4. **Commit & push:** `git add memory && git commit -m "<routine>: <YYYY-MM-DD> <one-line result>"`, then `git push origin HEAD:main`. If the push is rejected, run `git pull --rebase origin main` and push again. If it still fails, say so in the Discord message.
 5. **Notify:** send **one** Discord message per run with `bash scripts/discord.sh "<text>"`. When a run executes several commands, each command's "Discord:" step contributes one line to a single combined message, sent once at the end after the push. Keep it short:
    - Prefix `RAAM` for normal runs and `RAAM ⚠️` for halts or errors.
@@ -34,6 +34,7 @@ The strategy rules are in `memory/TRADING-STRATEGY.md`. The parameters are in `c
 | Health / snapshot | `python3 scripts/raam.py health [--dry-run]` |
 | Month review numbers | `python3 scripts/raam.py review [--month YYYY-MM] [--force]` |
 | Pre-flight (read-only readiness check) | `python3 scripts/raam.py preflight` |
+| Shadow variants (tracked, never traded) | `python3 scripts/shadow.py [--date D] [--force] [--dry-run]` |
 | Raw Alpaca | `bash scripts/alpaca.sh account\|positions\|orders\|clock\|quote SYM\|...` |
 | Research | your WebSearch / WebFetch tools (see `.claude/commands/research.md`) |
 | Discord | `bash scripts/discord.sh "message"` or `bash scripts/discord.sh --file <path> "message"` |
