@@ -1,0 +1,79 @@
+{
+  "month": "2026-09",
+  "as_of": "2026-09-30",
+  "effective_month": "2026-10",
+  "recorded_at": "2026-10-14T22:02:12+00:00",
+  "variants": {
+    "Live model": {
+      "targets": {
+        "AGG": 0.2,
+        "BIL": 0.35,
+        "DBC": 0.1,
+        "IBIT": 0.05,
+        "SPY": 0.3
+      },
+      "shield_picks": [
+        "DBC",
+        "IBIT",
+        "BIL"
+      ],
+      "source": "live signal file"
+    },
+    "No Bitcoin": {
+      "targets": {
+        "AGG": 0.2,
+        "BIL": 0.3,
+        "DBC": 0.1,
+        "SPY": 0.3,
+        "VV": 0.1
+      },
+      "shield_picks": [
+        "VV",
+        "DBC",
+        "BIL"
+      ]
+    },
+    "Core 50% SPY": {
+      "targets": {
+        "BIL": 0.35,
+        "DBC": 0.1,
+        "IBIT": 0.05,
+        "SPY": 0.5
+      },
+      "shield_picks": [
+        "DBC",
+        "IBIT",
+        "BIL"
+      ]
+    },
+    "Core 40% SPY / 10% AGG": {
+      "targets": {
+        "AGG": 0.1,
+        "BIL": 0.35,
+        "DBC": 0.1,
+        "IBIT": 0.05,
+        "SPY": 0.4
+      },
+      "shield_picks": [
+        "DBC",
+        "IBIT",
+        "BIL"
+      ]
+    },
+    "Bitcoin satellite": {
+      "targets": {
+        "AGG": 0.2,
+        "BIL": 0.27,
+        "DBC": 0.09,
+        "IBIT": 0.05,
+        "SPY": 0.3,
+        "VV": 0.09
+      },
+      "shield_picks": [
+        "VV",
+        "DBC",
+        "BIL"
+      ]
+    }
+  }
+}
