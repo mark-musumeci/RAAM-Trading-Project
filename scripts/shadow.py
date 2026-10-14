@@ -26,6 +26,7 @@ import pandas as pd
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import raam  # noqa: E402
+import report  # noqa: E402
 
 SHADOW_CONFIG = raam.ROOT / "config" / "shadow.json"
 
@@ -131,12 +132,9 @@ def _turnover(new: dict, old: dict) -> float:
 def account_return(client, start: dt.date, end: dt.date) -> float | None:
     """Live account equity, close of `start` to close of `end` (after real costs)."""
     try:
-        h = client.portfolio_history(start, end) or {}
+        s = report.equity_series(client, start, end)
     except Exception:  # noqa: BLE001 - the account column is optional context
         return None
-    s = pd.Series(h.get("equity") or [], index=[dt.datetime.fromtimestamp(t, raam.ET).date()
-                                                for t in (h.get("timestamp") or [])], dtype=float).dropna()
-    s = s[(s > 0) & (s.index >= start) & (s.index <= end)]
     return float(s.iloc[-1] / s.iloc[0] - 1.0) if len(s) >= 2 else None
 
 

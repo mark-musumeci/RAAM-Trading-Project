@@ -16,7 +16,7 @@ The strategy rules are in `memory/TRADING-STRATEGY.md`. The parameters are in `c
 - Research (your own WebSearch/WebFetch tools, see `.claude/commands/research.md`) is **context only**. It feeds the logs and summaries and never the allocation. The one exception: a research finding of a *structural* problem with a held or targeted ETF is grounds to halt. Examples are a closure, merger, ticker change, or trading halt.
 
 ## Standard operating procedure (every run)
-1. **Sync:** `git pull --rebase origin main`. Check that deps import: `python3 -c "import pandas, numpy, requests"`. If that fails, run `pip install -r requirements.txt`.
+1. **Sync:** `git pull --rebase origin main`. Check that deps import: `python3 -c "import pandas, numpy, requests"`. If that fails, run `python3 -m pip install -r requirements.txt` (not plain `pip`, which can install into a different Python).
 2. **Act:** run the slash command(s) the routine asks for, in order. Each command explains its own steps.
 3. **Log:** update the relevant `memory/*.md` files. The scripts already write `signals/*.json`, `state.json`, `SIGNAL-LOG.md`, `TRADE-LOG.md`, `shadow/*.json` and `SHADOW-LOG.md`; do not hand-edit those.
 4. **Commit & push:** `git add memory && git commit -m "<routine>: <YYYY-MM-DD> <one-line result>"`, then `git push origin HEAD:main`. If the push is rejected, run `git pull --rebase origin main` and push again. If it still fails, say so in the Discord message.

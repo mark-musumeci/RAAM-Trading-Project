@@ -50,7 +50,7 @@ bash scripts/discord.sh "RAAM test"
      - This is the **only** place routines get keys from; the scripts never read a `.env` file in the cloud.
      - Do not use the "API credentials" section. Those keys are injected by a proxy and are never visible to the scripts.
    - **Network access:** Custom. Allow `paper-api.alpaca.markets`, `data.alpaca.markets` and `discord.com`, and tick "include default package managers".
-   - **Setup script:** `pip install -r requirements.txt`
+   - **Setup script:** `python3 -m pip install -r requirements.txt`
 2. **Routines.** Create them with `/schedule` or at claude.ai/code/routines:
    - repo `musu-codes/RAAM-Trading-Project`;
    - the environment above;

@@ -60,12 +60,21 @@ def inception_date() -> dt.date | None:
 
 
 def equity_series(client, start: dt.date, end: dt.date) -> pd.Series:
+    """Daily account equity (each day's close), start..end.
+
+    Alpaca adds a day's close to the daily history only after that day ends, so when `end` is
+    today the last point comes from the live account equity instead."""
     h = client.portfolio_history(start, end) or {}
     s = pd.Series(h.get("equity") or [], index=[
         dt.datetime.fromtimestamp(t, raam.ET).date() for t in (h.get("timestamp") or [])],
         dtype=float).dropna()
-    s = s[s > 0]
-    return s[~s.index.duplicated(keep="last")].sort_index()
+    s = s[(s > 0) & (s.index >= start) & (s.index <= end)]
+    s = s[~s.index.duplicated(keep="last")].sort_index()
+    if end == raam.today_et() and (s.empty or s.index[-1] < end):
+        today = float(client.account()["equity"])
+        if today > 0:
+            s = pd.concat([s, pd.Series([today], index=[end], dtype=float)])
+    return s
 
 
 def fmt_pct(x, signed=True, nd=2):

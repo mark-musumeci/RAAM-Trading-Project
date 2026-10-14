@@ -94,6 +94,30 @@ Context only. These changed nothing in the strategy or the evaluation criteria.
     - **F1:** sells that filled before a mid-rebalance API error were not logged. Now the completed orders and the failed one are written to TRADE-LOG and the signal file, and the run halts.
     - **F2:** a blank (NaN) latest close was silently replaced by the previous day's close. Now any blank or non-positive close in the lookback window halts the signal.
 
+## Robustness (2026-10-14, `backtest/robustness.py` → [`backtest/results/ROBUSTNESS.md`](../backtest/results/ROBUSTNESS.md))
+Context only. These changed nothing in the strategy or the evaluation criteria.
+- **Does the ranking have skill?** The live ranking was compared with 1,000 portfolios whose Shield holds 5 *random* candidates each month, with every other rule identical.
+  - It beat **94–98%** of them on Sharpe and **97–100%** on down-market defence, in both windows (2015–26 with Bitcoin; 2008–26 without), at portfolio level and for the Shield alone.
+  - On raw return it beat 63–98%. On the worst single day it beat only about half: a monthly model can't react to a one-day crash.
+  - **The edge is real, and it is mainly defence and risk-adjusted return.**
+- **Which parts matter:**
+  - *Momentum only* (top 5 by momentum) earns more but defends much worse: 83% of 60/40's down-month losses against 63%, and a worst daily drop of −17.7% against −14.1%. The volatility and correlation ranks are what make it defensive.
+  - *No ranking* (all 12 with the cash test) matched the Sharpe in 2015–26 but trailed over 2008–26 (0.84 vs 0.93) and defended worse. The cash test does a lot of the work; the ranking adds defence on top.
+- **Long history without Bitcoin (Mar 2008 → Sep 2026, 223 months, IGOV extended with BWX):**
+
+  | | C&S (no Bitcoin) | 60/40 | SPY |
+  |---|---|---|---|
+  | Return / yr | 6.6% | 8.5% | 12.0% |
+  | Sharpe | 0.93 | 0.85 | 0.78 |
+  | Worst month-end drop | −19.0% | −30.2% | −47.2% |
+
+  - Worst daily drop **−22.0%** (9 Mar 2009). The breaker tripped once (23 Feb 2009).
+  - Crisis years: 2008 −11.4% against 60/40's −17.2%; 2022 −7.8% against −15.2%.
+  - Bull years lag badly: 2015–19 returned 4.2%/yr against 8.4%. It was ahead of 60/40 in only 5 of 19 calendar years, and beat it in 23% of rolling 12-month windows.
+- **For judging live months:**
+  - Without Bitcoin's contribution, expect a defensive product: about 2%/yr below 60/40 in normal markets, with roughly a third smaller drawdowns.
+  - **A 2008-type crisis realistically means about −20% to −22%.** That is worse than the −14.1% in "Normal ranges", and the strategy would still be working as designed.
+
 ## How routines should use this
 - In `/monthly-review`, the headline comparison is **Core & Shield against 60/40**. Compare the month's return, cash weight and drawdown with the normal ranges. When 60/40 fell, report the share of its loss that C&S took (the norm is about 63%).
 - In months when Bitcoin moves sharply, note IBIT's contribution separately.

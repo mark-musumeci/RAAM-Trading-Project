@@ -89,3 +89,22 @@ def test_holdings_after_executed_rebalance(renv, capsys):
 def test_missing_notes_file_still_renders(renv, capsys):
     code, out = run(["--date", "2026-09-30", "--notes-file", "does-not-exist.txt"], capsys)
     assert code == 0 and out["status"] == "ok"
+
+
+class HistoryLagsOneDay(FakeWithHistory):
+    """Like Alpaca: today's close is not in the daily history until the day has ended."""
+
+    def portfolio_history(self, start, end):
+        h = super().portfolio_history(start, end - dt.timedelta(days=1))
+        return h
+
+
+def test_equity_series_adds_today_from_the_live_account(renv):
+    fake = HistoryLagsOneDay()
+    fake.equity = 123_456.0
+    renv.mp.setattr(raam, "today_et", lambda: dt.date(2026, 10, 14))
+    s = report.equity_series(fake, dt.date(2026, 9, 30), dt.date(2026, 10, 14))
+    assert s.index[-1] == dt.date(2026, 10, 14) and s.iloc[-1] == pytest.approx(123_456.0)
+    assert s.index[-2] == dt.date(2026, 10, 13)
+    past = report.equity_series(fake, dt.date(2026, 9, 30), dt.date(2026, 10, 9))
+    assert past.index[-1] == dt.date(2026, 10, 8)      # not today: the history is used as-is

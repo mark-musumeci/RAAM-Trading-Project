@@ -126,15 +126,13 @@ def breaker_from_cfg(cfg: dict) -> dict | None:
             "day": -float(g["circuit_breaker_daily_loss_pct"])}
 
 
-def run(bars: dict, cfg: dict, cost_bps: float, no_trend: bool = False,
-        breaker: dict | None = None, delay: int = 1) -> dict:
-    """delay: trading days from the signal close to the fill open (live = 1, the next session)."""
-    cash = cfg["universe"]["cash"]
+def signals_for(bars: dict, cfg: dict, no_trend: bool = False, delay: int = 1) -> list[tuple]:
+    """Month-end signals as (signal date, fill date, targets, full signal).
+    delay: trading days from the signal close to the fill open (live = 1, the next session)."""
     assets = raam.tradable_symbols(cfg)
     cal = list(bars["SPY"].index)
     idx = {d: i for i, d in enumerate(cal)}
     hist_days = cfg["lookbacks"]["history_calendar_days"]
-
     orig_trend = raam.atr_trend_series
     if no_trend:
         raam.atr_trend_series = lambda b, *a, **k: pd.Series(0, index=b.index)
@@ -149,10 +147,25 @@ def run(bars: dict, cfg: dict, cost_bps: float, no_trend: bool = False,
                 sig = raam.compute_signal(window, cfg, t)
             except raam.Halt:
                 continue                        # warm-up: not enough history yet
-            signals.append((t, cal[idx[t] + delay], sig["targets"]))
+            signals.append((t, cal[idx[t] + delay], sig["targets"], sig))
     finally:
         raam.atr_trend_series = orig_trend
+    return signals
 
+
+def run(bars: dict, cfg: dict, cost_bps: float, no_trend: bool = False,
+        breaker: dict | None = None, delay: int = 1) -> dict:
+    return simulate(bars, cfg, signals_for(bars, cfg, no_trend, delay), cost_bps, breaker)
+
+
+def simulate(bars: dict, cfg: dict, signals: list[tuple], cost_bps: float,
+             breaker: dict | None = None) -> dict:
+    """Trade a list of (signal date, fill date, targets, ...) on the daily path: fill at the open,
+    hold to the next fill, costs on turnover, optional circuit breaker."""
+    cash = cfg["universe"]["cash"]
+    assets = raam.tradable_symbols(cfg)
+    cal = list(bars["SPY"].index)
+    idx = {d: i for i, d in enumerate(cal)}
     cols = sorted(set(assets + EW_BENCH + ["SPY", "AGG"]))
     opens = pd.DataFrame({s: bars[s]["o"] for s in cols}).reindex(cal)
     closes = pd.DataFrame({s: bars[s]["c"] for s in cols}).reindex(cal)
@@ -161,7 +174,7 @@ def run(bars: dict, cfg: dict, cost_bps: float, no_trend: bool = False,
     periods, daily, trips = [], [], []
     prev_w = {s: 0.0 for s in assets}
     value, peak, prev_close_val = 1.0, 1.0, None
-    for k, (t, entry, w) in enumerate(signals):
+    for k, (t, entry, w, *_) in enumerate(signals):
         last = k + 1 >= len(signals)
         exit_ = cal[-1] if last else signals[k + 1][1]
         turnover = sum(abs(w.get(s, 0) - prev_w.get(s, 0)) for s in assets)

@@ -13,7 +13,7 @@ only when the owner decides them, and they are recorded in the change log at the
 | Half | Weight | Holdings | Rule |
 |---|---|---|---|
 | **Core** | 50% | **SPY 30% + AGG 20%** | Fixed, and reset to these weights at every monthly rebalance |
-| **Shield** | 50% | RAAM: 5 slots of **10% of the portfolio** each, from the 11 ETFs below, with BIL for failed slots | RAAM rules below; the monthly signal decides it |
+| **Shield** | 50% | RAAM: 5 slots of **10% of the portfolio** each, from the 12 candidates below (11 ETFs + IBIT), with BIL for failed slots | RAAM rules below; the monthly signal decides it |
 
 - Portfolio targets = Core weights + 0.5 × RAAM (Shield) weights. For example, if RAAM picks AGG, total AGG is 20% + 10% = 30%.
 - Configured in `config/raam.json → portfolio`. Setting `core: {}` and `shield_weight: 1.0` runs RAAM alone.
@@ -39,7 +39,7 @@ Computed daily from Alpaca daily bars (split- and dividend-adjusted). The rankin
 |---|---|---|
 | **M**: Absolute Momentum | 4-month (84 sessions) rate of change, % | highest momentum |
 | **V**: Volatility Model | RiskMetrics EWMA volatility, λ = 0.94, annualized, with a 10-day SMA smoothing | lowest volatility |
-| **C**: Average Relative Correlation | mean pairwise correlation of daily returns with the other 10 ETFs over 84 sessions | lowest correlation |
+| **C**: Average Relative Correlation | mean pairwise correlation of daily returns with the other 11 candidates over 84 sessions | lowest correlation |
 | **T**: ATR Trend/Breakout | +2 after the high breaks the upper band, −2 after the low breaks the lower band. It changes the session *after* the break. **Informational only: not scored since improvement A (`w_trend` = 0)** | — |
 
 Bands:
@@ -54,7 +54,7 @@ Bands:
    - The `−M/x` term only breaks ties, in favour of higher momentum.
 3. Take the **5 lowest scores**. Each gets **20% of the Shield**, which is 10% of the portfolio.
 4. **Cash hurdle (Tier 1 upgrade U1):** each of those 5 keeps its 20% only if its momentum **beats the cash asset's own 4-month momentum**. Otherwise its slot moves to **BIL**. If none beat cash, the whole Shield is BIL (50% of the portfolio) while the Core stays invested. The paper's rule was momentum > 0%.
-5. **Timing:** the signal is computed after the close on the last trading day of month *m*. It is executed at about 09:45 ET on the first trading day of month *m+1*. It is held all month; there are no stops and no intra-month trading.
+5. **Timing:** the signal is computed after the close on the last trading day of month *m*. It is executed on the first trading day of month *m+1* at about 10:45 ET in summer (EDT) and 09:45 ET in winter (EST); the routine schedule is fixed in UTC. It is held all month; there are no stops and no intra-month trading.
 
 ## Open ambiguities in the paper (defaults in use)
 
