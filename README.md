@@ -1,4 +1,4 @@
-# 24/7 RAAM Trading Bot — Core & Shield
+# RAAM Trading Bot Project — Core & Shield
 
 An autonomous **Core & Shield** portfolio on an **Alpaca paper account**, run by **Claude Code cloud routines**:
 - **Core, 50%:** a fixed 60/40, 30% SPY + 20% AGG, reset monthly. It does the growing.
