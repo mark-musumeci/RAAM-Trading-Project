@@ -66,37 +66,37 @@ def test_partial_fill_halts(env):
     assert "AGG" in [f["symbol"] for f in out["unfilled"]]
 
 
-def test_api_error_mid_rebalance_stops_submitting(env):
+def _fail_buys(env):
+    orig = env.fake.submit_order
+
+    def submit(**o):
+        if o["side"] == "buy":
+            raise requests.HTTPError("POST /v2/orders -> 503: service unavailable")
+        return orig(**o)
+    env.mp.setattr(env.fake, "submit_order", submit)
+
+
+def test_api_error_mid_rebalance_halts_without_retrying(env):
     targets = _signal(env)
     _hold_unwanted(env, targets)
-    orig = env.fake.submit_order
-
-    def submit(**o):
-        if o["side"] == "buy":
-            raise requests.HTTPError("POST /v2/orders -> 503: service unavailable")
-        return orig(**o)
-    env.mp.setattr(env.fake, "submit_order", submit)
-    assert raam.main(["rebalance", "--date", "2026-10-01"]) == 1        # error, not retried
+    _fail_buys(env)
+    assert raam.main(["rebalance", "--date", "2026-10-01"]) == 2        # halt, not retried
     assert all(o["side"] == "sell" for o in env.fake.submitted)          # nothing after the failure
-    sig = json.loads((env.mem / "signals" / "2026-09.json").read_text())
-    assert not sig["executed"]
+    assert raam.cmd_rebalance(args(date="2026-10-01"), FAST)["status"] == "noop"   # never re-run blindly
 
 
-@pytest.mark.xfail(strict=True, reason="finding F1: sells that filled before a mid-rebalance API "
-                                       "error are not written to TRADE-LOG or the signal file")
 def test_api_error_mid_rebalance_logs_completed_sells(env):
+    """F1: the sells that went through before the error are recorded, with the failed order."""
     targets = _signal(env)
     sold = _hold_unwanted(env, targets)
-    orig = env.fake.submit_order
-
-    def submit(**o):
-        if o["side"] == "buy":
-            raise requests.HTTPError("POST /v2/orders -> 503: service unavailable")
-        return orig(**o)
-    env.mp.setattr(env.fake, "submit_order", submit)
-    raam.main(["rebalance", "--date", "2026-10-01"])
-    log = env.mem / "TRADE-LOG.md"
-    assert log.exists() and sold in log.read_text()
+    _fail_buys(env)
+    out = raam.cmd_rebalance(args(date="2026-10-01"), FAST)
+    assert out["status"] == "halt" and "broker error" in out["reason"]
+    log = (env.mem / "TRADE-LOG.md").read_text()
+    assert sold in log and "error: HTTPError" in log
+    sig = json.loads((env.mem / "signals" / "2026-09.json").read_text())
+    assert "HTTPError" in sig["executed"]["error"]
+    assert [f["symbol"] for f in sig["executed"]["fills"] if f["status"] == "filled"] == [sold]
 
 
 def test_buys_are_scaled_to_available_cash(env):
@@ -114,9 +114,8 @@ def test_buys_are_scaled_to_available_cash(env):
 
 
 # ---------------------------------------------------------------- bad market data
-@pytest.mark.xfail(strict=True, reason="finding F2: a present-but-blank (NaN) latest close is dropped, so "
-                                       "that ETF is silently ranked on the previous day's price")
 def test_nan_latest_close_halts(env):
+    """F2: a blank latest close stops the signal instead of falling back to the previous day."""
     env.fake._bars["EEM"].iloc[-1, env.fake._bars["EEM"].columns.get_loc("c")] = np.nan
     assert _signal_code(env) == 2
     assert not (env.mem / "signals" / "2026-09.json").exists()
@@ -159,3 +158,10 @@ def test_everything_falling_sends_shield_to_cash(env):
     core = CFG["portfolio"]["core"]
     assert targets[CASH] == pytest.approx(CFG["portfolio"]["shield_weight"])
     assert {s: w for s, w in targets.items() if s != CASH and w > 0} == pytest.approx(core)
+
+
+def test_nan_close_inside_lookback_halts(env):
+    b = env.fake._bars["TIP"]
+    b.iloc[-20, b.columns.get_loc("c")] = np.nan
+    assert _signal_code(env) == 2
+    assert not (env.mem / "signals" / "2026-09.json").exists()

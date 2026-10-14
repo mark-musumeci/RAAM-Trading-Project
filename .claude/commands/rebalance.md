@@ -15,5 +15,6 @@ Monthly rebalance. Follow the SOP in CLAUDE.md.
    - `ok` with `dry_run` → report the planned orders and send the Discord message `RAAM DRY RUN rebalance: <orders>`.
    - `ok` with fills → check every order has status `filled`. Send the Discord message `RAAM rebalanced (<reason>): SELL ..., BUY ... | all filled | slippage avg <slippage.avg_bps> bps (worst <symbol> <bps>)`. If `plan.whole_share_symbols` is not empty, add `whole shares: <symbols>`.
    - `halt` / `error` → Discord message `RAAM ⚠️ rebalance halted: <reason>`. **Do not** retry, place manual orders or "fix" anything. The owner decides.
+     - If the reason starts with `broker error part-way through the rebalance`, some orders did go through: the script has already recorded them in `TRADE-LOG.md` and the signal file. Still run step 3 (health) and step 4 (commit) so the record and `state.json` match the account. Name the filled and failed orders in the Discord message.
 3. After a real (non-dry-run) rebalance, run `python3 scripts/raam.py health` so that `state.json` reflects the new positions.
 4. Commit and push. The script has already written `TRADE-LOG.md` and marked the signal as executed.

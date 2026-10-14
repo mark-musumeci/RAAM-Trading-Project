@@ -280,6 +280,11 @@ def compute_signal(bars: dict[str, pd.DataFrame], cfg: dict, as_of: dt.date) -> 
         if b.empty or b.index[-1] != as_of:
             last = None if b.empty else b.index[-1].isoformat()
             raise Halt(f"stale data for {sym}: last bar {last}, expected {as_of.isoformat()}")
+        window = b["c"].iloc[-(max(lb["momentum_days"], lb["correlation_days"]) + 1):]
+        bad = window[~np.isfinite(window) | (window <= 0)]
+        if len(bad):
+            raise Halt(f"bad close for {sym} on {bad.index[-1].isoformat()} ({bad.iloc[-1]}): "
+                       f"blank or non-positive price in the lookback window")
         trimmed[sym] = b
     M, V, T = {}, {}, {}
     for sym in risk:
@@ -645,6 +650,14 @@ def whole_share_symbols(client: Alpaca, symbols) -> set[str]:
     return out
 
 
+class PartialExecution(Exception):
+    """The broker failed part-way through a rebalance; `fills` records what was already done."""
+
+    def __init__(self, fills: list[dict], error: Exception):
+        super().__init__(f"{type(error).__name__}: {error}")
+        self.fills, self.error = fills, error
+
+
 def execute_plan(client: Alpaca, plan: dict, cfg: dict, whole_share: set | None = None) -> list[dict]:
     wait = cfg["execution"]["fill_wait_seconds"]
     whole_share = whole_share or set()
@@ -653,41 +666,59 @@ def execute_plan(client: Alpaca, plan: dict, cfg: dict, whole_share: set | None 
     buys = [o for o in plan["orders"] if o["side"] == "buy"]
     results = []
     ids = []
-    for o in sells:
-        qty = o["qty"]
-        if o["symbol"] in whole_share and not o.get("close_position"):
-            qty = math.floor(qty)
-            if qty < 1:
-                continue
-        r = client.submit_order(symbol=o["symbol"], qty=str(qty), side="sell",
-                                type="market", time_in_force="day")
-        ids.append(r["id"])
-    results += [_fill_summary(x, refs.get(x["symbol"])) for x in _wait(client, ids, wait).values()]
-    if buys:
-        cash = float(client.account()["cash"])
-        total = sum(o["notional"] for o in buys)
-        scale = min(1.0, cash / total) if total > 0 else 1.0
-        ids = []
-        for o in buys:
-            notional = math.floor(o["notional"] * scale * 100) / 100
-            if notional < 1:
-                continue
-            if o["symbol"] in whole_share:
-                ref = o.get("ref_price")
-                if not ref:
-                    results.append({"symbol": o["symbol"], "side": "buy", "status": "skipped: no price",
-                                    "ref_price": None, "slippage_bps": None})
+    current = None                     # the order being submitted when an error hits
+    try:
+        for o in sells:
+            qty = o["qty"]
+            if o["symbol"] in whole_share and not o.get("close_position"):
+                qty = math.floor(qty)
+                if qty < 1:
                     continue
-                q = math.floor(notional / float(ref))
-                if q < 1:
-                    continue
-                r = client.submit_order(symbol=o["symbol"], qty=str(q), side="buy",
-                                        type="market", time_in_force="day")
-            else:
-                r = client.submit_order(symbol=o["symbol"], notional=f"{notional:.2f}", side="buy",
-                                        type="market", time_in_force="day")
+            current = o
+            r = client.submit_order(symbol=o["symbol"], qty=str(qty), side="sell",
+                                    type="market", time_in_force="day")
+            current = None
             ids.append(r["id"])
         results += [_fill_summary(x, refs.get(x["symbol"])) for x in _wait(client, ids, wait).values()]
+        ids = []
+        if buys:
+            cash = float(client.account()["cash"])
+            total = sum(o["notional"] for o in buys)
+            scale = min(1.0, cash / total) if total > 0 else 1.0
+            for o in buys:
+                notional = math.floor(o["notional"] * scale * 100) / 100
+                if notional < 1:
+                    continue
+                if o["symbol"] in whole_share:
+                    ref = o.get("ref_price")
+                    if not ref:
+                        results.append({"symbol": o["symbol"], "side": "buy", "status": "skipped: no price",
+                                        "ref_price": None, "slippage_bps": None})
+                        continue
+                    q = math.floor(notional / float(ref))
+                    if q < 1:
+                        continue
+                    current = o
+                    r = client.submit_order(symbol=o["symbol"], qty=str(q), side="buy",
+                                            type="market", time_in_force="day")
+                else:
+                    current = o
+                    r = client.submit_order(symbol=o["symbol"], notional=f"{notional:.2f}", side="buy",
+                                            type="market", time_in_force="day")
+                current = None
+                ids.append(r["id"])
+            results += [_fill_summary(x, refs.get(x["symbol"])) for x in _wait(client, ids, wait).values()]
+    except Exception as e:  # noqa: BLE001 - record what already happened, then stop
+        try:
+            results += [_fill_summary(x, refs.get(x["symbol"])) for x in _wait(client, ids, 0).values()]
+        except Exception:  # noqa: BLE001 - the broker may still be failing
+            results += [{"id": i, "symbol": "?", "side": "?", "status": "unknown: check Alpaca",
+                         "ref_price": None, "slippage_bps": None} for i in ids]
+        if current is not None:
+            results.append({"symbol": current["symbol"], "side": current["side"],
+                            "status": f"error: {type(e).__name__}", "ref_price": current.get("ref_price"),
+                            "slippage_bps": None})
+        raise PartialExecution(results, e) from e
     return results
 
 
@@ -799,10 +830,16 @@ def cmd_rebalance(args, cfg):
     clock = client.clock()
     if not clock["is_open"]:
         raise Halt(f"market is closed (next open {clock['next_open']}); no orders submitted")
-    fills = execute_plan(client, plan, cfg, whole) if plan["orders"] else []
+    exec_error = None
+    try:
+        fills = execute_plan(client, plan, cfg, whole) if plan["orders"] else []
+    except PartialExecution as pe:
+        fills, exec_error = pe.fills, str(pe)
     now = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
     if sig is not None:
         sig["executed"] = {"at": now, "date": d.isoformat(), "fills": fills}
+        if exec_error:
+            sig["executed"]["error"] = exec_error
         path.write_text(json.dumps(sig, indent=2) + "\n", encoding="utf-8")
     if fills:
         append_trade_log(d.isoformat(), fills, reason)
@@ -815,7 +852,11 @@ def cmd_rebalance(args, cfg):
         save_state(state)
     bad = [f for f in fills if f["status"] != "filled"]
     result.update({"fills": fills, "unfilled": bad, "slippage": slippage_summary(fills)})
-    if bad:
+    if exec_error:
+        result["status"] = "halt"
+        result["reason"] = (f"broker error part-way through the rebalance ({exec_error}); "
+                            f"{len(fills) - len(bad)} order(s) filled and recorded - check Alpaca, do not retry")
+    elif bad:
         result["status"] = "halt"
         result["reason"] = f"{len(bad)} order(s) not filled - check Alpaca"
     return result

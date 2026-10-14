@@ -90,10 +90,9 @@ Context only. These changed nothing in the strategy or the evaluation criteria.
   - **Bitcoin −80% while IBIT is held:** about −3 pp extra, as the 5% cap intends.
 - **Failure drills (`tests/test_faults.py`):**
   - Rejected orders, partial fills, API errors, missing or stale data and zero prices all end in a halt with no wrong trade. Buys never exceed available cash.
-  - Two open findings (xfail tests):
-    - **F1:** sells that filled before a mid-rebalance API error are not logged.
-    - **F2:** a blank (NaN) latest close is silently replaced by the previous day's close.
-  - Both are for the owner to decide on.
+  - Two findings, both **fixed on 2026-10-14** (owner approved; tests now pass):
+    - **F1:** sells that filled before a mid-rebalance API error were not logged. Now the completed orders and the failed one are written to TRADE-LOG and the signal file, and the run halts.
+    - **F2:** a blank (NaN) latest close was silently replaced by the previous day's close. Now any blank or non-positive close in the lookback window halts the signal.
 
 ## How routines should use this
 - In `/monthly-review`, the headline comparison is **Core & Shield against 60/40**. Compare the month's return, cash weight and drawdown with the normal ranges. When 60/40 fell, report the share of its loss that C&S took (the norm is about 63%).

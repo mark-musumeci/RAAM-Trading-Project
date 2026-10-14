@@ -28,7 +28,7 @@ from matplotlib.patches import FancyBboxPatch, Rectangle  # noqa: E402
 from matplotlib.textpath import TextToPath  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-VERSION, VERSION_DATE = "1.0", "27 September 2026"
+VERSION, VERSION_DATE = "1.1", "14 October 2026"
 TITLE = "Core & Shield · Strategy Handbook"
 
 # Same palette as the monthly report (scripts/report.py)
@@ -592,11 +592,11 @@ def section_safety(doc: Doc):
     doc.h2("Tested failure drills")
     doc.text("Automated tests simulate a rejected order, a partial fill, a broker outage, missing, stale and zero "
              "prices, an untradable ETF and an unexpected position. All end in a safe halt with no wrong trade. "
-             "Two small gaps were found and are open for a decision:", after=0.08)
-    doc.bullets(["**F1:** if the broker fails halfway through a rebalance, sells that already filled are not "
-                 "written to the trade log (nothing wrong is traded; the record is incomplete).",
-                 "**F2:** if a day's closing price arrives blank rather than missing, that ETF is ranked on the "
-                 "previous day's price instead of halting (unlikely with Alpaca; small impact)."])
+             "Two small gaps the drills found were fixed on 14 Oct 2026:", after=0.08)
+    doc.bullets(["**F1:** if the broker fails halfway through a rebalance, the orders that already filled (and "
+                 "the one that failed) are now written to the trade log, and the run halts for the owner.",
+                 "**F2:** a blank or zero closing price anywhere in the lookback window now halts the signal, "
+                 "instead of the ETF being ranked on the previous day's price."])
 
 
 def section_results(doc: Doc, p: pd.DataFrame):
