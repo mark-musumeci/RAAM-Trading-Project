@@ -52,7 +52,7 @@ bash scripts/discord.sh "RAAM test"
    - **Network access:** Custom. Allow `paper-api.alpaca.markets`, `data.alpaca.markets` and `discord.com`, and tick "include default package managers".
    - **Setup script:** `pip install -r requirements.txt`
 2. **Routines.** Create them with `/schedule` or at claude.ai/code/routines:
-   - repo `musu-codes/24.7-RAAM-Trading`;
+   - repo `musu-codes/RAAM-Trading-Project`;
    - the environment above;
    - connectors: none.
 

@@ -20,12 +20,12 @@ The routine API stores crons in **UTC**, and they do **not** shift with daylight
 Runs may start a few minutes late because of scheduling stagger. Holidays need no special handling: the scripts check Alpaca's market calendar and do nothing on market holidays.
 
 ## Repository must be attached
-Each routine must have `musu-codes/24.7-RAAM-Trading` selected under **Repositories**. Without it, the run starts in an empty container and stops with "no repository present". The Claude GitHub app, or `/web-setup`, must have access to this private repo.
+Each routine must have `musu-codes/RAAM-Trading-Project` selected under **Repositories**. Without it, the run starts in an empty container and stops with "no repository present". The Claude GitHub app, or `/web-setup`, must have access to this private repo.
 
 ## Settings for all routines
 | Setting | Value |
 |---|---|
-| Repository | `musu-codes/24.7-RAAM-Trading` |
+| Repository | `musu-codes/RAAM-Trading-Project` |
 | Environment | your RAAM cloud environment (see below) |
 | Connectors | remove all; none are needed |
 | Model | default |
