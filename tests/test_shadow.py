@@ -25,6 +25,8 @@ class ShadowFake(FakeWithHistory):
     def __init__(self):
         super().__init__()
         rng = np.random.default_rng(3)
+        g = self._bars["TIP"].copy()                     # a stand-in price series for GLD
+        self._bars["GLD"] = g * 1.7
         extra = [d for d in OCT_DAYS + NOV_DAYS if d <= dt.date(2026, 11, 6)]
         for s, b in self._bars.items():
             c = float(b["c"].iloc[-1]) * np.cumprod(1 + rng.normal(0.0005, 0.01, len(extra)))
@@ -67,6 +69,8 @@ def test_records_variants_and_writes_log(senv):
         assert sum(x["targets"].values()) == pytest.approx(1.0, abs=1e-6), name
         assert x["targets"].get("IBIT", 0) <= 0.05 + 1e-9, name
     assert "IBIT" not in v["No Bitcoin"]["targets"]
+    gold = v["+ Gold (13 candidates)"]
+    assert len(gold["shield_picks"]) >= 1 and sum(gold["targets"].values()) == pytest.approx(1.0)
     assert v["Core 50% SPY"]["targets"]["SPY"] >= 0.5
     assert v["Core 40% SPY / 10% AGG"]["targets"]["SPY"] >= 0.4
     sat = v["Bitcoin satellite"]
@@ -116,3 +120,15 @@ def test_backfills_every_missing_month(senv):
     assert out["recorded"] == ["2026-09", "2026-10"]
     assert [r["month"] for r in out["months"]] == ["2026-10", "2026-11"]
     assert out["months"][0]["complete"] and not out["months"][1]["complete"]
+
+
+def test_variant_added_later_starts_its_own_since_start():
+    rows = [{"returns_pct": {"old": 1.0, "new": None}}, {"returns_pct": {"old": 1.0, "new": 2.0}}]
+    out = shadow.since_start(rows)
+    assert out["old"] == pytest.approx(2.01) and out["new"] == pytest.approx(2.0)
+
+
+def test_add_puts_the_candidate_in_the_universe():
+    c = shadow.variant_cfg(CFG, {"add": ["GLD"]})
+    assert c["universe"]["risk_assets"][-1] == "GLD"
+    assert "GLD" not in CFG["universe"]["risk_assets"]          # the live config is untouched

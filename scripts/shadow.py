@@ -48,6 +48,7 @@ def variant_cfg(cfg: dict, spec: dict) -> dict:
     c = copy.deepcopy(cfg)
     rm = set(spec.get("remove", []))
     c["universe"]["risk_assets"] = [s for s in c["universe"]["risk_assets"] if s not in rm]
+    c["universe"]["risk_assets"] += [s for s in spec.get("add", []) if s not in c["universe"]["risk_assets"]]
     pf = c.setdefault("portfolio", {})
     pf["max_weight"] = {k: v for k, v in (pf.get("max_weight") or {}).items() if k not in rm}
     if "core" in spec:
@@ -86,7 +87,7 @@ def variant_targets(bars: dict, cfg: dict, spec: dict, as_of: dt.date) -> dict:
 def all_symbols(cfg: dict, scfg: dict) -> list[str]:
     syms = list(raam.tradable_symbols(cfg))
     for spec in scfg["variants"].values():
-        syms += list(spec.get("core", {}))
+        syms += list(spec.get("core", {})) + list(spec.get("add", []))
         if spec.get("satellite"):
             syms.append(spec["satellite"]["symbol"])
     for mix in (cfg.get("benchmark_mixes") or {}).values():
@@ -178,10 +179,11 @@ def performance(client, cfg: dict, scfg: dict, records: list[dict], d: dt.date) 
 
 
 def since_start(rows: list[dict]) -> dict:
+    """Compounded return per column, each from its first tracked month (variants added later start later)."""
     out = {}
     for n in (rows[0]["returns_pct"] if rows else {}):
-        vals = [r["returns_pct"].get(n) for r in rows]
-        if any(v is None for v in vals):
+        vals = [r["returns_pct"].get(n) for r in rows if r["returns_pct"].get(n) is not None]
+        if not vals:
             out[n] = None
             continue
         g = 1.0
@@ -218,6 +220,8 @@ def write_log(scfg: dict, records: list[dict], rows: list[dict], total: dict) ->
         lines.append(f"| {label} | " + " | ".join(_pct(r["returns_pct"].get(c)) for c in cols) + " |")
     if rows:
         lines.append("| **Since start** | " + " | ".join(f"**{_pct(total.get(c))}**" for c in cols) + " |")
+        lines.append("")
+        lines.append("*Since start* compounds each column from its first tracked month; n/a = not yet tracked.")
     lines += ["", "## What each variant held"]
     for rec in reversed(records):
         lines += ["", f"### {rec['effective_month']} (signal {rec['as_of']}, recorded {rec['recorded_at'][:10]})",

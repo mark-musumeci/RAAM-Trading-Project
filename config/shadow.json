@@ -8,21 +8,39 @@
     },
     "No Bitcoin": {
       "_why": "How much of the result is IBIT.",
-      "remove": ["IBIT"]
+      "remove": [
+        "IBIT"
+      ]
     },
     "Core 50% SPY": {
       "_why": "Owner proposal 2026-10-14: growth-only Core (backtest 11.8%/yr, Sharpe 1.14, 2008 -18%).",
-      "core": {"SPY": 0.5}
+      "core": {
+        "SPY": 0.5
+      }
     },
     "Core 40% SPY / 10% AGG": {
       "_why": "Middle ground between the live Core and the 50% SPY Core.",
-      "core": {"SPY": 0.4, "AGG": 0.1}
+      "core": {
+        "SPY": 0.4,
+        "AGG": 0.1
+      }
     },
     "Bitcoin satellite": {
       "_why": "IBIT outside the ranking: 5% IBIT when its momentum beats cash, else BIL; the Shield (45%) ranks the other 11. Removes the half-empty IBIT slot.",
-      "remove": ["IBIT"],
+      "remove": [
+        "IBIT"
+      ],
       "shield_weight": 0.45,
-      "satellite": {"symbol": "IBIT", "weight": 0.05}
+      "satellite": {
+        "symbol": "IBIT",
+        "weight": 0.05
+      }
+    },
+    "+ Gold (13 candidates)": {
+      "_why": "Owner decision 2026-10-14: GLD as an ordinary 13th Shield candidate (IBIT keeps its 5% cap). Tracked from the 2026-10 signal (November). Planned for adoption at the 3-month checkpoint (Jan 2027). Backtest 2015-26: 9.4%/yr, Sharpe vs T-bills 0.97 vs 0.93 live; 2008-26 without Bitcoin: worse crash tail (worst month-end -23.5% vs -19.0%).",
+      "add": [
+        "GLD"
+      ]
     }
   }
 }

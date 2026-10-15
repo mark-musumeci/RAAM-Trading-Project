@@ -54,7 +54,12 @@
   - swapping VV→TLT and VAW→GLD;
   - capped risk-based sizing;
   - staggered rebalancing.
-- **Shadow variants** (from October 2026): `scripts/shadow.py` tracks the variants pre-registered in `config/shadow.json` every month without trading them, in `memory/SHADOW-LOG.md`. The variants are: no Bitcoin, Core 50% SPY, Core 40/10, and Bitcoin as a separate 5% satellite. This gives live evidence for checkpoint decisions without resetting this evaluation. The *Live model* row against the live account is extra monthly evidence for B4. The variants are judged only at checkpoints, never adopted mid-month, and never added or changed because of results already seen.
+- **Shadow variants** (from October 2026): `scripts/shadow.py` tracks the variants pre-registered in `config/shadow.json` every month without trading them, in `memory/SHADOW-LOG.md`. The variants are: no Bitcoin, Core 50% SPY, Core 40/10, Bitcoin as a separate 5% satellite, and (from November) gold as a 13th candidate. This gives live evidence for checkpoint decisions without resetting this evaluation. The *Live model* row against the live account is extra monthly evidence for B4. The variants are judged only at checkpoints, never adopted mid-month, and never added or changed because of results already seen.
+- **Planned change: gold (GLD) as a 13th Shield candidate.** Decided by the owner on 2026-10-14, on backtest and structural grounds: it fills the "few crisis assets" gap. The known cost is a worse crash tail: 2008 −11.6% vs −7.4%.
+  - It is shadow-tracked from the 2026-10 signal (November) as "+ Gold (13 candidates)".
+  - **Decision rule for the 3-month checkpoint (early Jan 2027):** adopt it from the next rebalance **unless** shadow tracking shows an implementation problem: missing or stale GLD data, unexpected ranking behaviour, or a recording error.
+  - Two months of returns are noise, so they are **not** a criterion either way.
+  - On adoption: GLD joins `config/raam.json`, the research structural scan, the pre-flight check and the tests. This plan's change log records it, and the evaluation continues with the change noted, without restarting the clock.
 - The rating (69/100 at the start) is updated at each checkpoint using these results.
 
 ## Change log
@@ -63,3 +68,4 @@
 | 2026-09-26 | Plan written before the first trade | owner |
 | 2026-09-26 | IBIT added (capped at 5%) **before the first trade**. B1/B3/B5 reference numbers updated from the 2015–2026 backtest, and O8 added. Criteria otherwise unchanged. | owner |
 | 2026-10-14 | Shadow tracking of 4 pre-registered variants added (`config/shadow.json`). Evidence only: criteria and the live strategy unchanged. | owner |
+| 2026-10-14 | 5th shadow variant "+ Gold (13 candidates)" added, tracked from November. Planned adoption at the January checkpoint under the decision rule in section 5. Live strategy unchanged until then. | owner |
