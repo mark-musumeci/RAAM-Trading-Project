@@ -299,3 +299,20 @@ def test_core_trend_filter_moves_core_to_cash_when_below_average(env):
 def test_core_trend_filter_needs_enough_history(env):
     env.fake._bars[CORE_SYM] = env.fake._bars[CORE_SYM].iloc[-150:]     # ~7 month-ends < 10
     assert raam.main(["signal", "--date", "2026-09-30"]) == 2
+
+
+def test_rebalance_sells_previous_core_holding(env):
+    """SPY (the previous Core) is sell-only: the switch to the QQQM Core sells it all and never buys it."""
+    raam.cmd_signal(args(date="2026-09-30"), CFG)
+    env.fake._positions = {"SPY": {"qty": 300.0, "market_value": 30_000.0}}
+    out = raam.cmd_rebalance(args(date="2026-10-01"), CFG)
+    assert out["status"] == "ok", out
+    spy = [o for o in env.fake.submitted if o["symbol"] == "SPY"]
+    assert len(spy) == 1 and spy[0]["side"] == "sell" and float(spy[0]["qty"]) == 300.0
+    assert not any("SPY" in w for w in out["plan"]["warnings"])
+
+
+def test_preflight_does_not_warn_about_sell_only_holdings(env):
+    env.fake._positions = {"SPY": {"qty": 300.0, "market_value": 30_000.0}}
+    out = raam.cmd_preflight(args(), CFG)
+    assert out["status"] == "ok" and not any("SPY" in w for w in out["warnings"])

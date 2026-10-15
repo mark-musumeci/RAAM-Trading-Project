@@ -31,6 +31,10 @@
       "IBIT"
     ],
     "cash": "BIL",
+    "sell_only": [
+      "SPY"
+    ],
+    "_note_sell_only": "Holdings from earlier rules that the rebalance sells to zero and never buys. SPY was the previous Core (until the 2 Nov 2026 rebalance). Remove once sold.",
     "asset_class": {
       "VV": "US Equities",
       "IJH": "US Equities",

@@ -120,11 +120,17 @@ def portfolio_parts(cfg: dict) -> tuple[dict, float]:
     return core, shield
 
 
-def tradable_symbols(cfg: dict) -> list[str]:
-    """Every symbol the bot may hold: RAAM universe, its cash asset and the Core."""
+def signal_symbols(cfg: dict) -> list[str]:
+    """Symbols the signal needs prices for: RAAM universe, its cash asset and the Core."""
     uni = cfg["universe"]
     core, _ = portfolio_parts(cfg)
     return list(dict.fromkeys(uni["risk_assets"] + [uni["cash"]] + list(core)))
+
+
+def tradable_symbols(cfg: dict) -> list[str]:
+    """Every symbol the bot may trade: the signal symbols plus universe.sell_only, holdings left over from
+    earlier rules that the rebalance sells to zero and never buys (their target is always 0)."""
+    return list(dict.fromkeys(signal_symbols(cfg) + list(cfg["universe"].get("sell_only", []))))
 
 
 def apply_caps(targets: dict, cfg: dict) -> tuple[dict, dict]:
@@ -299,7 +305,7 @@ def compute_signal(bars: dict[str, pd.DataFrame], cfg: dict, as_of: dt.date) -> 
     risk, cash = uni["risk_assets"], uni["cash"]
     lb, amb = cfg["lookbacks"], cfg["ambiguities"]
     trimmed = {}
-    for sym in tradable_symbols(cfg):
+    for sym in signal_symbols(cfg):
         b = bars.get(sym)
         if b is None or b.empty:
             raise Halt(f"no bars for {sym}")
