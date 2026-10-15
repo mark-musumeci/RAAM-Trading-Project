@@ -23,7 +23,6 @@ import sys
 from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
-import pandas as pd
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import backtest as bt  # noqa: E402
@@ -176,6 +175,7 @@ def main() -> None:
                 "random_p5_p50_p95": {k: [float(np.percentile(v, q)) for q in (5, 50, 95)] for k, v in dist.items()},
                 "beats_random_pct": {k: float(((dist[k] < real[k]) if better[k] else (dist[k] > real[k])).mean() * 100)
                                      for k in real},
+                "random_sharpe": [round(float(v), 4) for v in dist["Sharpe"]],   # for the README histogram
             }
         if win == "B":
             w["history"] = history_tables(bars, cfgs["B"]["port"], signals)

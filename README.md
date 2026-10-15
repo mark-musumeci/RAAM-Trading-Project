@@ -1,67 +1,370 @@
-# RAAM Trading Bot Project — Core & Shield
+<div align="center">
 
-An autonomous **Core & Shield** portfolio on an **Alpaca paper account**, run by **Claude Code cloud routines**:
-- **Core, 50%:** a fixed 60/40, 30% SPY + 20% AGG, reset monthly. It does the growing.
-- **Shield, 50%:** the **Ranked Asset Allocation Model**, from Gioele Giordano's 2018 Charles H. Dow Award paper. It does the defending.
-  - Each month it ranks 12 candidates (11 of the 7Twelve ETFs plus IBIT, a spot-Bitcoin ETF) on momentum, volatility and correlation, and holds the top 5.
-  - IBIT is capped at 5% of the whole portfolio.
-  - Any pick whose momentum doesn't beat cash is swapped for BIL (T-bills).
+# Core & Shield
 
-It rebalances once a month and holds; there are no stops. This repo is the bot's persistent disk: code, config and memory. Each routine run clones it, acts, and pushes its memory back.
+**A rules-based, defence-first multi-asset strategy, run end-to-end by an AI operator on a paper brokerage account.**
 
-Backtest, 2009–2026: 7.5%/yr at a Sharpe of about 1.1, the same as 60/40, but with about 40% smaller drawdowns. 2022 was −7.8% vs 60/40's −15.2%. The rules are in [memory/TRADING-STRATEGY.md](memory/TRADING-STRATEGY.md) and the evidence is in [memory/BACKTEST-SUMMARY.md](memory/BACKTEST-SUMMARY.md).
+![Paper trading](https://img.shields.io/badge/paper_trading-live_since_1_Oct_2026-1baf7a)
+![Rebalance](https://img.shields.io/badge/rebalance-monthly-2a78d6)
+![Tests](https://img.shields.io/badge/tests-76_passing-1baf7a)
+![Python](https://img.shields.io/badge/python-3.11%2B-2a78d6)
+![Benchmark](https://img.shields.io/badge/benchmark-60%2F40-898781)
 
-## Layout
-| Path | Purpose |
+**[Summary](#executive-summary)** · **[How it works](#how-it-works)** · **[A real month](#a-real-month-step-by-step)** · **[Evidence](#evidence)** · **[Risk & governance](#risk-management-and-governance)** · **[Architecture](#system-architecture)** · **[Docs](#documentation)**
+
+<table>
+<tr>
+<td align="center" width="25%"><h2>9.3%</h2>return per year<br><sub>60/40: 9.2%</sub></td>
+<td align="center" width="25%"><h2>1.18</h2>Sharpe ratio<br><sub>60/40: 0.93</sub></td>
+<td align="center" width="25%"><h2>−11.1%</h2>worst month-end drop<br><sub>60/40: −19.2%</sub></td>
+<td align="center" width="25%"><h2>97%</h2>of random portfolios beaten<br><sub>on Sharpe, 1,000 runs</sub></td>
+</tr>
+</table>
+
+<sub>Backtest Feb 2015 – Sep 2026, after costs. Without Bitcoin, 2008–2026: 6.6%/yr, Sharpe 0.93, worst month-end drop −19.0% (60/40: 8.5%, 0.85, −30.2%).</sub>
+
+</div>
+
+![How Core & Shield runs each month](docs/images/architecture.png)
+
+> [!IMPORTANT]
+> Research project on an Alpaca **paper** account. Backtested figures are hypothetical, were built with the benefit of hindsight, and include a simulated Bitcoin history before January 2024. Past performance does not predict future results. **Not investment advice.**
+
+---
+
+## Executive summary
+
+| | |
 |---|---|
-| `CLAUDE.md` | Always-loaded operating instructions for the agent |
-| `config/raam.json` | Model parameters and guardrail thresholds |
-| `scripts/raam.py` | Deterministic engine: calendar, signal, rebalance, health, review |
-| `scripts/alpaca.sh` | Thin curl wrapper for Alpaca (ad-hoc and manual use) |
-| `scripts/discord.sh` | Discord notifications via channel webhook (`DISCORD_WEBHOOK_URL`), with optional file attachment (`--file`) |
-| `scripts/report.py` | One-page monthly PDF report: Core & Shield vs 60/40, holdings, next allocation, backtest checks |
-| `reports/` | Archive of the monthly PDF reports and their commentary notes |
-| `.claude/commands/` | `/health` `/signal` `/rebalance` `/monthly-review` `/report` `/research` `/portfolio` `/trade` |
-| `memory/` | Strategy, logs, signals (`signals/*.json`) and `state.json` (high-water mark, circuit breaker) |
-| `tests/` | pytest unit tests for the indicators, ranking, order planning, commands and report |
+| **What** | Half the portfolio is a fixed 60/40 (**Core**: 30% SPY + 20% AGG). The other half (**Shield**) holds the 5 strongest of 12 diversified ETFs, including spot Bitcoin capped at 5%, and moves to T-bills when nothing is trending. |
+| **Objective** | About a 60/40's return, with materially smaller losses in bear markets. It is built to *specialise in defence*, not to beat equities. |
+| **Edge, tested** | The ranking beats **97–98%** of 1,000 random-pick portfolios on Sharpe and **97–100%** on down-market defence (2015–2026 and 2008–2026). |
+| **Governance** | Deterministic engine, pre-registered evaluation plan, shadow tracking of alternatives, full change log. The AI operates; it never decides. |
+| **Status** | Live on Alpaca paper since **1 Oct 2026**. Checkpoints at 1, 3, 6 and 12 months; the verdict is due **Oct 2027**. |
 
-## Schedule (cron is UTC, see routines/README.md)
-| Routine | Time | Runs |
+**Key statistics.** Backtest Feb 2015 – Sep 2026 (140 months): 5 bps per trade, next-open fills, Sharpe with rf = 0.
+
+| | **Core & Shield** | C&S without Bitcoin | 60/40 | SPY |
+|---|---:|---:|---:|---:|
+| Return per year | **9.3%** | 6.5% | 9.2% | 14.1% |
+| Volatility | **7.8%** | 6.9% | 10.0% | 15.6% |
+| Sharpe ratio | **1.18** | 0.95 | 0.93 | 0.93 |
+| Worst month-end drawdown | **−11.1%** | −11.1% | −19.2% | −23.3% |
+| Worst daily drawdown | −14.1% | −14.6% | — | −33.7% |
+| 2022 | **−8.8%** | ≈ −8% | −15.2% | −18.0% |
+| Beta to 60/40 | 0.69 | — | 1.00 | — |
+
+Over a longer, harder window **without Bitcoin** (Mar 2008 – Sep 2026, 223 months), Core & Shield returned **6.6%/yr** against 60/40's 8.5%. Its Sharpe was **0.93 vs 0.85**, and its worst month-end drawdown **−19.0% vs −30.2%**. That is the honest base case: a defensive product that gives up some return in bull markets.
+
+---
+
+## Investment thesis
+
+1. **The problem.** A 60/40 is the default balanced portfolio, but its losses arrive together. Stocks and bonds fell at the same time in 2022 (−15.2%), and the 2008–09 drawdown reached −30%.
+2. **The trade-off.** Tactical trend-following models sidestep slow bear markets, but they hold defensive assets too often and lag badly in bull markets.
+3. **The design.** Combine the two:
+   - The **Core** keeps half the money always invested for long-run growth.
+   - The **Shield** is a rotation engine that holds what is trending, calm and diversifying, and retreats to T-bills when trends break.
+   - Each half covers the other's weakness.
+4. **Why the signal should persist.** It rests on some of the best-documented effects in finance:
+   - time-series and cross-sectional **momentum** across asset classes, over a century of data;
+   - the **low-volatility** effect;
+   - **diversification** across low-correlation assets.
+
+   See the references below.
+5. **Who it is for.** Investors judged on risk-adjusted return and drawdown rather than maximum return: pension and superannuation funds, income drawers, anyone near a goal date.
+
+**Not designed to:**
+- beat the S&P 500;
+- avoid a one-day crash (it is monthly);
+- be a Bitcoin strategy (one candidate of twelve, capped at 5%).
+
+---
+
+## How it works
+
+**Portfolio = Core + 0.5 × Shield**, rebalanced once a month.
+
+| Half | Weight | Holdings | Rule |
+|---|---|---|---|
+| **Core** | 50% | SPY 30% · AGG 20% | Fixed; reset every month |
+| **Shield** | 50% | 5 slots × 10%, chosen from 12 candidates | Re-ranked every month; failed slots go to BIL (T-bills) |
+
+**Shield candidates** (the 7Twelve multi-asset set plus spot Bitcoin):
+
+| Asset class | ETFs |
+|---|---|
+| US equities | VV, IJH, IJR |
+| International equities | EFA, EEM |
+| Real estate | RWR |
+| Commodities and resources | DBC, VAW |
+| US bonds and inflation-protected | AGG, TIP |
+| International government bonds | IGOV |
+| Crypto | IBIT, **capped at 5% of the portfolio** |
+| Cash (not ranked) | BIL |
+
+**The monthly decision** is computed after the close on the last trading day, and traded at the next morning's session (~10:45 ET):
+
+| Factor | Measure | Best rank goes to |
 |---|---|---|
-| **RAAM – Morning** | 09:45 EST / 10:45 EDT | `/rebalance` (Core and Shield together). It acts only on the first trading day of the month, or when the circuit breaker is tripped. |
-| **RAAM – Close** | 16:30 EST / 17:30 EDT | `/health` every day. Then `/signal` on the last trading day of the month, and `/monthly-review` on the first trading day. |
-| **RAAM – Monthly Report** | 18:00 EST / 19:00 EDT, days 28–31 | `/report` on the last trading day of the month only: a one-page PDF posted to Discord. |
+| Momentum | 84-trading-day return | highest |
+| Volatility | EWMA (λ = 0.94), annualised, 10-day smoothed | lowest |
+| Correlation | average 84-day correlation with the other 11 | lowest |
 
-## Local quickstart
-```bash
-pip install -r requirements.txt
-cp env.template .env          # fill in Alpaca paper keys etc.
-python -m pytest -q            # unit tests, no network
-python scripts/raam.py calendar
-python scripts/raam.py health --dry-run
-python scripts/raam.py signal --force --dry-run     # compute today's ranks without saving
-python scripts/raam.py rebalance --force --dry-run  # show the orders it would place
-bash scripts/discord.sh "RAAM test"
+`Score = ⅓·Rank(M) + ⅓·Rank(V) + ⅓·Rank(C)`. The 5 lowest scores are selected. A selected ETF keeps its 10% slot only if its momentum beats T-bill (BIL) momentum; otherwise the slot goes to BIL. Full rules: [memory/TRADING-STRATEGY.md](memory/TRADING-STRATEGY.md).
+
+---
+
+## A real month, step by step
+
+Each stage has one job and one owner. These are the actual outputs from the first live month: the 30 Sep 2026 signal and the 1 Oct 2026 trades.
+
+### 1 · Research gate
+- Claude scans all 14 funds for closures, mergers, ticker or index changes and halts, plus custody and regulatory risks for IBIT.
+- A structural flag **stops** the signal and raises a ⚠️ alert. Market news is logged as context and never changes a pick.
+
+![Research gate](docs/images/stage_research.png)
+
+### 2 · Signal engine
+- Ranks the 12 candidates on momentum, volatility and correlation, and keeps the best 5.
+- Each pick must then beat T-bill momentum. In September, three of the five did not, so their slots went to T-bills: the model turned defensive as designed.
+
+![Signal engine](docs/images/stage_engine.png)
+
+### 3 · Portfolio construction
+- Adds the fixed Core to the Shield's picks, then applies the caps.
+- IBIT won a full 10% slot, so the 5% cap moved half of it to T-bills.
+
+![Portfolio construction](docs/images/stage_portfolio.png)
+
+### 4 · Execution
+- After the risk checks, orders go to Alpaca at about 10:45 ET on the first trading day: sells first, then buys.
+- Every fill is logged with its slippage against the planned price.
+
+![Execution](docs/images/stage_execution.png)
+
+### 5 · Oversight
+- Each month is scored against the pre-registered evaluation plan, and every run posts one line to Discord.
+- The first review, covering the 30 Sep signal and the 1 Oct rebalance, passed every operations check (O1–O8).
+
+![Oversight](docs/images/stage_oversight.png)
+
+---
+
+## Evidence
+
+### Backtest
+
+![Growth of $100,000](docs/images/growth.png)
+
+Core & Shield matched 60/40's return with about **22% less volatility** and **42% less maximum drawdown**. It took **63%** of 60/40's losses in 60/40's down months.
+
+![Calendar-year returns](docs/images/calendar_years.png)
+
+The pattern is the design working:
+- **ahead in falling markets**, 2022 most clearly;
+- **behind in strong equity years** (2019, 2023–2025);
+- 2018 was worse than 60/40 because Bitcoin's crash hit while it was held. Without Bitcoin, 2018 was about level.
+
+### Is the ranking skill or luck?
+
+The live ranking was compared with 1,000 portfolios whose Shield holds **5 random candidates** each month, with every other rule identical.
+
+| Test | 2015–26 (with Bitcoin) | 2008–26 (no Bitcoin) |
+|---|---:|---:|
+| Beats random on Sharpe | **97%** | **98%** |
+| Beats random on down-market defence | **97%** | **100%** |
+| Beats random on return | 98% | 86% |
+
+**Which parts matter:**
+- *Momentum alone* earns more but defends far worse: 83% of 60/40's down-month losses against 63%. The volatility and correlation ranks are what make the Shield defensive.
+- The cash test does much of the work.
+- The ranking adds defence on top of the cash test.
+
+Source: [backtest/results/ROBUSTNESS.md](backtest/results/ROBUSTNESS.md).
+
+### Stress tests
+
+![Losses in real and simulated crises](docs/images/stress.png)
+
+| Question | Finding |
+|---|---|
+| **Trading costs** | The Sharpe edge over 60/40 survives even 50 bps per trade (0.97 vs ~0.92). The return edge disappears above ~10 bps. |
+| **Parameter sensitivity** | **13 of 13** nearby settings (lookbacks 63–126 days, hold 4–6, λ, factor weights ±10 pp) still beat 60/40's Sharpe; the range is 1.03–1.28. It is not a lucky peak. |
+| **Late execution** | Filling 2–5 days after the signal barely matters (Sharpe 1.18–1.23). |
+| **Any single year** | It beat 60/40 on return in only 49% of rolling 12-month windows, but had the **smaller drawdown in 89%**. |
+| **Monte Carlo** | Across 5,000 bootstrapped 10-year paths: **94%** chance of a higher Sharpe than 60/40, **97%** chance of a smaller worst drawdown. |
+| **Bitcoin −80% while held** | About −3 pp extra loss, as the 5% cap intends. |
+| **Realistic worst case** | About **−20% to −22%**. In 2008–09 the −20% circuit breaker tripped once. |
+
+Source: [backtest/results/STRESS.md](backtest/results/STRESS.md).
+
+### Attribution: where the return comes from
+
+| | Beta to 60/40 | Alpha / yr (rf = T-bills) |
+|---|---:|---:|
+| Core & Shield | **0.69** | **+2.2%** (t ≈ 2.0) |
+| Core & Shield without Bitcoin | 0.65 | −0.2% |
+
+The strategy's main product is **lower market exposure with smaller drawdowns**. Nearly all of the measured alpha comes from timing Bitcoin, which should not be expected to repeat at the same size.
+
+---
+
+## Risk management and governance
+
+| Control | Rule |
+|---|---|
+| **Circuit breaker** | −20% from the high-water mark, or −5% in one day, moves the whole portfolio to T-bills. It re-enters automatically at the next monthly rebalance. |
+| **Data integrity** | Stale, missing, blank or non-positive prices halt the signal. There is no guessing. |
+| **Order checks** | Weights must sum to 100% ± 0.5%; universe tickers only; no single buy above 35% of equity; buys are scaled to available cash; the market must be open. |
+| **Broker failures** | A rejected or partial order, or an API error mid-rebalance, records what filled, halts, and alerts. It is never retried blindly. |
+| **Paper lock** | Live trading needs two explicit switches (`PAPER_TRADING=false` and `LIVE_CONFIRM=yes`). |
+| **Pre-registered evaluation** | Pass/fail criteria were written *before* the first trade ([EVALUATION-PLAN.md](memory/EVALUATION-PLAN.md)): operations (O1–O8) and behaviour (B1–B5), with a rules-based 12-month verdict. |
+| **Shadow tracking** | Four pre-registered alternatives (no Bitcoin, 50% SPY Core, 40/10 Core, Bitcoin satellite) are tracked monthly without trading ([SHADOW-LOG.md](memory/SHADOW-LOG.md)). This builds live evidence without resetting the test. |
+| **Change control** | Rules change only by owner decision, with evidence, in a dated change log. |
+| **AI boundaries** | Claude runs the routines, writes the logs and may **halt**. It never changes targets, picks, timing or rules. All maths and orders live in one deterministic script. |
+| **Secrets** | API keys live only in the cloud environment's variables, never in files, commits or messages. |
+
+---
+
+## Live paper trading
+
+| | |
+|---|---|
+| Account | Alpaca paper, $100,000 starting equity |
+| First signal / first trades | 30 Sep 2026 / 1 Oct 2026 (all orders filled) |
+| Daily | Health check: equity, drawdown, drift, breaker. One Discord line. |
+| Monthly | Signal, rebalance, one-page PDF report, and a review scored against the evaluation plan |
+| Where to look | [reports/](reports/) · [memory/SHADOW-LOG.md](memory/SHADOW-LOG.md) · [memory/TRADE-LOG.md](memory/TRADE-LOG.md) · [memory/SIGNAL-LOG.md](memory/SIGNAL-LOG.md) · [memory/MONTHLY-REVIEW.md](memory/MONTHLY-REVIEW.md) |
+
+| Checkpoint | Date | Question |
+|---|---|---|
+| 1 month | Nov 2026 | Does it run correctly? |
+| 3 months | Jan 2027 | Is it reliable? |
+| 6 months | Apr 2027 | Does it behave like the backtest? |
+| 12 months | Oct 2027 | Is it worth running? |
+
+---
+
+## System architecture
+
+```mermaid
+flowchart LR
+    subgraph Cloud["Claude Code cloud routines (scheduled)"]
+        M["Morning<br/>10:45 ET"]
+        C["Close<br/>17:30 ET"]
+        R["Monthly report<br/>19:00 ET, month-end"]
+    end
+    subgraph Repo["GitHub repo = the system's memory"]
+        E["scripts/raam.py<br/>deterministic engine"]
+        S["scripts/shadow.py<br/>scripts/report.py"]
+        L["memory/<br/>signals · trade log · state · logs"]
+    end
+    A[("Alpaca<br/>paper account")]
+    D["Discord<br/>alerts & reports"]
+    W["Web research<br/>(can only halt)"]
+    C -- "last trading day" --> W
+    M & C & R -- "clone, run, push" --> Repo
+    E -- "orders · prices · equity" --> A
+    S -- "prices · equity" --> A
+    Cloud -- "one message per run" --> D
 ```
 
-## Cloud routine setup
-1. **Cloud environment.** Set this up at claude.ai/code, in the environment settings:
-   - **Environment variables:** paste in everything from `env.template` with real values, in the same `KEY=value` format. Keep `PAPER_TRADING=true`.
-     - This is the **only** place routines get keys from; the scripts never read a `.env` file in the cloud.
-     - Do not use the "API credentials" section. Those keys are injected by a proxy and are never visible to the scripts.
-   - **Network access:** Custom. Allow `paper-api.alpaca.markets`, `data.alpaca.markets` and `discord.com`, and tick "include default package managers".
+| Routine | Schedule (cron in UTC) | Does |
+|---|---|---|
+| **Morning** | Weekdays 10:45 EDT / 09:45 EST | Rebalance on the first trading day of the month, or if the breaker tripped. Otherwise does nothing. |
+| **Close** | Weekdays 17:30 EDT / 16:30 EST | Daily health; month-end research → signal → shadow variants; first-day monthly review. |
+| **Monthly report** | 19:00 EDT / 18:00 EST, days 28–31 | One-page PDF (account vs 60/40) on the last trading day, posted to Discord. |
+
+**Engineering:**
+- One deterministic engine: the same data always gives the same targets.
+- Every command prints a single JSON object with `ok` / `noop` / `halt` / `error`.
+- Dry-run modes everywhere; idempotent rebalances (a month can't be traded twice).
+- **76 tests** with no network, including fault drills for broker errors, partial fills and bad data.
+
+---
+
+## Limitations
+
+- **Thin return edge.** Without Bitcoin, the strategy trails 60/40 by about 2%/yr in normal markets. It was ahead in only 5 of 19 calendar years (2008–2026). Its value is defence.
+- **Bitcoin dependence.** Most of the measured alpha is Bitcoin timing. Bitcoin history before 2024 is simulated from BTC-USD minus IBIT's fee.
+- **Hindsight.** Several design choices were made after seeing 2015–2026 data. With ~11 years, a Sharpe estimate is only accurate to about ±0.3.
+- **Monthly cadence.** It can't avoid a one-day crash. The −5% daily breaker can then lock in a loss and miss a fast rebound.
+- **Paper, not live.** Paper fills do not capture real market impact. Taxes are ignored, and turnover is about 15% a month.
+- **Small universe.** 12 candidates make the ranks lumpy, and there are few true crisis assets (no gold or long Treasuries).
+
+---
+
+<details>
+<summary><b>Repository guide</b></summary>
+
+| Path | Purpose |
+|---|---|
+| `CLAUDE.md` | Operating instructions for the AI operator (rules, safety, standard procedure) |
+| `config/raam.json` | Strategy parameters and guardrail thresholds |
+| `config/shadow.json` | Pre-registered shadow variants (tracked, never traded) |
+| `scripts/raam.py` | Deterministic engine: calendar, signal, rebalance, health, review, pre-flight |
+| `scripts/shadow.py` | Shadow tracking of strategy variants |
+| `scripts/report.py` | One-page monthly PDF report |
+| `scripts/alpaca.sh`, `scripts/discord.sh` | Broker and notification helpers |
+| `.claude/commands/` | Operator commands: `/signal` `/rebalance` `/health` `/monthly-review` `/report` `/research` `/portfolio` `/trade` |
+| `routines/` | Paste-ready prompts for the cloud routines |
+| `memory/` | Rules, evaluation plan, backtest summary, logs, signals, state |
+| `backtest/` | Backtest (`backtest.py`), stress tests (`stress.py`), robustness tests (`robustness.py`) and results |
+| `docs/` | Strategy handbook PDF, README image builder |
+| `reports/` | Monthly PDF reports |
+| `tests/` | pytest suite (engine, commands, faults, report, shadow) |
+
+</details>
+
+<details>
+<summary><b>Quickstart (local)</b></summary>
+
+```bash
+python -m pip install -r requirements.txt
+cp env.template .env                                # Alpaca paper keys, Discord webhook
+python -m pytest -q                                  # 76 tests, no network
+python scripts/raam.py calendar
+python scripts/raam.py signal --force --dry-run      # today's ranks, nothing saved
+python scripts/raam.py rebalance --force --dry-run   # the orders it would place
+python backtest/backtest.py                          # rebuild the backtest report
+python docs/build_readme_assets.py                   # rebuild the README images
+```
+
+</details>
+
+<details>
+<summary><b>Cloud routine setup</b></summary>
+
+1. **Cloud environment** (claude.ai/code → environments):
+   - **Environment variables:** everything in `env.template`, with real values. Keep `PAPER_TRADING=true`. Routines read keys only from here; the scripts never read `.env` in the cloud.
+   - **Network:** custom. Allow `paper-api.alpaca.markets`, `data.alpaca.markets` and `discord.com`, plus default package managers.
    - **Setup script:** `python3 -m pip install -r requirements.txt`
-2. **Routines.** Create them with `/schedule` or at claude.ai/code/routines:
+2. **Routines:**
    - repo `musu-codes/RAAM-Trading-Project`;
    - the environment above;
-   - connectors: none.
+   - no connectors;
+   - prompts and crons from [routines/](routines/).
+3. **First runs:** *Run now* with `dry_run`, and read the transcript. A green status only means it didn't crash.
 
-   The paste-ready prompts and settings are in [routines/](routines/):
-   - [routines/morning.md](routines/morning.md) runs weekdays at 09:45 ET.
-   - [routines/close.md](routines/close.md) runs weekdays at 16:30 ET.
-3. **First runs.** Click **Run now** with the text `dry_run` and read the transcript. A green status only means the run didn't crash.
+</details>
 
-## Safety
-- Paper only, unless both `PAPER_TRADING=false` and `LIVE_CONFIRM=yes` are set.
-- A circuit breaker (−20% from peak, or −5% in one day) moves the portfolio to 100% BIL; it re-enters automatically at the next monthly rebalance with the fresh signal.
-- Research never changes the allocation. Claude may halt and alert, but never improvises trades.
+---
+
+## Documentation
+
+- **[Strategy handbook (PDF)](docs/Core-and-Shield-Strategy.pdf):** the full strategy in 12 pages.
+- [Trading rules](memory/TRADING-STRATEGY.md) · [Evaluation plan](memory/EVALUATION-PLAN.md) · [Backtest summary](memory/BACKTEST-SUMMARY.md)
+- Results: [backtest report](backtest/results/REPORT.md) · [stress tests](backtest/results/STRESS.md) · [robustness](backtest/results/ROBUSTNESS.md)
+
+## References
+
+- Giordano, G. (2018). *Ranked Asset Allocation Model.* Charles H. Dow Award, CMT Association. The origin of the Shield.
+- Moskowitz, T., Ooi, Y. H. & Pedersen, L. H. (2012). Time series momentum. *Journal of Financial Economics.*
+- Asness, C., Moskowitz, T. & Pedersen, L. H. (2013). Value and momentum everywhere. *Journal of Finance.*
+- Hurst, B., Ooi, Y. H. & Pedersen, L. H. (2017). A century of evidence on trend-following investing. *Journal of Portfolio Management.*
+- Faber, M. (2007). A quantitative approach to tactical asset allocation. *Journal of Wealth Management.*
+- Frazzini, A. & Pedersen, L. H. (2014). Betting against beta. *Journal of Financial Economics.*
+- Israelsen, C. (2010). *7Twelve: A Diversified Investment Portfolio with a Plan.* Wiley.
+
+<sub>Paper-trading research project. All backtested results are hypothetical, and simulated performance has inherent limitations. Nothing here is investment, financial or trading advice.</sub>
