@@ -28,7 +28,7 @@ from matplotlib.patches import FancyBboxPatch, Rectangle  # noqa: E402
 from matplotlib.textpath import TextToPath  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-VERSION, VERSION_DATE = "1.1", "14 October 2026"
+VERSION, VERSION_DATE = "1.2", "14 October 2026"
 TITLE = "Core & Shield · Strategy Handbook"
 
 # Same palette as the monthly report (scripts/report.py)
@@ -345,7 +345,7 @@ def cover(doc: Doc):
     doc.text("**Backtest, Feb 2015 – Sep 2026, after trading costs** (Bitcoin before 2024 simulated; see section 6)",
              size=9, color=INK2, after=0.12)
     doc.cards([("Return per year", "9.3%", "60/40: 9.2%"),
-               ("Sharpe ratio", "1.18", "60/40: 0.93"),
+               ("Sharpe vs T-bills", "0.93", "60/40: 0.73"),
                ("Worst month-end drop", "−11.1%", "60/40: −19.2%"),
                ("2022 (bear market)", "−8.8%", "60/40: −15.2%")])
     doc.table(["At a glance", ""],
@@ -624,14 +624,15 @@ def section_results(doc: Doc, p: pd.DataFrame):
         dd = (eq / eq.cummax() - 1) * 100
         ax2.fill_between(x, dd, 0, color=c, alpha=0.18 if col == "ret" else 0.1, lw=0)
         ax2.plot(x, dd, color=c, lw=lw)
-    doc.table(["", "Return / yr", "Volatility", "Sharpe", "Worst month-end drop", "Worst daily drop", "2022"],
-              [["**Core & Shield**", "9.3%", "7.8%", "1.18", "−11.1%", "−14.1%", "−8.8%"],
-               ["60/40 (SPY/AGG)", "9.2%", "10.0%", "0.93", "−19.2%", "", "−15.2%"],
-               ["SPY", "14.1%", "15.6%", "0.93", "−23.3%", "−33.7%", "−18.0%"],
-               ["Core & Shield without Bitcoin", "6.5%", "6.9%", "0.95", "−11.1%", "−14.6%", "≈ −8%"]],
-              [2.1, 0.9, 0.85, 0.7, 1.25, 1.1, 0.8], aligns=["left"] + ["right"] * 6, size=8.2, after=0.06)
-    doc.text("Sharpe ratio = return ÷ volatility (no risk-free rate). 2008 test (no Bitcoin, which didn't exist): "
-             "Core & Shield −7.4% vs 60/40 −17.7%.", size=8, color=MUTED)
+    doc.table(["", "Return / yr", "Sharpe", "Sortino", "Calmar", "Worst month-end", "Worst day", "2022"],
+              [["**Core & Shield**", "9.3%", "0.93", "1.58", "0.84", "−11.1%", "−14.1%", "−8.8%"],
+               ["60/40 (SPY/AGG)", "9.2%", "0.73", "1.11", "0.48", "−19.2%", "", "−15.2%"],
+               ["SPY", "14.1%", "0.81", "1.24", "0.61", "−23.3%", "−33.7%", "−18.0%"],
+               ["C&S without Bitcoin", "6.5%", "0.66", "1.00", "0.59", "−11.1%", "−14.6%", "≈ −8%"]],
+              [1.75, 0.85, 0.65, 0.7, 0.65, 1.0, 0.85, 0.7], aligns=["left"] + ["right"] * 7, size=8.2, after=0.06)
+    doc.text("Sharpe and Sortino measured against T-bills (2.0%/yr); at a 0% rate the Sharpe ratios are 1.18, 0.93, "
+             "0.93 and 0.95. Sortino counts only downside volatility; Calmar = return ÷ worst month-end drop. "
+             "2008 test (no Bitcoin): Core & Shield −7.4% vs 60/40 −17.7%.", size=8, color=MUTED)
     cy = p.assign(year=p["entry"].dt.year).groupby("year").agg(
         cs=("ret", lambda r: ((1 + r).prod() - 1) * 100), b=("b6040", lambda r: ((1 + r).prod() - 1) * 100))
     ax3 = doc.axes(1.5, after=0.1, title="Calendar-year returns (%)  · *2026 to date")

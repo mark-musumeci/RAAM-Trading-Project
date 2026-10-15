@@ -11,6 +11,7 @@
     "vol_pct": 7.8,
     "sharpe_rf0": 1.18,
     "sharpe_vs_tbills": 0.93,
+    "sortino_vs_tbills": 1.58,
     "months": 140,
     "max_dd_pct": -11.1,
     "peak": "2022-01-03",
@@ -19,6 +20,7 @@
     "months_to_recover": 16,
     "recovered": "2024-02-01",
     "longest_under_water_months": 24,
+    "calmar": 0.84,
     "down_capture_vs_6040_pct": 63.0
    },
    "Core & Shield without Bitcoin": {
@@ -26,6 +28,7 @@
     "vol_pct": 6.9,
     "sharpe_rf0": 0.95,
     "sharpe_vs_tbills": 0.66,
+    "sortino_vs_tbills": 1.0,
     "months": 140,
     "max_dd_pct": -11.1,
     "peak": "2022-01-03",
@@ -34,6 +37,7 @@
     "months_to_recover": 17,
     "recovered": "2024-03-01",
     "longest_under_water_months": 25,
+    "calmar": 0.59,
     "down_capture_vs_6040_pct": 66.0
    },
    "60/40": {
@@ -41,6 +45,7 @@
     "vol_pct": 10.0,
     "sharpe_rf0": 0.93,
     "sharpe_vs_tbills": 0.73,
+    "sortino_vs_tbills": 1.11,
     "months": 140,
     "max_dd_pct": -19.2,
     "peak": "2022-01-03",
@@ -48,13 +53,15 @@
     "months_peak_to_trough": 9,
     "months_to_recover": 16,
     "recovered": "2024-02-01",
-    "longest_under_water_months": 24
+    "longest_under_water_months": 24,
+    "calmar": 0.48
    },
    "SPY": {
     "cagr_pct": 14.1,
     "vol_pct": 15.6,
     "sharpe_rf0": 0.93,
     "sharpe_vs_tbills": 0.81,
+    "sortino_vs_tbills": 1.24,
     "months": 140,
     "max_dd_pct": -23.3,
     "peak": "2022-01-03",
@@ -62,7 +69,8 @@
     "months_peak_to_trough": 9,
     "months_to_recover": 15,
     "recovered": "2024-01-02",
-    "longest_under_water_months": 23
+    "longest_under_water_months": 23,
+    "calmar": 0.61
    }
   },
   "2015-19": {
@@ -71,6 +79,7 @@
     "vol_pct": 6.8,
     "sharpe_rf0": 1.36,
     "sharpe_vs_tbills": 1.23,
+    "sortino_vs_tbills": 2.31,
     "months": 59,
     "max_dd_pct": -7.1,
     "peak": "2018-09-04",
@@ -79,6 +88,7 @@
     "months_to_recover": 4,
     "recovered": "2019-05-01",
     "longest_under_water_months": 12,
+    "calmar": 1.32,
     "down_capture_vs_6040_pct": 65.0
    },
    "Core & Shield without Bitcoin": {
@@ -86,6 +96,7 @@
     "vol_pct": 5.2,
     "sharpe_rf0": 0.83,
     "sharpe_vs_tbills": 0.66,
+    "sortino_vs_tbills": 0.94,
     "months": 59,
     "max_dd_pct": -7.1,
     "peak": "2018-09-04",
@@ -94,6 +105,7 @@
     "months_to_recover": 6,
     "recovered": "2019-07-01",
     "longest_under_water_months": 16,
+    "calmar": 0.61,
     "down_capture_vs_6040_pct": 72.0
    },
    "60/40": {
@@ -101,6 +113,7 @@
     "vol_pct": 7.7,
     "sharpe_rf0": 1.13,
     "sharpe_vs_tbills": 1.01,
+    "sortino_vs_tbills": 1.57,
     "months": 59,
     "max_dd_pct": -8.4,
     "peak": "2018-10-01",
@@ -108,13 +121,15 @@
     "months_peak_to_trough": 3,
     "months_to_recover": 3,
     "recovered": "2019-04-01",
-    "longest_under_water_months": 5
+    "longest_under_water_months": 5,
+    "calmar": 1.04
    },
    "SPY": {
     "cagr_pct": 12.5,
     "vol_pct": 13.1,
     "sharpe_rf0": 0.97,
     "sharpe_vs_tbills": 0.9,
+    "sortino_vs_tbills": 1.35,
     "months": 59,
     "max_dd_pct": -15.3,
     "peak": "2018-10-01",
@@ -122,7 +137,8 @@
     "months_peak_to_trough": 3,
     "months_to_recover": 4,
     "recovered": "2019-05-01",
-    "longest_under_water_months": 11
+    "longest_under_water_months": 11,
+    "calmar": 0.82
    }
   },
   "2020-26": {
@@ -131,6 +147,7 @@
     "vol_pct": 8.5,
     "sharpe_rf0": 1.08,
     "sharpe_vs_tbills": 0.75,
+    "sortino_vs_tbills": 1.24,
     "months": 81,
     "max_dd_pct": -11.1,
     "peak": "2022-01-03",
@@ -139,6 +156,7 @@
     "months_to_recover": 16,
     "recovered": "2024-02-01",
     "longest_under_water_months": 24,
+    "calmar": 0.83,
     "down_capture_vs_6040_pct": 63.0
    },
    "Core & Shield without Bitcoin": {
@@ -146,6 +164,7 @@
     "vol_pct": 7.9,
     "sharpe_rf0": 1.03,
     "sharpe_vs_tbills": 0.68,
+    "sortino_vs_tbills": 1.05,
     "months": 81,
     "max_dd_pct": -11.1,
     "peak": "2022-01-03",
@@ -154,6 +173,7 @@
     "months_to_recover": 17,
     "recovered": "2024-03-01",
     "longest_under_water_months": 25,
+    "calmar": 0.73,
     "down_capture_vs_6040_pct": 63.0
    },
    "60/40": {
@@ -161,6 +181,7 @@
     "vol_pct": 11.5,
     "sharpe_rf0": 0.85,
     "sharpe_vs_tbills": 0.61,
+    "sortino_vs_tbills": 0.92,
     "months": 81,
     "max_dd_pct": -19.2,
     "peak": "2022-01-03",
@@ -168,13 +189,15 @@
     "months_peak_to_trough": 9,
     "months_to_recover": 16,
     "recovered": "2024-02-01",
-    "longest_under_water_months": 24
+    "longest_under_water_months": 24,
+    "calmar": 0.49
    },
    "SPY": {
     "cagr_pct": 15.4,
     "vol_pct": 17.2,
     "sharpe_rf0": 0.92,
     "sharpe_vs_tbills": 0.76,
+    "sortino_vs_tbills": 1.18,
     "months": 81,
     "max_dd_pct": -23.3,
     "peak": "2022-01-03",
@@ -182,7 +205,65 @@
     "months_peak_to_trough": 9,
     "months_to_recover": 15,
     "recovered": "2024-01-02",
-    "longest_under_water_months": 23
+    "longest_under_water_months": 23,
+    "calmar": 0.66
+   }
+  }
+ },
+ "long_history_no_bitcoin": {
+  "window": [
+   "2008-03-03",
+   "2026-09-25"
+  ],
+  "stats": {
+   "Core & Shield without Bitcoin": {
+    "cagr_pct": 6.6,
+    "vol_pct": 7.2,
+    "sharpe_rf0": 0.93,
+    "sharpe_vs_tbills": 0.74,
+    "sortino_vs_tbills": 1.14,
+    "months": 223,
+    "max_dd_pct": -19.0,
+    "peak": "2008-06-02",
+    "trough": "2009-03-02",
+    "months_peak_to_trough": 9,
+    "months_to_recover": 7,
+    "recovered": "2009-10-01",
+    "longest_under_water_months": 25,
+    "calmar": 0.35,
+    "down_capture_vs_6040_pct": 66.0
+   },
+   "60/40": {
+    "cagr_pct": 8.5,
+    "vol_pct": 10.3,
+    "sharpe_rf0": 0.85,
+    "sharpe_vs_tbills": 0.72,
+    "sortino_vs_tbills": 1.06,
+    "months": 223,
+    "max_dd_pct": -30.2,
+    "peak": "2008-06-02",
+    "trough": "2009-03-02",
+    "months_peak_to_trough": 9,
+    "months_to_recover": 19,
+    "recovered": "2010-10-01",
+    "longest_under_water_months": 27,
+    "calmar": 0.28
+   },
+   "SPY": {
+    "cagr_pct": 12.0,
+    "vol_pct": 16.3,
+    "sharpe_rf0": 0.78,
+    "sharpe_vs_tbills": 0.7,
+    "sortino_vs_tbills": 1.02,
+    "months": 223,
+    "max_dd_pct": -47.2,
+    "peak": "2008-06-02",
+    "trough": "2009-03-02",
+    "months_peak_to_trough": 9,
+    "months_to_recover": 24,
+    "recovered": "2011-03-01",
+    "longest_under_water_months": 32,
+    "calmar": 0.25
    }
   }
  },

@@ -25,6 +25,19 @@ Sharpe uses rf = 0.
 | 60/40 (SPY/AGG) | 9.2% | 10.0% | 0.93 | −19.2% | — | −15.2% |
 | SPY | 14.1% | 15.6% | 0.93 | −23.3% | −33.7% | −18.0% |
 
+**Risk-adjusted and downside ratios** (from `backtest/results/readme_metrics.json`, built by `docs/readme_metrics.py`; T-bills returned 2.0%/yr):
+
+| | Sharpe vs T-bills | Sortino vs T-bills | Calmar |
+|---|---|---|---|
+| **Core & Shield (live)** | **0.93** | **1.58** | **0.84** |
+| Core & Shield without IBIT | 0.66 | 1.00 | 0.59 |
+| 60/40 | 0.73 | 1.11 | 0.48 |
+| SPY | 0.81 | 1.24 | 0.61 |
+| *2008–2026, without Bitcoin:* C&S / 60/40 / SPY | 0.74 / 0.72 / 0.70 | 1.14 / 1.06 / 1.02 | 0.35 / 0.28 / 0.25 |
+
+- **Definitions:** Sortino = annual return above T-bills ÷ downside deviation (months below T-bills only). Calmar = annual return ÷ worst month-end drawdown over the whole window.
+- **Reading them:** the strategy's lead is largest on Sortino and Calmar, which only count losses. That is consistent with its job of limiting losses, not maximising return.
+
 - **Against 60/40:** about the same return (9.3% vs 9.2%), a **higher Sharpe** (1.18 vs 0.93) and a **much smaller month-end drawdown** (−11% vs −19%).
 - **2020–now:** 9.2% CAGR, Sharpe 1.08 (without IBIT: 8.1%, 1.03; 60/40: 9.5%, 0.85).
 - **Hindsight check:** even with Bitcoin flattened to a 0% long-run return, the strategy earned 7.6% vs 6.5% without IBIT. About half the IBIT benefit is timing (riding trends and exiting crashes), and about half is Bitcoin's actual rise. **Don't count on the second half repeating.**

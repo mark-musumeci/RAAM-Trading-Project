@@ -2,6 +2,8 @@
 """Extra README figures, saved to backtest/results/readme_metrics.json so every number traces to a file.
 
 - Sharpe two ways: rf = 0 (as in the backtest report) and in excess of T-bills (BIL, open to open)
+- Sortino (excess over T-bills / downside deviation below T-bills) and Calmar (CAGR / |worst month-end drawdown|)
+- The same for Mar 2008 - Sep 2026 without Bitcoin (IGOV extended with BWX)
 - Early vs late period (2015-19 vs 2020-26); not out-of-sample, the design used both
 - Drawdown duration: longest time under water and the worst drawdown's peak -> trough -> recovery
 - Turnover and the cost it implies; measured live slippage
@@ -56,8 +58,10 @@ def stats(r: np.ndarray, rf: np.ndarray, dates: list, bench: np.ndarray | None =
            "vol_pct": round(float(r.std(ddof=1) * np.sqrt(12) * 100), 1),
            "sharpe_rf0": round(float(r.mean() / r.std(ddof=1) * np.sqrt(12)), 2),
            "sharpe_vs_tbills": round(float(ex.mean() / ex.std(ddof=1) * np.sqrt(12)), 2),
+           "sortino_vs_tbills": round(float(ex.mean() * 12 / (np.sqrt(np.mean(np.minimum(ex, 0) ** 2)) * np.sqrt(12))), 2),
            "months": len(r)}
     out.update(drawdown_stats(r, dates))
+    out["calmar"] = round(out["cagr_pct"] / abs(out["max_dd_pct"]), 2) if out["max_dd_pct"] else None
     if bench is not None:
         down = bench < 0
         out["down_capture_vs_6040_pct"] = round(float(r[down].mean() / bench[down].mean() * 100), 0)
@@ -86,6 +90,16 @@ def main() -> None:
         out["stats"][wname] = {
             name: stats(r[m], rf[m], dates, None if name in ("60/40", "SPY") else p["b6040"].values[m])
             for name, r in series.items()}
+
+    # long history without Bitcoin
+    bars_b = bt.splice_igov(bars)
+    b = bt.run(bars_b, noibit, 5.0, breaker=bt.breaker_from_cfg(cfg))["periods"]
+    rf_b = rf_series(b, bars_b)
+    dates_b = list(b["exit"])
+    out["long_history_no_bitcoin"] = {
+        "window": [str(b["entry"].iloc[0]), str(b["exit"].iloc[-1])],
+        "stats": {"Core & Shield without Bitcoin": stats(b["ret"].values, rf_b, dates_b, b["b6040"].values),
+                  "60/40": stats(b["b6040"].values, rf_b, dates_b), "SPY": stats(b["spy"].values, rf_b, dates_b)}}
 
     turn = p["turnover"].iloc[1:]                            # first month is the initial purchase
     sig = json.load(open(ROOT / "memory" / "signals" / "2026-09.json", encoding="utf-8"))

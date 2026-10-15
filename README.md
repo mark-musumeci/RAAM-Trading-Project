@@ -50,13 +50,15 @@
 | Volatility | **7.8%** | 6.9% | 10.0% | 15.6% |
 | Sharpe ratio vs T-bills | **0.93** | 0.66 | 0.73 | 0.81 |
 | Sharpe ratio, rf = 0 | 1.18 | 0.95 | 0.93 | 0.93 |
+| Sortino ratio vs T-bills | **1.58** | 1.00 | 1.11 | 1.24 |
+| Calmar ratio | **0.84** | 0.59 | 0.48 | 0.61 |
 | Worst month-end drawdown | **−11.1%** | −11.1% | −19.2% | −23.3% |
 | Worst daily drawdown | −14.1% | −14.6% | — | −33.7% |
 | 2022 | **−8.8%** | ≈ −8% | −15.2% | −18.0% |
 | Longest time under water | 24 months | 25 months | 24 months | 23 months |
 | Beta to 60/40 | 0.69 | 0.65 | 1.00 | — |
 
-Over a longer, harder window **without Bitcoin** (Mar 2008 – Sep 2026, 223 months), Core & Shield returned **6.6%/yr** against 60/40's 8.5%. Its Sharpe was **0.93 vs 0.85**, and its worst month-end drawdown **−19.0% vs −30.2%**. That is the honest base case: a defensive product that gives up some return in bull markets.
+Over a longer, harder window **without Bitcoin** (Mar 2008 – Sep 2026, 223 months), Core & Shield returned **6.6%/yr** against 60/40's 8.5%. Against T-bills its Sharpe was **0.74 vs 0.72**, Sortino **1.14 vs 1.06** and Calmar **0.35 vs 0.28**, with a worst month-end drawdown of **−19.0% vs −30.2%**. That is the honest base case: a defensive product that gives up some return in bull markets.
 
 ---
 
@@ -166,6 +168,8 @@ Each stage has one job and one owner. These are the actual outputs from the firs
 | Circuit breaker | Simulated on the daily path |
 | Benchmarks | 60/40 = 60% SPY + 40% AGG, rebalanced monthly; SPY total return |
 | Sharpe ratio | Shown both against T-bills (BIL, 2.0%/yr over the window) and at rf = 0 |
+| Sortino ratio | Annual return above T-bills ÷ annualised downside deviation (months below T-bills only) |
+| Calmar ratio | Annual return ÷ worst month-end drawdown over the whole window (not the usual 36-month window) |
 | Known biases | Several design choices (dropping the trend factor, the 50/50 split, adding Bitcoin) were made after seeing this data, so there is no clean out-of-sample period. Treat all backtest figures as optimistic; the live paper record is the real test. |
 
 ---
@@ -193,6 +197,8 @@ The design choices used the whole 2015–2026 history, so neither half is truly 
 |---|---:|---:|---:|---:|
 | Return per year | 9.4% | 8.7% | **9.2%** | **9.5%** |
 | Sharpe vs T-bills | 1.23 | 1.01 | **0.75** | **0.61** |
+| Sortino vs T-bills | 2.31 | 1.57 | **1.24** | **0.92** |
+| Calmar | 1.32 | 1.04 | **0.83** | **0.49** |
 | Worst month-end drawdown | −7.1% | −8.4% | **−11.1%** | **−19.2%** |
 | Share of 60/40's down-month losses | 65% | — | **63%** | — |
 | Without Bitcoin: Sharpe vs T-bills | 0.66 | — | **0.68** | — |
