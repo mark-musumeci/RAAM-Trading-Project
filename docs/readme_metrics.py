@@ -79,7 +79,11 @@ def main() -> None:
     q = q[q["entry"] >= p["entry"].iloc[0]].reset_index(drop=True)
     assert len(q) == len(p), (len(q), len(p))
 
+    pv = bt.run(bars, bt.variants(cfg)[bt.PREV][0], 5.0, breaker=bt.breaker_from_cfg(cfg))["periods"]
+    pv = pv[pv["entry"] >= p["entry"].iloc[0]].reset_index(drop=True)
+    assert len(pv) == len(p), (len(pv), len(p))
     series = {"Core & Shield": p["ret"].values, "Core & Shield without Bitcoin": q["ret"].values,
+              "Previous live (60/40 Core)": pv["ret"].values,
               "60/40": p["b6040"].values, "SPY": p["spy"].values}
     windows = {"full": slice(None), "2015-19": (p["entry"] <= IS_END).values,
                "2020-26": (p["entry"] > IS_END).values}
@@ -95,10 +99,15 @@ def main() -> None:
     bars_b = bt.splice_igov(bars)
     b = bt.run(bars_b, noibit, 5.0, breaker=bt.breaker_from_cfg(cfg))["periods"]
     rf_b = rf_series(b, bars_b)
+    prev_nb = bt.variants(noibit)[bt.PREV][0]
+    pb = bt.run(bars_b, prev_nb, 5.0, breaker=bt.breaker_from_cfg(cfg))["periods"]
+    pb = pb[pb["entry"] >= b["entry"].iloc[0]].reset_index(drop=True)
+    assert len(pb) == len(b), (len(pb), len(b))
     dates_b = list(b["exit"])
     out["long_history_no_bitcoin"] = {
         "window": [str(b["entry"].iloc[0]), str(b["exit"].iloc[-1])],
         "stats": {"Core & Shield without Bitcoin": stats(b["ret"].values, rf_b, dates_b, b["b6040"].values),
+                  "Previous live without Bitcoin": stats(pb["ret"].values, rf_b, dates_b, b["b6040"].values),
                   "60/40": stats(b["b6040"].values, rf_b, dates_b), "SPY": stats(b["spy"].values, rf_b, dates_b)}}
 
     turn = p["turnover"].iloc[1:]                            # first month is the initial purchase

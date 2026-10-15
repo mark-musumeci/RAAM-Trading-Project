@@ -1,14 +1,51 @@
 # Backtest Summary: historical context for the live bot
 
-Source: `backtest/backtest.py` → [`backtest/results/REPORT.md`](../backtest/results/REPORT.md), run 2026-09-26. It covers the **live config**, Core & Shield with IBIT:
-- the **Core**: a fixed 30% SPY + 20% AGG;
+Source: `backtest/backtest.py` → [`backtest/results/REPORT.md`](../backtest/results/REPORT.md), rerun 2026-10-14 for the **live config from the 2026-10 signal**:
+- the **Core**: 50% **QQQM** (Nasdaq-100) while its month-end close is above its 10-month average, otherwise BIL (T-bills). QQQM before its Oct 2020 launch is QQQ, the same index;
 - the **Shield**: 50% RAAM over **12 candidates, including IBIT (a spot-Bitcoin ETF)**, with IBIT capped at **5% of the whole portfolio**;
 - the Tier 1 rules, the trend term off, and the −20% breaker on the whole portfolio.
 
 It uses the live engine (`compute_signal`), a signal at the month-end close and a fill at the next open, 5 bps of cost per side, and the day-by-day path. Before IBIT launched (Jan 2024), IBIT = BTC-USD aligned to US trading days, minus a 0.25%/yr fee, spliced into real IBIT. That makes the comparison window **Feb 2015 → Sep 2026**.
 **This is context, not a rule change.** Routines use it to judge whether a live month is normal. They never use it to alter the model.
 
-## What Core & Shield is
+## Current design: QQQM trend Core + Shield (live from the 2 Nov 2026 rebalance)
+Figures from `backtest/results/readme_metrics.json` (`docs/readme_metrics.py`); T-bills returned 2.0%/yr.
+
+| Feb 2015 → Sep 2026 | **Live (QQQM trend Core)** | Live without IBIT | Previous (60/40 Core) | 60/40 | SPY |
+|---|---|---|---|---|---|
+| Return / yr | **11.9%** | 9.0% | 9.3% | 9.2% | 14.1% |
+| Volatility | 9.7% | 9.0% | 7.8% | 10.0% | 15.6% |
+| Sharpe vs T-bills | **1.01** | 0.79 | 0.93 | 0.73 | 0.81 |
+| Sortino vs T-bills | **1.77** | 1.28 | 1.58 | 1.11 | 1.24 |
+| Calmar | **1.02** | 0.74 | 0.84 | 0.48 | 0.61 |
+| Worst month-end drawdown | −11.7% | −12.2% | −11.1% | −19.2% | −23.3% |
+| Worst daily drawdown | −15.4% | −16.1% | −14.1% | — | −33.7% |
+| Months to recover the worst drawdown | 4 | 4 | 16 | 16 | 15 |
+| Share of 60/40's down-month losses | 72% | 74% | 63% | 100% | — |
+| Beta to 60/40 / alpha vs T-bills | 0.68 / +4.9%/yr (t 2.3) | 0.64 / +2.4%/yr (t 1.3) | 0.69 / +2.2%/yr | 1.00 | — |
+| 2022 | **−4.9%** | — | −8.8% | −15.2% | −18.0% |
+
+- **2008–2026 without Bitcoin:** 8.8%/yr vs 6.6% (previous design) and 8.5% (60/40). Sharpe vs T-bills 0.85 vs 0.74 and 0.72; Calmar **0.72** vs 0.35 and 0.28. Worst month-end drawdown −12.2% vs −19.0% and −30.2%. Jun 2008–Jun 2009 about −1% vs −7.4% and −17.7%.
+- **By period:** better than the previous design in 2020–26 (Calmar 1.12 vs 0.83) and slightly **worse in 2015–19** (1.17 vs 1.32). The gain is concentrated in the tech-led 2020s and in stepping aside in 2022.
+- **Bitcoin dependence is much lower:** without IBIT it still returns 9.0%/yr (previous design 6.5%).
+- **Known risk outside the data:** a tech-led bust. In 2000–02 the trend-filtered Nasdaq-100 alone fell about 36% before stepping aside. Inside this portfolio that is roughly an extra −18%. Over 1999–2026 a trend-filtered S&P 500 had the better Calmar (0.33 vs 0.26); the Nasdaq-100's edge is a 2010s-era result.
+- **The trend filter matters:** QQQM with no filter would have had a −24.6% worst day and 65% down capture vs SPY.
+- **Skill test** (`backtest/robustness.py`): the full strategy beats **99%** of 1,000 random-pick Shield portfolios on Sharpe in both 2015–26 and 2008–26, and 98–100% on down-market defence and worst day.
+
+### Normal ranges (current design, for judging a live month)
+- **Monthly return:** 70% of months between −3% and +3%, 81% between −4% and +4%. Worst month −8.7%, best +9.1%. 66% of months positive.
+- **Drawdown:** worst month-end −11.7%, worst daily −15.4% (March 2020, when the −5% daily breaker tripped once). A 2008-type crisis realistically reaches −15% to −20%.
+- **Share of losses:** in 60/40's down months it lost about **72%** as much.
+- **Cash (BIL):** 26% on average. It can reach **100%** when the Core trend filter is off and the whole Shield is in cash (2022 averaged 83%).
+- **Core trend filter:** off (Core in T-bills) in about 1 month in 5.
+- **Turnover:** about 21% of the portfolio a month (5.1× a year two-sided), ≈0.25%/yr at 5 bps.
+- **IBIT:** never above 5% at a rebalance.
+
+---
+
+**Everything below describes the previous design (fixed 60/40 Core, live 1–31 Oct 2026)** and the tests that led here. It is kept as history; its "Normal ranges" no longer apply.
+
+## What Core & Shield was (previous design)
 A balanced portfolio that aims to **match or beat a 60/40's risk-adjusted return while taking much less damage in bear markets**:
 - The Core supplies growth.
 - The Shield (RAAM) is a defensive rotation with a small, capped Bitcoin sleeve. It moves into bonds and cash when trends weaken, and it lags in strong equity bull markets.
@@ -56,7 +93,7 @@ Sharpe uses rf = 0.
 - **2008 stress test** (without IBIT, since Bitcoin didn't exist): C&S −7.4% vs 60/40 −17.7%. The breaker tripped once, on 2009-02-23 (−20.2%).
 - **The paper's claim (+638% in 2004–17) is NOT reproduced**, and Core & Shield is our own evolution of it.
 
-## Normal ranges (live config; for judging a live month)
+## Normal ranges (previous design; superseded)
 - **Monthly return:** 78% of months fall between −3% and +3%. The worst month was −5.7% and the best +6.9%. 65% of months are positive.
 - **Daily path:** max drawdown −14.1% (2020-03-18). The worst day was −4.2%.
 - **Share of losses:** in months when 60/40 falls, Core & Shield lost about **63%** as much. In SPY's down months, it lost about 42% as much.

@@ -149,9 +149,10 @@ def build(client, cfg: dict, month: str, as_of: dt.date) -> tuple[dict, dict]:
     return_usd = (round(equity_end - contributions, 2)
                   if invested and equity_end is not None and contributions is not None else None)
 
+    held_core = ((held_sig or {}).get("portfolio") or {}).get("core", core)   # the Core actually held
     rows = []
     for s, w in sorted(held.items(), key=lambda kv: -kv[1]):
-        c = core.get(s, 0.0)
+        c = held_core.get(s, 0.0)
         sleeve = "Core" if abs(w - c) < 1e-9 else ("Shield" if c == 0 else "Core + Shield")
         r = pr(closes[s], start, end) if s in closes else None
         rows.append({"symbol": s, "sleeve": sleeve, "weight_pct": round(w * 100, 2),
@@ -162,7 +163,7 @@ def build(client, cfg: dict, month: str, as_of: dt.date) -> tuple[dict, dict]:
         for s, w in sorted(next_sig["targets"].items(), key=lambda kv: -kv[1]):
             if w <= 0:
                 continue
-            c = core.get(s, 0.0)
+            c = (next_sig.get("portfolio") or {}).get("core", core).get(s, 0.0)
             next_rows.append({"symbol": s, "core_pct": round(c * 100, 1),
                               "shield_pct": round((w - c) * 100, 1), "total_pct": round(w * 100, 1)})
 
@@ -428,8 +429,8 @@ def render(metrics: dict, series: dict, notes: list[str], path: pathlib.Path) ->
 
     fig.text(L, 0.026, "Paper trading, not investment advice. Past and backtested results do not "
              "guarantee future results.", fontsize=6.3, color=MUTED)
-    fig.text(L, 0.014, "Backtest 2015–2026: Core & Shield + IBIT 9.3%/yr, Sharpe ~1.2, max DD −14.1% · "
-             "60/40 9.2%/yr, Sharpe ~0.9, max DD −19%.",
+    fig.text(L, 0.014, "Backtest 2015–2026 (QQQM trend Core + Shield): 11.9%/yr, Sharpe vs T-bills 1.0, worst "
+             "month-end −11.7% · 60/40 9.2%/yr, 0.73, −19.2%.",
              fontsize=6.3, color=MUTED)
     path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(path, format=path.suffix.lstrip(".") or "pdf", facecolor=SURFACE, dpi=110)

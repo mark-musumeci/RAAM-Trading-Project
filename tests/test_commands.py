@@ -14,7 +14,8 @@ import raam  # noqa: E402
 
 CFG = raam.load_config()
 CASH = CFG["universe"]["cash"]
-SYMS = raam.tradable_symbols(CFG)
+SYMS = list(dict.fromkeys(raam.tradable_symbols(CFG) + ["SPY", "AGG"]))   # + benchmark ETFs
+CORE_SYM = CFG["portfolio"]["core_trend"]["symbol"]
 # Sept 2026: last trading day Wed 30th; Oct 2026: first trading day Thu 1st
 SEPT_DAYS = [d.date() for d in pd.bdate_range("2026-09-01", "2026-09-30") if d.day != 7]  # Labor Day
 OCT_DAYS = [d.date() for d in pd.bdate_range("2026-10-01", "2026-10-31")]
@@ -33,6 +34,8 @@ class FakeAlpaca:
         self._bars = {}
         for i, s in enumerate(SYMS):
             drift = 0.001 if i % 2 == 0 else -0.0008
+            if s == CORE_SYM:
+                drift = 0.0015                  # Core trend filter ON by default in tests
             c = pd.Series(100 * np.cumprod(1 + rng.normal(drift, 0.01, len(idx))), index=idx)
             self._bars[s] = pd.DataFrame({"o": c, "h": c * 1.01, "l": c * 0.99, "c": c, "v": 1e6})
 
@@ -211,11 +214,13 @@ def test_signal_records_cash_hurdle(env):
 def test_signal_combines_core_and_shield(env):
     out = raam.cmd_signal(args(date="2026-09-30", dry_run=True), CFG)
     t, sh = out["targets"], out["shield_targets"]
-    core, shield = raam.portfolio_parts(CFG)
+    _, shield = raam.portfolio_parts(CFG)
+    core = out["portfolio"]["core"]                       # this month's Core, after the trend filter
+    assert out["core_trend"]["on"] and core == {CORE_SYM: 0.5}
     assert sum(t.values()) == pytest.approx(1.0) and sum(sh.values()) == pytest.approx(1.0)
     for s in raam.tradable_symbols(CFG):
         assert t[s] == pytest.approx(core.get(s, 0.0) + shield * sh.get(s, 0.0))
-    assert t["SPY"] >= 0.30 - 1e-9
+    assert t[CORE_SYM] >= 0.50 - 1e-9
 
 
 def test_first_rebalance_buys_core_within_caps(env):
@@ -223,7 +228,7 @@ def test_first_rebalance_buys_core_within_caps(env):
     out = raam.cmd_rebalance(args(date="2026-10-01"), CFG)
     assert out["status"] == "ok", out
     bought = {o["symbol"] for o in env.fake.submitted}
-    assert {"SPY", "AGG"} <= bought
+    assert CORE_SYM in bought                              # a 50% buy fits the 55% order cap
 
 
 # ---------------------------------------------------------------- preflight / execution quality
@@ -245,20 +250,20 @@ def test_preflight_warns_non_fractionable_and_halts_untradable(env):
 
 
 def test_rebalance_uses_whole_shares_for_non_fractionable(env):
-    env.fake.nonfrac = {"SPY"}
+    env.fake.nonfrac = {CORE_SYM}
     raam.cmd_signal(args(date="2026-09-30"), CFG)
     out = raam.cmd_rebalance(args(date="2026-10-01"), CFG)
     assert out["status"] == "ok", out
-    spy = [o for o in env.fake.submitted if o["symbol"] == "SPY"]
-    assert spy and "notional" not in spy[0] and float(spy[0]["qty"]).is_integer()
-    others = [o for o in env.fake.submitted if o["symbol"] != "SPY"]
+    core = [o for o in env.fake.submitted if o["symbol"] == CORE_SYM]
+    assert core and "notional" not in core[0] and float(core[0]["qty"]).is_integer()
+    others = [o for o in env.fake.submitted if o["symbol"] != CORE_SYM]
     assert all("notional" in o for o in others)
-    assert out["plan"]["whole_share_symbols"] == ["SPY"]
+    assert out["plan"]["whole_share_symbols"] == [CORE_SYM]
 
 
 def test_rebalance_halts_on_untradable_asset(env):
     raam.cmd_signal(args(date="2026-09-30"), CFG)
-    env.fake.untradable = {"SPY"}
+    env.fake.untradable = {CORE_SYM}
     with pytest.raises(raam.Halt, match="not tradable"):
         raam.cmd_rebalance(args(date="2026-10-01"), CFG)
     assert not env.fake.submitted
@@ -269,7 +274,7 @@ def test_slippage_recorded_in_fills_and_trade_log(env):
     out = raam.cmd_rebalance(args(date="2026-10-01"), CFG)
     assert all(f["ref_price"] == 100.0 and f["slippage_bps"] == 0.0 for f in out["fills"])
     assert out["slippage"]["avg_bps"] == 0.0
-    row = [ln for ln in (env.mem / "TRADE-LOG.md").read_text().splitlines() if "| SPY |" in ln][0]
+    row = [ln for ln in (env.mem / "TRADE-LOG.md").read_text().splitlines() if f"| {CORE_SYM} |" in ln][0]
     assert row.count("|") == 10          # date, sym, side, qty, fill, ref, slippage, status, reason
 
 
@@ -278,3 +283,19 @@ def test_slippage_sign_convention():
     assert raam.slippage_bps("sell", 100, 99.9) == 10.0     # sold lower = cost
     assert raam.slippage_bps("buy", 100, 99.95) == -5.0     # price improvement
     assert raam.slippage_bps("buy", None, 100) is None
+
+
+def test_core_trend_filter_moves_core_to_cash_when_below_average(env):
+    b = env.fake._bars[CORE_SYM]
+    b[["o", "h", "l", "c"]] = b[["o", "h", "l", "c"]].mul(np.linspace(1.6, 1.0, len(b)), axis=0)
+    out = raam.cmd_signal(args(date="2026-09-30", dry_run=True), CFG)
+    ct = out["core_trend"]
+    assert ct["on"] is False and ct["month_end_close"] < ct["sma"] and ct["off_to"] == CASH
+    assert out["targets"].get(CORE_SYM, 0) == 0
+    assert out["targets"][CASH] >= 0.5 - 1e-9
+    assert sum(out["targets"].values()) == pytest.approx(1.0)
+
+
+def test_core_trend_filter_needs_enough_history(env):
+    env.fake._bars[CORE_SYM] = env.fake._bars[CORE_SYM].iloc[-150:]     # ~7 month-ends < 10
+    assert raam.main(["signal", "--date", "2026-09-30"]) == 2

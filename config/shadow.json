@@ -1,10 +1,18 @@
 {
-  "_note": "Pre-registered shadow variants (owner decision 2026-10-14). Each month-end scripts/shadow.py computes what each variant would hold, from the same data as the live signal, and tracks its return. Nothing here is ever traded. Change this list only by owner decision, never because of results already seen; a new variant starts tracking from its first recorded month.",
+  "_note": "Pre-registered shadow variants (owner decision 2026-10-14). Each month-end scripts/shadow.py computes what each variant would hold, from the same data as the live signal, and tracks its return. Nothing here is ever traded. Change this list only by owner decision, never because of results already seen; a new variant starts tracking from its first recorded month. From the 2026-10 signal (November) the live rules use the QQQM trend Core (owner decision 2026-10-14), so variants are defined relative to that; the old fixed 60/40 Core is tracked as 'Previous live'. Records before November used the old live rules.",
   "start_month": "2026-10",
   "cost_bps_per_side": 5,
   "variants": {
     "Live model": {
       "_why": "The live rules recomputed by the engine (uses the live signal file when it exists). Checks that the account tracks the model (evaluation B4)."
+    },
+    "Previous live (60/40 Core)": {
+      "_why": "The strategy before 2026-10-14: fixed 30% SPY + 20% AGG Core with the same Shield. Shows month by month whether the QQQM trend Core is paying off.",
+      "core": {
+        "SPY": 0.3,
+        "AGG": 0.2
+      },
+      "core_trend": null
     },
     "No Bitcoin": {
       "_why": "How much of the result is IBIT.",
@@ -16,14 +24,16 @@
       "_why": "Owner proposal 2026-10-14: growth-only Core (backtest 11.8%/yr, Sharpe 1.14, 2008 -18%).",
       "core": {
         "SPY": 0.5
-      }
+      },
+      "core_trend": null
     },
     "Core 40% SPY / 10% AGG": {
       "_why": "Middle ground between the live Core and the 50% SPY Core.",
       "core": {
         "SPY": 0.4,
         "AGG": 0.1
-      }
+      },
+      "core_trend": null
     },
     "Bitcoin satellite": {
       "_why": "IBIT outside the ranking: 5% IBIT when its momentum beats cash, else BIL; the Shield (45%) ranks the other 11. Removes the half-empty IBIT slot.",

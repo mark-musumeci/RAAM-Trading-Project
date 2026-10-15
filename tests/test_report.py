@@ -70,7 +70,7 @@ def test_full_report_is_one_page_pdf_with_next_allocation(renv, capsys, tmp_path
     assert data.startswith(b"%PDF")
     assert len(re.findall(rb"/Type\s*/Page(?!s)", data)) == 1
     alloc = {r["symbol"]: r for r in out["metrics"]["next_allocation"]}
-    assert alloc["SPY"]["core_pct"] == pytest.approx(30.0)
+    assert alloc["QQQM"]["core_pct"] == pytest.approx(50.0)          # trend filter on in the fake
     assert sum(r["total_pct"] for r in alloc.values()) == pytest.approx(100.0, abs=0.5)
 
 
@@ -81,7 +81,7 @@ def test_holdings_after_executed_rebalance(renv, capsys):
     code, out = run(["--month", "2026-10", "--metrics-only"], capsys)
     assert code == 0, out
     rows = {r["symbol"]: r for r in out["metrics"]["holdings"]}
-    assert rows["SPY"]["sleeve"] in ("Core", "Core + Shield")
+    assert rows["QQQM"]["sleeve"] in ("Core", "Core + Shield")
     assert sum(r["weight_pct"] for r in rows.values()) == pytest.approx(100.0, abs=0.5)
     assert out["metrics"]["inception"] == "2026-10-01" and out["metrics"]["invested"] is True
 

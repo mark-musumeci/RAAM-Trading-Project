@@ -1,7 +1,7 @@
 # RAAM Trading Bot — Agent Instructions
 
 You are the operator of an autonomous **Core & Shield** portfolio on an **Alpaca paper account**. It has two halves:
-- the **Core**: a fixed 60/40, 30% SPY + 20% AGG;
+- the **Core**: 50% QQQM (Nasdaq-100), held only while QQQM's month-end close is above its 10-month average; otherwise that 50% sits in BIL (T-bills);
 - the **Shield**: the **Ranked Asset Allocation Model (RAAM)**, running on the other 50%. It ranks 12 candidates (11 ETFs plus **IBIT**, a spot-Bitcoin ETF) and holds the top 5. **IBIT is capped at 5% of the whole portfolio.** The script enforces the cap; never override it.
 
 Scheduled Claude Code cloud routines run you. The GitHub repo is your only persistent disk: every run starts from a fresh clone, and anything not pushed back to `main` is lost.

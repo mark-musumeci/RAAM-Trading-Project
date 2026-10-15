@@ -28,7 +28,7 @@ from matplotlib.patches import FancyBboxPatch, Rectangle  # noqa: E402
 from matplotlib.textpath import TextToPath  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-VERSION, VERSION_DATE = "1.2", "14 October 2026"
+VERSION, VERSION_DATE = "2.0", "14 October 2026"
 TITLE = "Core & Shield · Strategy Handbook"
 
 # Same palette as the monthly report (scripts/report.py)
@@ -306,32 +306,33 @@ def cover(doc: Doc):
     f.text(ML / W, (H - 1.9) / H, "How it works, why it exists, and how to judge it", fontsize=13,
            color=INK2, family=FONT)
     f.text(ML / W, (H - 2.2) / H, f"Version {VERSION} · {VERSION_DATE} · written before the first trade "
-           "(1 October 2026)", fontsize=8.5, color=MUTED, family=FONT)
+           "(1 October 2026); v2.0 adds the QQQM trend Core, live from 2 November 2026", fontsize=8.5,
+           color=MUTED, family=FONT)
     doc.y = H - 2.55
-    doc.callout("**In one sentence:** half the money sits in a classic 60/40 (the **Core**), the other half is "
-                "run by a rules-based model (the **Shield**) that each month picks the strongest, calmest and "
-                "least-crowded of 12 ETFs, or retreats to cash. The goal is roughly a 60/40's return with much "
-                "smaller losses when markets fall.", size=10.5)
+    doc.callout("**In one sentence:** half the money is a growth **Core** (the Nasdaq-100, held only while it is "
+                "above its 10-month average), the other half is run by a rules-based model (the **Shield**) that "
+                "each month picks the strongest, calmest and least-crowded of 12 ETFs, or retreats to cash. The goal "
+                "is to beat a 60/40 on return with much smaller losses when markets fall.", size=10.5)
 
     # structure donut
     ax = f.add_axes([ML / W, (doc.y - 3.3) / H, 3.3 / W, 3.3 / H])
     inner = [50, 50]
     ax.pie(inner, radius=0.62, colors=[BLUE, GREEN], startangle=90, counterclock=False,
            wedgeprops=dict(width=0.26, edgecolor=SURFACE, linewidth=2))
-    outer = [30, 20] + [10] * 5
-    oc = [BLUE, BLUE_L] + [GREEN] * 5
+    outer = [50] + [10] * 5
+    oc = [BLUE] + [GREEN] * 5
     wedges, _ = ax.pie(outer, radius=1.0, colors=oc, startangle=90, counterclock=False,
                        wedgeprops=dict(width=0.3, edgecolor=SURFACE, linewidth=2))
-    for w_, a in zip(wedges[2:], (1.0, 0.85, 0.7, 0.55, 0.4)):
+    for w_, a in zip(wedges[1:], (1.0, 0.85, 0.7, 0.55, 0.4)):
         w_.set_alpha(a)
     ax.text(0, 0.08, "100%", ha="center", va="center", fontsize=13, fontweight="bold", family=FONT)
     ax.text(0, -0.12, "portfolio", ha="center", va="center", fontsize=8, color=MUTED, family=FONT)
     ax.set_aspect("equal")
     lx = ML + 3.6
     ly = doc.y - 0.35
-    legend = [(BLUE, "**Core · 50%** · fixed, never changes"),
-              (BLUE, "SPY 30% · US stocks (S&P 500)"),
-              (BLUE_L, "AGG 20% · US bonds"),
+    legend = [(BLUE, "**Core · 50%** · growth, with a trend filter"),
+              (BLUE, "QQQM · Nasdaq-100 while it trends up"),
+              (BLUE_L, "T-bills (BIL) when it is below its 10-month average"),
               (GREEN, "**Shield · 50%** · RAAM, re-picked monthly"),
               (GREEN, "5 slots × 10% each, chosen from 12 ETFs"),
               (GREEN, "a slot goes to cash (BIL) if its ETF is weaker than cash"),
@@ -344,16 +345,16 @@ def cover(doc: Doc):
     doc.y -= 3.55
     doc.text("**Backtest, Feb 2015 – Sep 2026, after trading costs** (Bitcoin before 2024 simulated; see section 6)",
              size=9, color=INK2, after=0.12)
-    doc.cards([("Return per year", "9.3%", "60/40: 9.2%"),
-               ("Sharpe vs T-bills", "0.93", "60/40: 0.73"),
-               ("Worst month-end drop", "−11.1%", "60/40: −19.2%"),
-               ("2022 (bear market)", "−8.8%", "60/40: −15.2%")])
+    doc.cards([("Return per year", "11.9%", "60/40: 9.2%"),
+               ("Sharpe vs T-bills", "1.01", "60/40: 0.73"),
+               ("Calmar ratio", "1.02", "60/40: 0.48"),
+               ("2022 (bear market)", "−4.9%", "60/40: −15.2%")])
     doc.table(["At a glance", ""],
               [["Account", "Alpaca paper trading account, starting value $100,000 (move to IBKR paper planned)"],
                ["Trades", "Once a month: signal after the last trading day's close, orders the next morning"],
                ["Run by", "Claude Code cloud routines; the maths and orders are a fixed Python script"],
                ["Alerts", "Discord: daily health line, monthly PDF report, any halt"],
-               ["Status", "Locked for evaluation from 24 Sep 2026; judged against 60/40 at 1, 3, 6 and 12 months"]],
+               ["Status", "Live since 1 Oct 2026; current Core from 2 Nov 2026, when the 12-month evaluation restarted"]],
               [1.2, 5], bold_first_col=True, size=8.5)
 
 
@@ -362,54 +363,54 @@ def section_idea(doc: Doc):
     doc.h1("1", "The idea", "Why this strategy exists, where it comes from, and what it is (and isn't) for.")
     doc.h2("The problem it solves")
     doc.text("A 60/40 portfolio is the standard balanced benchmark, but its losses in a bad year are large: "
-             "**−15% in 2022** and about **−19%** at its worst month-end in our test window. Tactical rotation "
-             "models are the opposite: they sidestep much of a slow bear market by moving into bonds or cash, "
-             "but they lag badly in strong bull markets because they hold defensive assets too often.")
-    doc.text("Core & Shield combines the two. The **Core** is a fixed 60/40 that captures most of the market's "
-             "long-run growth. The **Shield** is a rotation model that behaves like a shock absorber. Together "
-             "they aim for **about the same return as a 60/40, with roughly half the damage in bear markets**.")
+             "**−15% in 2022** and about **−19%** at its worst month-end in our test window. Growth assets compound "
+             "faster but fall further. Tactical rotation models sidestep slow bear markets but lag in bull markets.")
+    doc.text("Core & Shield gives each half one job. The **Core** is pure growth, the Nasdaq-100 through QQQM, with "
+             "one simple exit: it moves to T-bills when the index is below its 10-month average. The **Shield** is a "
+             "rotation model that behaves like a shock absorber. Because the Shield already defends, the Core "
+             "doesn't need bonds. Together they aim to **beat a 60/40 on return with much smaller drawdowns**.")
     doc.h2("Where it comes from")
     doc.text("The Shield is the **Ranked Asset Allocation Model (RAAM)** by Gioele Giordano, which won the 2018 "
              "Charles H. Dow Award from the CMT Association. RAAM ranks a diversified set of ETFs on momentum, "
              "volatility and correlation each month and holds the best five, moving to cash when nothing is "
-             "trending up.")
+             "trending up. The Core's trend filter is the 10-month moving-average rule studied by Faber (2007).")
     doc.text("Our version is **not** the paper's version. The paper's headline (+638%, Sharpe 1.94 over 2004–17) "
              "was in-sample, before costs, and could not be reproduced. We resolved the paper's seven ambiguities, "
-             "made three safety upgrades, removed a factor that hurt results, wrapped it in the Core, and added a "
-             "small, capped Bitcoin sleeve. Section 9 lists every change and the evidence behind it.")
+             "made three safety upgrades, removed a factor that hurt results, added a growth Core with a trend "
+             "filter, and added a small, capped Bitcoin sleeve. Section 9 lists every change and the evidence.")
     doc.h2("What it is designed to do")
-    doc.bullets(["**Specialise in defence.** It wins mainly by losing less, not by making more. Its best years "
-                 "relative to 60/40 are bad years for markets (2018 aside, see section 6).",
-                 "**Stay invested for growth.** Half the portfolio is always in stocks and bonds, so it does not "
-                 "miss recoveries the way a pure timing model can.",
+    doc.bullets(["**Grow, then step aside.** The Core rides the Nasdaq-100 in uptrends and sits in T-bills in long "
+                 "downtrends, as in 2022.",
+                 "**Defend with the Shield.** The Shield holds what is trending, calm and diversifying, and moves "
+                 "slots to cash when trends break.",
                  "**Follow rules, not opinions.** The allocation is computed by a script. Nobody, including Claude, "
                  "overrides it because of news or a market view.",
-                 "**Trade rarely.** One rebalance a month, about 15% of the portfolio turned over each time."])
+                 "**Trade rarely.** One rebalance a month, about 21% of the portfolio turned over each time."])
     doc.h2("What it is not")
-    doc.bullets(["**Not a way to beat the S&P 500.** In a strong bull market it will trail SPY, often by a lot, "
-                 "and usually trail 60/40 a little. That is by design.",
-                 "**Not a crash-proof product.** A sudden one-day crash hits before any monthly model can react; "
+    doc.bullets(["**Not diversified away from US tech.** When the Core is on, half the portfolio is the Nasdaq-100. "
+                 "A tech-led bust is the main risk (section 8).",
+                 "**Not a crash-proof product.** A sudden one-day crash hits before any monthly signal can react; "
                  "the circuit breaker limits the damage but cannot prevent it.",
                  "**Not a Bitcoin strategy.** Bitcoin is one candidate of twelve and is capped at 5%."])
     doc.h2("Who a strategy like this suits")
-    doc.text("Investors who care more about the size of the worst loss than about maximum return: people drawing "
-             "an income, those near a goal date, and institutions such as pension and superannuation funds that "
-             "are judged on risk-adjusted returns. For them, matching a 60/40's return with a much smaller drawdown "
-             "is a meaningful improvement.")
-    doc.callout("**Its personality in one line:** a balanced portfolio that expects to be roughly level with 60/40 "
-                "in good years and clearly ahead in bad ones.")
+    doc.text("Investors who want more than a balanced portfolio's return but are judged on drawdowns and "
+             "risk-adjusted return, and who accept a concentrated growth engine in exchange.")
+    doc.callout("**Its personality in one line:** a growth engine with two brakes. It expects to beat 60/40 in "
+                "most years and to lose much less in long bear markets, but it is exposed to sudden crashes and to "
+                "a tech-led bust.")
 
 
 def section_build(doc: Doc):
     doc.h1("2", "How the portfolio is built", "Two halves, 13 possible holdings, one cap.")
     doc.table(["Half", "Weight", "Holdings", "How it changes"],
-              [["Core", "50%", "SPY 30% + AGG 20%", "Never. Reset to exactly these weights at every monthly rebalance."],
+              [["Core", "50%", "QQQM (Nasdaq-100), or BIL when the trend filter is off",
+                "Every month: held while QQQM's month-end close is above its 10-month average, else T-bills."],
                ["Shield", "50%", "5 slots of 10% each, from 12 candidate ETFs, with BIL (cash) for failed slots",
                 "Re-chosen every month by the RAAM rules in section 3."]],
               [0.8, 0.7, 2.2, 2.6], bold_first_col=True)
-    doc.text("The two halves simply add up. If the Shield picks AGG, the portfolio holds 20% (Core) + 10% "
-             "(Shield) = **30% AGG**. If the Shield sends a slot to cash, that 10% sits in BIL, a 1–3 month "
-             "Treasury bill fund that earns the short-term interest rate.")
+    doc.text("The two halves simply add up. When the Core's trend filter is off and the Shield's picks fail the "
+             "cash test, the whole portfolio can sit in **BIL**, a 1–3 month Treasury bill fund that earns the "
+             "short-term interest rate. In the backtest the Core was off in about 1 month in 5.")
     doc.h2("The Shield's 12 candidates")
     doc.text("Eleven ETFs from Craig Israelsen's **7Twelve** diversified portfolio, plus spot Bitcoin. Together they "
              "span stocks, real estate, commodities, bonds and crypto, so there is usually something trending up.",
@@ -428,21 +429,21 @@ def section_build(doc: Doc):
                ["International bonds", "IGOV", "iShares International Treasury: developed-market government bonds"],
                ["Crypto", "IBIT", "iShares Bitcoin Trust: spot Bitcoin. **Capped at 5% of the portfolio**"],
                ["Cash (not ranked)", "BIL", "SPDR 1–3 Month T-Bill: where failed slots and any IBIT excess go"],
-               ["Core only", "SPY", "SPDR S&P 500: the Core's stock holding (not a Shield candidate)"]],
+               ["Core only", "QQQM", "Invesco Nasdaq-100: the Core's growth holding (not a Shield candidate)"]],
               [1.5, 0.6, 4.2], size=8.3)
     doc.h2("The Bitcoin cap")
     doc.text("A normal Shield slot is 10% of the portfolio. If IBIT is picked, it only gets **5%**; the other 5% "
              "goes to BIL. The cap is enforced by the script after the ranking, so the portfolio never starts a "
              "month with more than 5% in Bitcoin (between rebalances it drifts with Bitcoin's price). A Bitcoin "
              "crash of −80% while it is held costs roughly 3–4% of the portfolio.")
-    p = [("AGG", 100), ("SPY", 100), ("BIL", 87.9), ("TIP", 59.3), ("IBIT", 52.1), ("DBC", 40.7), ("IGOV", 35.7),
+    p = [("BIL", 88.6), ("QQQM", 81.4), ("TIP", 59.3), ("AGG", 55.0), ("IBIT", 52.1), ("DBC", 40.7), ("IGOV", 35.7),
          ("RWR", 33.6), ("VV", 33.6), ("IJR", 14.3), ("EEM", 12.9), ("VAW", 10.0), ("EFA", 10.0), ("IJH", 4.3)]
     doc.need(2.6)
     doc.h2("How often each ETF was held (backtest, % of months)")
     ax = doc.axes(2.0)
     style(ax, "x")
     names, vals = [x[0] for x in p][::-1], [x[1] for x in p][::-1]
-    cols = [BLUE if n in ("SPY", "AGG") else (MUTED if n == "BIL" else GREEN) for n in names]
+    cols = [BLUE if n == "QQQM" else (MUTED if n == "BIL" else GREEN) for n in names]
     ax.barh(names, vals, color=cols, height=0.62)
     for i, v in enumerate(vals):
         ax.text(v + 1, i, f"{v:.0f}%", va="center", fontsize=7, color=INK2, family=FONT)
@@ -450,8 +451,8 @@ def section_build(doc: Doc):
     ax.set_xticks([])
     ax.tick_params(axis="y", labelsize=7.5, colors=INK2)
     ax.spines["bottom"].set_visible(False)
-    doc.text("Blue = always held through the Core. Grey = cash. SPY and AGG show 100% because the Core always "
-             "holds them; the Shield also picks AGG in some months.", size=8, color=MUTED)
+    doc.text("Blue = the Core (QQQM, held whenever its trend filter is on). Grey = cash. Green = Shield picks.",
+             size=8, color=MUTED)
 
 
 def flow(ax):
@@ -463,7 +464,7 @@ def flow(ax):
              ("3  Score", "average of the\nthree ranks"),
              ("4  Pick 5", "the five lowest\nscores, 10% each"),
              ("5  Cash test", "a pick weaker than\ncash goes to BIL"),
-             ("6  Add the Core", "+ SPY 30%\n+ AGG 20%"),
+             ("6  Add the Core", "QQQM 50% if trending,\nelse BIL 50%"),
              ("7  Cap Bitcoin", "IBIT ≤ 5%,\nexcess to BIL"),
              ("8  Trade", "next morning, then\nhold all month")]
     for i, (t, s) in enumerate(steps):
@@ -501,17 +502,17 @@ def section_rules(doc: Doc):
                  "The **five lowest scores** are picked. Each gets 20% of the Shield, which is 10% of the portfolio.",
                  "**Cash test:** a pick keeps its slot only if its 84-day momentum beats cash's own (BIL's) "
                  "84-day momentum. Otherwise that slot goes to BIL. If nothing beats cash, the whole Shield "
-                 "(50%) sits in BIL while the Core stays invested.",
+                 "(50%) sits in BIL.",
                  "A fourth factor from the paper (an ATR trend/breakout signal) is still calculated and logged, "
                  "but **no longer scored**: three separate backtests showed results were better without it."])
     doc.h2("Worked example (illustrative numbers)")
-    doc.text("Suppose the five lowest scores are TIP, IBIT, DBC, AGG and VV, cash momentum is +1.3%, and VV's "
-             "momentum is −1.0%:", after=0.1)
-    doc.table(["Step", "SPY", "AGG", "TIP", "DBC", "IBIT", "VV", "BIL", "Total"],
+    doc.text("Suppose the five lowest scores are TIP, IBIT, DBC, AGG and VV, cash momentum is +1.3%, VV's "
+             "momentum is −1.0%, and QQQM is above its 10-month average:", after=0.1)
+    doc.table(["Step", "QQQM", "AGG", "TIP", "DBC", "IBIT", "VV", "BIL", "Total"],
               [["Shield picks (10% each)", "", "10%", "10%", "10%", "10%", "10%", "", "50%"],
                ["Cash test: VV −1.0% < cash +1.3%", "", "10%", "10%", "10%", "10%", "0%", "10%", "50%"],
-               ["Add the Core", "30%", "30%", "10%", "10%", "10%", "", "10%", "100%"],
-               ["Cap IBIT at 5%", "30%", "30%", "10%", "10%", "**5%**", "", "**15%**", "100%"]],
+               ["Add the Core (trend filter on)", "50%", "10%", "10%", "10%", "10%", "", "10%", "100%"],
+               ["Cap IBIT at 5%", "50%", "10%", "10%", "10%", "**5%**", "", "**15%**", "100%"]],
               [2.6, 0.55, 0.55, 0.55, 0.55, 0.55, 0.55, 0.55, 0.6],
               aligns=["left"] + ["right"] * 8, size=8.2)
     doc.text("The last row is what gets bought on the first trading day and held for the month.", size=8.5,
@@ -571,8 +572,8 @@ def section_safety(doc: Doc):
                  "**Action:** the next morning, everything (Core included) moves to 100% BIL.",
                  "**Re-entry:** automatic at the next monthly rebalance, following a fresh signal, with the "
                  "high-water mark reset.",
-                 "**History:** never tripped in the 2015–2026 backtest (worst daily drawdown −14.1%). In the 2008 "
-                 "test it tripped once (23 Feb 2009, −20.2%) and re-entered in March.",
+                 "**History:** in the 2015–2026 backtest it tripped once, on the daily rule (12 Mar 2020, a −5.1% "
+                 "day; worst daily drawdown −15.4%), and re-entered at the April rebalance.",
                  "**Trade-off:** in a one-day crash it locks the loss and can miss a fast rebound until the next "
                  "month. It is a tail-risk net, not a return enhancer."])
     doc.h2("Checks before every signal and trade")
@@ -581,7 +582,7 @@ def section_safety(doc: Doc):
                ["Momentum, volatility and correlation are valid numbers", "Halt"],
                ["Target weights add up to 100% (±0.5%); none negative", "Halt"],
                ["Only universe tickers can be traded", "Halt; stray positions are left alone and flagged"],
-               ["No single buy above 35% of the account", "Halt"],
+               ["No single buy above 55% of the account (a full 50% Core buy must fit)", "Halt"],
                ["Account is a paper account (live needs two explicit switches)", "Refuses to run"],
                ["Market is open at order time", "Halt; nothing submitted"],
                ["Each ETF is tradable on Alpaca", "Halt; non-fractionable ETFs use whole shares"],
@@ -608,7 +609,7 @@ def section_results(doc: Doc, p: pd.DataFrame):
              "from the Bitcoin price minus IBIT's 0.25% fee. Past results do not guarantee future results.",
              size=8.8, color=INK2)
     x = p["exit"]
-    ax = doc.axes(2.05, after=0.12, title="Growth of $100,000 (log scale)")
+    ax = doc.axes(1.85, after=0.12, title="Growth of $100,000 (log scale)")
     style(ax)
     for col, lab, c, lw in (("spy", "SPY", BLUE_L, 1.0), ("b6040", "60/40", GREY, 1.3), ("ret", "Core & Shield", GREEN, 2.0)):
         ax.plot(x, (1 + p[col]).cumprod() * 100_000, color=c, lw=lw, label=lab)
@@ -625,17 +626,18 @@ def section_results(doc: Doc, p: pd.DataFrame):
         ax2.fill_between(x, dd, 0, color=c, alpha=0.18 if col == "ret" else 0.1, lw=0)
         ax2.plot(x, dd, color=c, lw=lw)
     doc.table(["", "Return / yr", "Sharpe", "Sortino", "Calmar", "Worst month-end", "Worst day", "2022"],
-              [["**Core & Shield**", "9.3%", "0.93", "1.58", "0.84", "−11.1%", "−14.1%", "−8.8%"],
+              [["**Core & Shield**", "11.9%", "1.01", "1.77", "1.02", "−11.7%", "−15.4%", "−4.9%"],
+               ["Without Bitcoin", "9.0%", "0.79", "1.28", "0.74", "−12.2%", "−16.1%", "−3.8%"],
+               ["Previous (60/40 Core)", "9.3%", "0.93", "1.58", "0.84", "−11.1%", "−14.1%", "−8.8%"],
                ["60/40 (SPY/AGG)", "9.2%", "0.73", "1.11", "0.48", "−19.2%", "", "−15.2%"],
-               ["SPY", "14.1%", "0.81", "1.24", "0.61", "−23.3%", "−33.7%", "−18.0%"],
-               ["C&S without Bitcoin", "6.5%", "0.66", "1.00", "0.59", "−11.1%", "−14.6%", "≈ −8%"]],
+               ["SPY", "14.1%", "0.81", "1.24", "0.61", "−23.3%", "−33.7%", "−18.0%"]],
               [1.75, 0.85, 0.65, 0.7, 0.65, 1.0, 0.85, 0.7], aligns=["left"] + ["right"] * 7, size=8.2, after=0.06)
-    doc.text("Sharpe and Sortino measured against T-bills (2.0%/yr); at a 0% rate the Sharpe ratios are 1.18, 0.93, "
-             "0.93 and 0.95. Sortino counts only downside volatility; Calmar = return ÷ worst month-end drop. "
-             "2008 test (no Bitcoin): Core & Shield −7.4% vs 60/40 −17.7%.", size=8, color=MUTED)
+    doc.text("Sharpe and Sortino against T-bills (2.0%/yr); at a 0% rate the Core & Shield Sharpe is 1.21 vs 0.93 "
+             "for 60/40. Calmar = return ÷ worst month-end drop. 2008–2026 without Bitcoin: 8.8%/yr vs 8.5%, Calmar "
+             "0.72 vs 0.28; Jun 2008–Jun 2009 about −1% vs 60/40 −17.7%.", size=8, color=MUTED)
     cy = p.assign(year=p["entry"].dt.year).groupby("year").agg(
         cs=("ret", lambda r: ((1 + r).prod() - 1) * 100), b=("b6040", lambda r: ((1 + r).prod() - 1) * 100))
-    ax3 = doc.axes(1.5, after=0.1, title="Calendar-year returns (%)  · *2026 to date")
+    ax3 = doc.axes(1.3, after=0.1, title="Calendar-year returns (%)  · *2026 to date")
     style(ax3)
     xs = np.arange(len(cy))
     ax3.bar(xs - 0.2, cy["cs"], 0.38, color=GREEN, label="Core & Shield")
@@ -646,38 +648,37 @@ def section_results(doc: Doc, p: pd.DataFrame):
         ax3.text(i - 0.2, a + (0.8 if a >= 0 else -0.8), f"{a:.0f}" if abs(a) >= 0.5 else "0", ha="center",
                  va="bottom" if a >= 0 else "top", fontsize=6.3, color=INK2, family=FONT)
     ax3.legend(frameon=False, fontsize=7.5, loc="upper right", labelcolor=INK2)
-    doc.text("**Reading it:** level with 60/40 over the whole period; clearly ahead in 2017 (Bitcoin) and 2022, "
-             "slightly ahead in 2020, 2021 and 2026, behind in strong equity years (2019, 2023–2025). 2018 was worse "
-             "than 60/40 mostly because Bitcoin's crash hit while it was held (without Bitcoin it was about level).",
-             size=8.8)
+    doc.text("**Reading it:** ahead of 60/40 in 8 of 12 years, including 2022 (−4.9% vs −15.2%) when the Core's "
+             "filter moved it to T-bills. Behind in 2015, 2016, 2019 and 2025. The advantage is concentrated in "
+             "2020–26; in 2015–19 the previous 60/40-Core design did slightly better.", size=8.8)
 
 
 def section_stress(doc: Doc, p: pd.DataFrame):
     doc.new_page()
-    doc.h1("7", "Stress tests", "How fragile is the result? Run 27 Sep 2026 with backtest/stress.py; none of it "
-           "changed the strategy.")
+    doc.h1("7", "Stress tests", "How fragile is the result? Rerun 14 Oct 2026 for the QQQM trend Core with "
+           "backtest/stress.py.")
     doc.table(["Test", "What was tried", "Result"],
               [["Trading costs", "5, 10, 25, 50 bps per trade",
-                "Risk-adjusted edge survives even 50 bps (Sharpe 0.97 vs about 0.92). The return edge disappears "
-                "above about 10 bps."],
+                "The edge over 60/40 holds to about 25 bps (Sharpe, rf = 0: 1.09 vs about 0.92) and is nearly gone "
+                "at 50 bps (0.95)."],
                ["Settings", "13 nearby settings: lookbacks 63–126 days, hold 4 or 6, λ 0.92/0.97, each weight ±10 pp",
-                "**13 of 13** still beat 60/40's Sharpe (range 1.03–1.28). Not a lucky peak."],
-               ["Late fills", "Trade 2, 3 or 5 days after the signal", "No real difference (Sharpe 1.18–1.23)."],
+                "**13 of 13** still beat 60/40's Sharpe (range 1.12–1.27). Not a lucky peak."],
+               ["Late fills", "Trade 2, 3 or 5 days after the signal", "Costs a little (Sharpe 1.20 → 1.08 at 5 days); "
+                "still ahead of 60/40."],
                ["Any single year", "127 rolling 12-month windows",
-                "Beat 60/40 on return in only **49%**, but had the **smaller drawdown in 89%**, and did better in "
-                "93% of the windows where 60/40 lost money."],
+                "Beat 60/40 on return in **59%**, and in **all 14** windows where 60/40 lost money."],
                ["Monte Carlo", "5,000 simulated 10-year paths (6-month blocks of history)",
-                "**94%** chance of a higher Sharpe than 60/40, **97%** of a smaller worst drop. Any single year: "
-                "52% chance of trailing 60/40, 14% chance of a loss."]],
+                "**89%** chance of a higher Sharpe than 60/40, **80%** of a smaller worst drop. Any single year: "
+                "38% chance of trailing 60/40, 13% chance of a loss."]],
               [1.1, 2.4, 3.1], size=8.3, bold_first_col=True)
     doc.need(3.3)
     doc.h2("Shocks worse than anything in the test window")
     doc.text("Each made-up shock was injected into real prices at six different dates and the whole model re-run, "
              "so it reacts as it would live. Averages shown; real 2008 and 2022 added for comparison.", size=8.8,
              color=INK2)
-    rows = [("2022 (real)", -8.8, -15.2), ("2008 (real, no Bitcoin)", -7.4, -17.7),
-            ("Stagflation, 6 months", -5.9, -17.3), ("Stocks & bonds fall together, 6 mo", -10.3, -22.3),
-            ("Crash day −20%", -9.3, -16.2)]
+    rows = [("2022 (real)", -4.9, -15.2), ("Jun 2008–Jun 2009 (no Bitcoin)", -0.8, -17.7),
+            ("Stagflation, 6 months", -4.9, -17.3), ("Stocks & bonds fall together, 6 mo", -5.7, -22.3),
+            ("Crash day −20%", -13.2, -16.2)]
     ax = doc.axes(2.1, after=0.1, left=2.0)
     style(ax, "x")
     ys = np.arange(len(rows))
@@ -691,12 +692,12 @@ def section_stress(doc: Doc, p: pd.DataFrame):
     ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: pct(v, 0)))
     ax.legend(frameon=False, fontsize=7.5, loc="lower left", labelcolor=INK2)
     ax.tick_params(axis="y", labelsize=7.8, colors=INK2)
-    doc.bullets(["Core & Shield took **34–57% of 60/40's loss** in every made-up shock.",
-                 "**Crash day:** the −5% daily breaker trips every time, so the portfolio sits in cash until "
-                 "the next rebalance and can miss a quick rebound.",
-                 "**Realistic worst case:** a six-month stock-and-bond slide running straight into a Covid-style "
-                 "crash reached **−21%** and tripped the −20% breaker. That is deeper than anything in the "
-                 "backtest (−14.1%), so plan for a 20% drawdown being possible.",
+    doc.bullets(["**Slow crises are where the new Core shines:** stocks and bonds falling together cost about 6% "
+                 "(previous design 10%, 60/40 22%), because the trend filter steps aside.",
+                 "**Crash days are the weak spot:** about −13% (previous design −9%). The Nasdaq-100 Core is fully "
+                 "exposed until the monthly filter reacts; the −5% daily breaker then holds cash until next month.",
+                 "**Outside the data:** in the 2000–02 dot-com crash the trend-filtered Nasdaq-100 alone fell about "
+                 "36% before stepping aside, roughly −18% on this portfolio. Plan for a 15–20% drawdown being possible.",
                  "**Bitcoin −80% while held:** about 3 percentage points extra loss, as the 5% cap intends."],
                 size=9)
     r12 = ((1 + p["ret"]).rolling(12).apply(np.prod, raw=True) - (1 + p["b6040"]).rolling(12).apply(np.prod, raw=True)) * 100
@@ -704,44 +705,44 @@ def section_stress(doc: Doc, p: pd.DataFrame):
     style(ax2)
     ax2.bar(p["exit"], r12, width=25, color=np.where(r12 >= 0, GREEN, GREY), alpha=0.85)
     ax2.axhline(0, color=BASELINE, lw=0.8)
-    doc.text("Green = ahead of 60/40 over the previous 12 months. Long stretches behind are normal in bull markets.",
-             size=8, color=MUTED)
+    doc.text("Green = ahead of 60/40 over the previous 12 months.", size=8, color=MUTED)
 
 
 def section_judge(doc: Doc):
-    doc.h1("8", "What to expect, and how to judge it", "The criteria were fixed before the first trade so results "
-           "can't move the goalposts.")
+    doc.h1("8", "What to expect, and how to judge it", "The criteria were reset for the new Core before any of its "
+           "results existed, so results can't move the goalposts.")
     doc.h2("Strengths and weaknesses")
     doc.table(["Good at", "Weak at"],
-              [["Slow bear markets and rising-rate years (2022: −8.8% vs −15.2%)",
-                "Strong equity bull markets: it trails SPY by a lot and 60/40 by a little"],
-               ["Smaller drawdowns in almost every period (89% of rolling years)",
-                "Sudden one-day crashes: a monthly model can't react in time"],
-               ["Robust to costs, settings and late trades",
-                "Return edge over 60/40 is thin; about half of it depends on Bitcoin"],
-               ["Simple, transparent, rules-based, low turnover",
-                "Single years are a coin flip against 60/40 on return"]],
+              [["Long bear markets and rising-rate years (2022: −4.9% vs −15.2%)",
+                "Sudden one-day crashes: about −13% in a simulated −20% crash day"],
+               ["Beating 60/40 in most years (8 of 12) with smaller drawdowns",
+                "A tech-led bust: the Core is the Nasdaq-100 when it's on"],
+               ["Fast recoveries: the worst drawdown took 4 months to recover (60/40: 16)",
+                "Choppy markets, where the trend filter can sell low and buy back higher (2015–16)"],
+               ["Robust to settings and late trades; less dependent on Bitcoin",
+                "Higher turnover (about 21% a month) and short-term gains in a taxable account"]],
               [3.3, 3.3], size=8.5)
     doc.h2("Normal ranges (from the backtest) for judging a live month")
     doc.table(["Measure", "Normal", "Unusual / investigate"],
-              [["Monthly return", "Between −3% and +3% (78% of months); 65% of months positive",
-                "Outside −5.7% to +6.9%"],
-               ["Cash (BIL) weight", "About 16% on average; about 37% in a year like 2022", "Above 50%"],
-               ["Drawdown from peak", "Up to about −11% month-end, −14% daily", "Worse than −14.1%"],
-               ["Share of 60/40's loss in its down months", "About 63%", "Above 85% on average"],
-               ["Bitcoin (IBIT)", "Held in about half of months, at 5%", "Above 5% at a rebalance"],
-               ["Turnover", "About 15% of the portfolio per month", "—"]],
+              [["Monthly return", "Between −4% and +4% (81% of months); 66% of months positive",
+                "Outside −8.7% to +9.1%"],
+               ["Cash (BIL) weight", "About 26% on average; up to 100% when the Core and Shield are both defensive",
+                "Cash that doesn't match the rules"],
+               ["Drawdown from peak", "Up to about −12% month-end, −15% daily", "Worse than −20%"],
+               ["Share of 60/40's loss in its down months", "About 72%", "Above 85% on average"],
+               ["Core trend filter", "Off (Core in T-bills) about 1 month in 5", "Off/on not matching the rule"],
+               ["Bitcoin (IBIT)", "Held in about half of months, at 5%", "Above 5% at a rebalance"]],
               [1.9, 2.9, 1.8], size=8.3, bold_first_col=True)
     doc.h2("Checkpoints")
     doc.table(["When", "Question", "Passes when"],
-              [["1 month (early Nov 2026)", "Does it run?", "All operations criteria pass for October: signal and "
-                "rebalance on time, all orders filled, slippage ≤ 10 bps, holdings within ±2 pp of target, "
-                "IBIT ≤ 5%, report delivered"],
-               ["3 months (early Jan 2027)", "Is it reliable?", "Operations pass 3 months out of 3; returns, cash "
+              [["1 month (early Dec 2026)", "Does the new design run?", "All operations criteria pass for November: "
+                "signal and rebalance on time, all orders filled, slippage ≤ 10 bps, holdings within ±2 pp of "
+                "target, IBIT ≤ 5%, report delivered"],
+               ["3 months (early Feb 2027)", "Is it reliable?", "Operations pass 3 months out of 3; returns, cash "
                 "and drawdown inside the normal ranges"],
-               ["6 months (early Apr 2027)", "Does it behave as designed?", "Live returns match a backtest of the "
+               ["6 months (early May 2027)", "Does it behave as designed?", "Live returns match a backtest of the "
                 "same months within 0.3 pp a month; defence assessed if 60/40 had 2+ down months"],
-               ["12 months (early Oct 2027)", "Is it worth running?", "See the verdict rules below"]],
+               ["12 months (early Nov 2027)", "Is it worth running?", "See the verdict rules below"]],
               [1.7, 1.6, 3.3], size=8.3, bold_first_col=True)
     doc.h2("The 12-month verdict")
     doc.bullets(["**Working as designed:** operations pass in 11+ months, behaviour matches the backtest, and the "
@@ -750,9 +751,9 @@ def section_judge(doc: Doc):
                  "the defence hasn't been tested yet. Keep running.",
                  "**Not working:** the live account doesn't match the model, or it takes more than 100% of 60/40's "
                  "losses, or its drawdown is larger than 60/40's in a year when 60/40 fell.",
-                 "**Explicitly not a failure:** trailing SPY, or trailing 60/40 in a year when 60/40 rose."])
+                 "**Explicitly not a failure:** trailing SPY, or trailing 60/40 in a single strong year."])
     doc.callout("**Rule for the evaluation year:** don't change the strategy unless something is broken. A change "
-                "resets the evidence. Ideas are parked and tested as fixed variants at the 6-month checkpoint.")
+                "resets the evidence. The previous 60/40-Core design and other ideas are shadow-tracked instead.")
 
 
 def section_history(doc: Doc):
@@ -774,8 +775,12 @@ def section_history(doc: Doc):
                                "0.95 → 1.18, worst drop slightly better; better in every sub-period; about half the "
                                "gain survives with Bitcoin's long-run return flattened to 0%"],
                ["26 Sep 2026", "Evaluation criteria written and fixed", "Before any live result existed"],
-               ["27 Sep 2026", "Stress tests run (section 7)", "Robust to costs, settings and timing; worst case "
-                               "about −21%"]],
+               ["27 Sep 2026", "Stress tests run", "Robust to costs, settings and timing; worst case about −21%"],
+               ["14 Oct 2026", "Fault-drill gaps F1/F2 fixed; shadow tracking of alternatives started",
+                "Tests now pass; no strategy change"],
+               ["14 Oct 2026", "**Core changed to QQQM + 10-month trend filter** (live from 2 Nov); evaluation "
+                               "restarted", "Calmar 0.84 → 1.02 (2015–26) and 0.35 → 0.72 (2008–26, no Bitcoin). "
+                               "Known risks: crash days, a tech-led bust, Nasdaq chosen with hindsight"]],
               [0.95, 3.0, 2.65], size=8.1)
     doc.h2("Tested and rejected, or parked")
     doc.table(["Idea", "Verdict", "Why"],
@@ -787,13 +792,19 @@ def section_history(doc: Doc):
                ["Bitcoin uncapped (10% slots)", "Not adopted", "12.7%/yr but more dependent on Bitcoin"],
                ["Volatility-managed Core", "Parked", "Shallower losses in every crisis, same Sharpe, "
                                                      "about 0.7%/yr less return"],
+               ["Remove VV / swap AGG→IEF (overlap fixes)", "Rejected", "Worse in both windows; the correlation "
+                                                                       "factor already handles the overlap"],
+               ["Gold interchangeable with Bitcoin", "Rejected", "Gold crowds Bitcoin out; about −1%/yr"],
+               ["Ranked growth Core; SPY or VTI + trend", "Rejected", "Lower Calmar or Sharpe than the QQQM trend Core"],
+               ["Gold as a 13th candidate", "Shadow-tracked", "Planned decision in January 2027; worse 2008 tail"],
                ["Risk-based sizing, staggered rebalancing", "Parked", "Candidates for the 6-month checkpoint"]],
               [2.3, 1.1, 3.2], size=8.3, bold_first_col=True)
-    doc.h2("Honest assessment at launch")
-    doc.text("Rated about **70/100** before the first trade: a sound, defensive, well-guarded balanced strategy "
-             "with a thin return edge over 60/40, a real but modest dependence on Bitcoin, and no live track record "
-             "yet. About 11 years of data means a Sharpe estimate is only accurate to roughly ±0.3, so most "
-             "differences between variants are not statistically significant. The live year is what decides it.")
+    doc.h2("Honest assessment")
+    doc.text("Rated about **70/100** at launch as a defensive balanced strategy with a thin edge. The QQQM trend "
+             "Core raises the backtested return and Calmar substantially and cuts the dependence on Bitcoin, but "
+             "it was chosen knowing the Nasdaq-100 led 2010–26, and it adds crash-day and tech-concentration risk. "
+             "About 11 years of data means a Sharpe estimate is only accurate to roughly ±0.3. The live year from "
+             "2 November 2026 is what decides it.")
     doc.h2("Glossary")
     doc.table(["Term", "Meaning"],
               [["60/40", "60% US stocks (SPY) + 40% US bonds (AGG): the benchmark"],

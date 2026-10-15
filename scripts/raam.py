@@ -141,15 +141,42 @@ def apply_caps(targets: dict, cfg: dict) -> tuple[dict, dict]:
     return out, applied
 
 
-def combine_targets(shield_targets: dict, cfg: dict) -> dict:
-    """Portfolio targets = Core weights + shield_weight x RAAM (Shield) weights."""
-    core, shield = portfolio_parts(cfg)
+def combine_targets(shield_targets: dict, cfg: dict, core: dict | None = None) -> dict:
+    """Portfolio targets = Core weights + shield_weight x RAAM (Shield) weights.
+    `core` is this month's effective Core (after any Core trend filter); default = the configured Core."""
+    cfg_core, shield = portfolio_parts(cfg)
+    core = cfg_core if core is None else core
     out = {s: 0.0 for s in tradable_symbols(cfg)}
     for s, w in core.items():
-        out[s] += w
+        out[s] = out.get(s, 0.0) + w
     for s, w in shield_targets.items():
         out[s] = out.get(s, 0.0) + shield * w
     return {k: round(v, 6) for k, v in out.items()}
+
+
+def core_for_month(closes: dict[str, pd.Series], cfg: dict) -> tuple[dict, dict | None]:
+    """This month's Core. With portfolio.core_trend set, the trend symbol's Core weight is held only
+    while its latest month-end close is above the average of its last `sma_months` month-end closes;
+    otherwise that weight goes to `off_to` (default: the cash asset). Returns (core, trend record)."""
+    core, _ = portfolio_parts(cfg)
+    tr = (cfg.get("portfolio") or {}).get("core_trend")
+    if not tr:
+        return core, None
+    sym, n = tr["symbol"], int(tr.get("sma_months", 10))
+    dest = tr.get("off_to") or cfg["universe"]["cash"]       # default: the strategy's cash asset
+    c = closes[sym].dropna()
+    idx = pd.to_datetime(c.index)
+    month_ends = c.groupby([idx.year, idx.month]).last()
+    if len(month_ends) < n:
+        raise Halt(f"not enough history for the {sym} trend filter ({len(month_ends)} month-ends, need {n})")
+    last, sma = float(month_ends.iloc[-1]), float(month_ends.iloc[-n:].mean())
+    on = last > sma
+    eff = dict(core)
+    if not on and sym in eff:
+        w = eff.pop(sym)
+        eff[dest] = eff.get(dest, 0.0) + w
+    return eff, {"symbol": sym, "month_end_close": round(last, 4), "sma": round(sma, 4), "sma_months": n,
+                 "on": on, "off_to": dest}
 
 
 # --------------------------------------------------------------------------
@@ -321,8 +348,9 @@ def compute_signal(bars: dict[str, pd.DataFrame], cfg: dict, as_of: dt.date) -> 
             "rank_C": float(r["rank_C"]), "score": round(float(r["score"]), 4),
             "selected": bool(r["selected"]), "weight": round(float(r["weight"]), 4),
         })
-    core, shield = portfolio_parts(cfg)
-    capped, caps_applied = apply_caps(combine_targets(weights, cfg), cfg)
+    _, shield = portfolio_parts(cfg)
+    core, core_trend = core_for_month({s: trimmed[s]["c"] for s in trimmed}, cfg)
+    capped, caps_applied = apply_caps(combine_targets(weights, cfg, core), cfg)
     return {
         "as_of": as_of.isoformat(),
         "month": month_key(as_of),
@@ -331,6 +359,7 @@ def compute_signal(bars: dict[str, pd.DataFrame], cfg: dict, as_of: dt.date) -> 
         "params": {"lookbacks": lb, "ranking": cfg["ranking"], "ambiguities": amb},
         "portfolio": {"name": (cfg.get("portfolio") or {}).get("name", "RAAM"),
                       "core": core, "shield_weight": shield},
+        "core_trend": core_trend,
         "shield_targets": weights,
         "momentum_hurdle": {"mode": hurdle_mode, "value_pct": round(float(hurdle), 3),
                             "cash_asset": cash},
@@ -563,9 +592,15 @@ def write_signal_log(sig: dict) -> None:
     if pf.get("core"):
         shield = ", ".join(f"{s} {w * 100:.0f}%" for s, w in sig["shield_targets"].items() if w > 0)
         core = ", ".join(f"{s} {w * 100:.0f}%" for s, w in pf["core"].items())
+        ct = sig.get("core_trend")
+        core_line = f"**Core (fixed):** {core}"
+        if ct:
+            state = "ON: held" if ct["on"] else f"OFF: Core moved to {ct['off_to']}"
+            core_line = (f"**Core:** {core}  ·  trend filter {ct['symbol']} month-end {ct['month_end_close']:.2f} vs "
+                         f"{ct['sma_months']}-month average {ct['sma']:.2f} → **{state}**")
         lines += ["", hurdle, "",
                   f"**Shield (RAAM, {pf['shield_weight'] * 100:.0f}% of portfolio):** {shield}",
-                  f"**Core (fixed):** {core}", "",
+                  core_line, "",
                   f"**{pf.get('name', 'Portfolio')} target allocation:** {alloc}", ""]
     else:
         lines += ["", hurdle, "", f"**Target allocation:** {alloc}", ""]
@@ -973,6 +1008,7 @@ def cmd_review(args, cfg):
         vals = {s: all_rets.get(s) for s, w in weights.items() if w > 0}
         return None if None in vals.values() else sum(weights[s] * vals[s] for s in vals)
     shield_est = sleeve(sig.get("shield_targets", sig["targets"])) if sig else None
+    core = ((sig.get("portfolio") or {}).get("core") or core) if sig else core     # the Core actually held
     core_est = sleeve({s: w / sum(core.values()) for s, w in core.items()}) if core else None
 
     def r(x):

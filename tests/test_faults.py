@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 import requests
 
-from test_commands import CASH, CFG, SYMS, args, env  # noqa: F401 - env is a fixture
+from test_commands import CASH, CFG, CORE_SYM, SYMS, args, env  # noqa: F401 - env is a fixture
 
 import raam
 
@@ -22,7 +22,7 @@ def _signal(env):
 
 def _hold_unwanted(env, targets, value=100_000.0):
     """Start fully invested in a universe ETF the new signal doesn't want, so the rebalance sells then buys."""
-    sym = next(s for s in SYMS if targets.get(s, 0) == 0)
+    sym = next(s for s in raam.tradable_symbols(CFG) if targets.get(s, 0) == 0)
     env.fake._positions = {sym: {"qty": 1000.0, "market_value": value}}
     return sym
 
@@ -48,10 +48,10 @@ def _signal_code(env):
 def test_rejected_buy_halts_and_is_recorded(env):
     targets = _signal(env)
     _hold_unwanted(env, targets)
-    _statuses(env, {"SPY": "rejected"})
+    _statuses(env, {CORE_SYM: "rejected"})
     out = raam.cmd_rebalance(args(date="2026-10-01"), FAST)
     assert out["status"] == "halt"
-    assert [f["symbol"] for f in out["unfilled"]] == ["SPY"]
+    assert [f["symbol"] for f in out["unfilled"]] == [CORE_SYM]
     sig = json.loads((env.mem / "signals" / "2026-09.json").read_text())
     assert sig["executed"]                              # recorded, so it is never re-run blindly
     assert "rejected" in (env.mem / "TRADE-LOG.md").read_text()
@@ -60,10 +60,10 @@ def test_rejected_buy_halts_and_is_recorded(env):
 def test_partial_fill_halts(env):
     targets = _signal(env)
     _hold_unwanted(env, targets)
-    _statuses(env, {"AGG": "partially_filled"})
+    _statuses(env, {CORE_SYM: "partially_filled"})
     out = raam.cmd_rebalance(args(date="2026-10-01"), FAST)
     assert out["status"] == "halt"
-    assert "AGG" in [f["symbol"] for f in out["unfilled"]]
+    assert CORE_SYM in [f["symbol"] for f in out["unfilled"]]
 
 
 def _fail_buys(env):

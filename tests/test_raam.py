@@ -263,7 +263,7 @@ def test_bad_portfolio_split_rejected():
 def test_plan_accepts_core_targets():
     t = raam.combine_targets({"VV": 0.2, "AGG": 0.2, "EFA": 0.2, CASH: 0.4}, CFG)
     plan = raam.plan_orders(t, 100_000, {}, {}, CFG)
-    assert {o["symbol"] for o in plan["orders"]} >= {"SPY", "AGG"}
+    assert {o["symbol"] for o in plan["orders"]} >= set(CFG["portfolio"]["core"]) | {"AGG"}
 
 
 

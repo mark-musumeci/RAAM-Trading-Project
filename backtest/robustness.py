@@ -60,7 +60,8 @@ def compact(signals: list[tuple]) -> list[dict]:
     for t, entry, _targets, sig in signals:
         out.append({"t": t, "entry": entry, "hurdle": sig["momentum_hurdle"]["value_pct"],
                     "mom": {r["symbol"]: r["momentum_pct"] for r in sig["table"]},
-                    "selected": [r["symbol"] for r in sig["table"] if r["selected"]]})
+                    "selected": [r["symbol"] for r in sig["table"] if r["selected"]],
+                    "core": dict(sig["portfolio"]["core"])})        # this month's Core, after its trend filter
     return out
 
 
@@ -92,7 +93,8 @@ def targets_for(rule: str, m: dict, cfg: dict, rng=None) -> dict:
         w = shield_weights(list(rng.choice(risk, n, replace=False)), m, cash, n)
     else:
         raise ValueError(rule)
-    t, _ = raam.apply_caps(raam.combine_targets(w, cfg), cfg)
+    core = m["core"] if raam.portfolio_parts(cfg)[0] else {}       # Shield-alone configs have no Core
+    t, _ = raam.apply_caps(raam.combine_targets(w, cfg, core), cfg)
     return t
 
 

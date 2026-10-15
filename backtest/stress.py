@@ -29,7 +29,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import backtest as bt  # noqa: E402
 raam = bt.raam
 
-EQUITY = ["SPY", "VV", "IJH", "IJR", "EFA", "EEM", "RWR", "VAW"]
+EQUITY = ["SPY", "QQQM", "VV", "IJH", "IJR", "EFA", "EEM", "RWR", "VAW"]   # every equity ETF the live rules can hold
 BONDS = ["AGG", "TIP", "IGOV"]
 SHOCK_DATES = ["2016-11-15", "2017-09-15", "2019-07-15", "2021-06-15", "2023-11-15", "2025-08-15"]
 AFTER_DAYS = 63                     # trading days watched after a shock ends
@@ -318,7 +318,7 @@ def main() -> None:
              "",
              f"## 5. Monte Carlo ({args.paths:,} paths, 6-month blocks of live monthly returns, paired with 60/40)",
              "Month-end values, so drawdowns are shallower than the daily path (the backtest's daily worst "
-             "was −14.1% vs −11.1% month-end). Resampling history can't create crises that never happened; "
+             f"was {L['MaxDD % (daily)']:.1f}%). Resampling history can't create crises that never happened; "
              "section 6 covers that.",
              "",
              "| Measure | Core & Shield | 60/40 |",

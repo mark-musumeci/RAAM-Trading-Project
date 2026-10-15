@@ -12,12 +12,13 @@ only when the owner decides them, and they are recorded in the change log at the
 ## Portfolio structure: Core & Shield
 | Half | Weight | Holdings | Rule |
 |---|---|---|---|
-| **Core** | 50% | **SPY 30% + AGG 20%** | Fixed, and reset to these weights at every monthly rebalance |
+| **Core** | 50% | **QQQM** (Invesco Nasdaq-100) when trending, otherwise **BIL** | **Trend filter:** held only while QQQM's month-end close is above the average of its last 10 month-end closes; otherwise the Core's 50% goes to BIL (T-bills). Checked at every month-end signal. |
 | **Shield** | 50% | RAAM: 5 slots of **10% of the portfolio** each, from the 12 candidates below (11 ETFs + IBIT), with BIL for failed slots | RAAM rules below; the monthly signal decides it |
 
-- Portfolio targets = Core weights + 0.5 × RAAM (Shield) weights. For example, if RAAM picks AGG, total AGG is 20% + 10% = 30%.
+- Portfolio targets = this month's Core + 0.5 × RAAM (Shield) weights. With the trend filter off and the whole Shield in cash, the portfolio can be 100% BIL.
+- **Why QQQM + trend (adopted 2026-10-14):** the Shield already defends, so the Core is pure growth, and the trend filter steps it aside in long bear markets. Backtest 2015–26: 11.9%/yr, Calmar 1.02 (previous 60/40 Core: 9.3%, 0.84). 2008–26 without Bitcoin: Calmar 0.72 (0.35). **Known risk:** it bets on Nasdaq-100 leadership. In the 2000–02 tech bust, the trend-filtered Nasdaq-100 still fell about 36% before stepping aside, which outside our backtest window would cost the portfolio roughly 18%.
 - Configured in `config/raam.json → portfolio`. Setting `core: {}` and `shield_weight: 1.0` runs RAAM alone.
-- Why: RAAM alone is a strong defender but lags badly in bull markets. The Core supplies growth, and the Shield roughly halves the damage in slow bear markets. See `memory/BACKTEST-SUMMARY.md`.
+- Why a Core at all: RAAM alone is a strong defender but lags badly in bull markets. The Core supplies growth; the Shield and the Core's trend filter limit the damage in bear markets. See `memory/BACKTEST-SUMMARY.md`.
 
 ## Shield universe (7Twelve portfolio + IBIT: 12 ranked candidates, plus BIL as cash)
 
@@ -70,7 +71,7 @@ Bands:
 
 ## Guardrails (not part of the paper)
 - **Paper trading only**, unless `PAPER_TRADING=false` **and** `LIVE_CONFIRM=yes`.
-- Target weights must sum to 100% ±0.5%. Only universe tickers may be traded, and a single non-cash buy is capped at **35%** of equity. It was 25%; it was raised because Core positions reach 30% (SPY, or AGG when RAAM also picks it).
+- Target weights must sum to 100% ±0.5%. Only universe tickers may be traded, and a single non-cash buy is capped at **55%** of equity. It was 25%, then 35%; it was raised to 55% on 2026-10-14 so a full 50% QQQM Core buy (start, trend re-entry or breaker re-entry) isn't blocked.
 - **Circuit breaker (Tier 1 upgrade U3):**
   - It trips on a **−20%** drawdown of the **whole portfolio** from its high-water mark, or a −5% single day. The next morning run moves the whole portfolio, Core included, to 100% BIL.
   - It **re-enters automatically** at the next monthly rebalance, following a signal computed after the trip, and re-bases the high-water mark at that point.
@@ -88,3 +89,4 @@ Bands:
 | 2026-09-24 | **Core & Shield:** 50% fixed 60/40 Core (30% SPY + 20% AGG) + 50% RAAM Shield. Per-order cap raised 25% → 35%. 2009–26 backtest: CAGR 7.5%, Sharpe 1.11 (60/40 1.09), max DD −11.1% month-end / −14.6% daily (60/40 −19.2% month-end), 2022 −7.8% (60/40 −15.2%). | owner |
 | 2026-10-14 | **Process only, no rule change.** F1/F2 fixes: a broker error part-way through a rebalance now records the completed orders and halts; a blank or non-positive close in the lookback window halts the signal. Shadow tracking of pre-registered variants added (`config/shadow.json`, `scripts/shadow.py`). | owner |
 | 2026-10-14 | **Planned, not yet live:** gold (GLD) to join the Shield as an ordinary 13th candidate at the January 2027 checkpoint, after shadow tracking from November. Backtest 2015–26: 9.4%/yr, Sharpe vs T-bills 0.97 (live 0.93), worst month-end −10.1% (−11.1%). 2008–26 without Bitcoin: Sharpe 0.76 (0.74), but a worse crash tail (worst month-end −23.5% vs −19.0%; Jun 2008–Jun 2009 −11.6% vs −7.4%). Adopted for its structural diversification (stagflation, dollar, inflation shocks). Decision rule: memory/EVALUATION-PLAN.md section 5. | owner |
+| 2026-10-14 | **Core changed: fixed 60/40 → QQQM with a 10-month trend filter** (owner decision; live from the 2026-10 signal, 2 Nov rebalance). Per-order cap 35% → 55%. Backtest 2015–26: 11.9%/yr vs 9.3%, Sharpe vs T-bills ≈1.0 vs 0.93, Calmar 1.02 vs 0.84, worst daily drop −15.4% vs −14.1%; without Bitcoin 9.0%/yr vs 6.5%. 2008–26 without Bitcoin: Calmar 0.72 vs 0.35. Known risk: a dot-com-style tech bust (trend-filtered Nasdaq-100 −36% in 2000–02). The evaluation restarts at the 2 Nov rebalance (see EVALUATION-PLAN.md). | owner |

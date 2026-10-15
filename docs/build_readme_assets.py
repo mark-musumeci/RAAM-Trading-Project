@@ -117,10 +117,10 @@ def hero():
     arrow(ax, (55.6, 40.5), (55.6, 38.2), AQUA)
     # 3 Portfolio
     panel(ax, 79, bottom, 37, top - bottom, "blue", "3  Portfolio")
-    card(ax, 80.6, 57.5, 33.8, 14.5, "Core · 50% · fixed", "SPY 30%  +  AGG 20%\nreset every month", "blue")
+    card(ax, 80.6, 57.5, 33.8, 14.5, "Core · 50% · growth", "QQQM (Nasdaq-100) if above its\n10-month average, else T-bills", "blue")
     card(ax, 80.6, 41.5, 33.8, 14.5, "Shield · 50% · rotating", "5 picks × 10% each\ndefends when trends break",
          "blue")
-    card(ax, 80.6, 26.5, 33.8, 13.5, "Caps", "Bitcoin ≤ 5% of portfolio\nno order > 35% of equity", "blue")
+    card(ax, 80.6, 26.5, 33.8, 13.5, "Caps", "Bitcoin ≤ 5% of portfolio\nno order > 55% of equity", "blue")
     # 4 Risk + execution
     panel(ax, 119, 47, 39, top - 47, "orange", "4  Risk guardrails")
     ax.text(120.8, 71.5, "•  weights must sum to 100%\n•  universe tickers only\n•  market open, paper account\n"
@@ -425,7 +425,8 @@ def stages():
           "scripts/raam.py signal")
     stage("stage_portfolio.png", "blue", "Portfolio",
           "Combine the fixed Core with the\nShield picks, then apply the caps.", portfolio,
-          "Output · October 2026 allocation", "same run as the signal", "config/raam.json → portfolio")
+          "Output · October 2026 allocation (previous 60/40 Core)", "same run as the signal",
+          "config/raam.json → portfolio")
     stage("stage_execution.png", "orange", "Execution",
           "After the risk checks, trade at\n~10:45 ET on the first trading day;\nrecord every fill and its cost.",
           execution, "Output · 1 Oct 2026 fills", "first trading day, ~10:45 ET",

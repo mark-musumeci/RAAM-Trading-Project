@@ -38,26 +38,32 @@ import raam  # noqa: E402
 CACHE = ROOT / "data" / "cache" / "yahoo_raw.pkl"
 OUT = ROOT / "backtest" / "results"
 SYMS = ["VV", "IJH", "IJR", "EFA", "EEM", "RWR", "DBC", "VAW", "AGG", "TIP", "IGOV",
-        "SHY", "BIL", "SPY", "BWX", "IBIT", "BTC-USD"]
+        "SHY", "BIL", "SPY", "BWX", "IBIT", "BTC-USD", "QQQ", "QQQM"]
 IBIT_FEE = 0.0025                        # IBIT expense ratio, charged on the BTC-USD stand-in
 IS_END = dt.date(2019, 12, 31)          # in-sample / out-of-sample split
-LIVE = "**LIVE: Core & Shield + IBIT capped 5%**"
+LIVE = "**LIVE: QQQM trend Core + Shield (IBIT capped 5%)**"
 EW_BENCH = ["VV", "IJH", "IJR", "EFA", "EEM", "RWR", "DBC", "VAW", "AGG", "TIP", "IGOV", "SHY"]
 
 
 # --------------------------------------------------------------------------- data
 def load_raw(refresh: bool) -> pd.DataFrame:
-    need_download = refresh or not CACHE.exists()
-    if not need_download:
-        raw = pd.read_pickle(CACHE)
-        need_download = any(s not in raw.columns.get_level_values(0) for s in SYMS)
-    if need_download:
-        import yfinance as yf
+    """Yahoo daily prices for SYMS, cached. New symbols are downloaded on their own and added to the
+    cache, so adding a ticker doesn't silently re-download (and shift) everything else."""
+    import yfinance as yf
+    if refresh or not CACHE.exists():
         CACHE.parent.mkdir(parents=True, exist_ok=True)
         df = yf.download(SYMS, start="2005-01-01", auto_adjust=True, progress=False,
                          group_by="ticker", threads=True)
         df.to_pickle(CACHE)
-    return pd.read_pickle(CACHE)
+        return df
+    raw = pd.read_pickle(CACHE)
+    missing = [s for s in SYMS if s not in raw.columns.get_level_values(0)]
+    if missing:
+        add = yf.download(missing, start="2005-01-01", auto_adjust=True, progress=False,
+                          group_by="ticker", threads=True)
+        raw = pd.concat([raw, add], axis=1)
+        raw.to_pickle(CACHE)
+    return raw
 
 
 def to_bars(raw: pd.DataFrame) -> dict[str, pd.DataFrame]:
@@ -67,7 +73,21 @@ def to_bars(raw: pd.DataFrame) -> dict[str, pd.DataFrame]:
         d = d[["o", "h", "l", "c", "v"]].dropna(subset=["o", "h", "l", "c"])
         d.index = [ts.date() for ts in d.index]
         bars[s] = d.astype(float)
-    return bars
+    return splice_qqqm(bars)
+
+
+def splice_qqqm(bars: dict) -> dict:
+    """QQQM (Nasdaq-100, launched Oct 2020) extended backwards with QQQ (same index), scaled to be
+    continuous. QQQM's 0.05%/yr lower fee is ignored before launch (slightly conservative)."""
+    if "QQQ" not in bars or "QQQM" not in bars or bars["QQQM"].empty:
+        return bars
+    q, m = bars["QQQ"], bars["QQQM"]
+    first = m.index[0]
+    early = q[q.index < first].copy()
+    early[["o", "h", "l", "c"]] *= m.at[first, "c"] / q.at[first, "c"]
+    out = dict(bars)
+    out["QQQM"] = pd.concat([early, m])
+    return out
 
 
 def build_ibit(bars: dict, flatten_to: float | None = None) -> dict:
@@ -294,8 +314,15 @@ def variants(live: dict) -> dict[str, tuple[dict, bool, dict | None]]:
         c["portfolio"] = {"name": "blend", "core": {"SPY": core_spy, "AGG": core_agg},
                           "shield_weight": shield, "max_weight": {"IBIT": 0.05}}
         return c
+    prev = copy.deepcopy(live)                     # the Core before 2026-10-14: fixed 60/40
+    prev["portfolio"]["core"] = {"SPY": 0.3, "AGG": 0.2}
+    prev["portfolio"].pop("core_trend", None)
+    no_filter = copy.deepcopy(live)
+    no_filter["portfolio"].pop("core_trend", None)
     return {
         LIVE: (live, False, brk),
+        PREV: (prev, False, brk),
+        "QQQM Core without the trend filter": (no_filter, False, brk),
         NOIBIT: (noibit, False, brk),
         "Core & Shield + IBIT uncapped (10% slots)": (uncapped, False, brk),
         SHIELD: (alone, False, brk),
@@ -308,8 +335,9 @@ def variants(live: dict) -> dict[str, tuple[dict, bool, dict | None]]:
 
 
 V1 = "RAAM alone, original paper rules (v1, no IBIT)"
-NOIBIT = "Core & Shield WITHOUT IBIT (previous live)"
+NOIBIT = "Live rules WITHOUT IBIT"
 SHIELD = "Shield alone (RAAM, live rules)"
+PREV = "Previous live: fixed 60/40 Core (30% SPY + 20% AGG)"
 
 
 # --------------------------------------------------------------------------- report
@@ -428,7 +456,7 @@ def main() -> None:
     report = f"""# RAAM Backtest Report
 
 Generated {dt.date.today().isoformat()} by `backtest/backtest.py`. Costs: {args.cost_bps:g} bps per side on turnover.
-Engine: the live `scripts/raam.py compute_signal()` with `config/raam.json` (**Core & Shield: fixed Core of 30% SPY + 20% AGG, plus 50% RAAM Shield of 12 candidates incl. IBIT, capped at 5% of the portfolio; Tier 1 rules, trend term off, −20% breaker on the whole portfolio**).
+Engine: the live `scripts/raam.py compute_signal()` with `config/raam.json` (**Core & Shield: Core = 50% QQQM while its month-end close is above its 10-month average, else T-bills (BIL); QQQM before Oct 2020 = QQQ, the same index. Plus 50% RAAM Shield of 12 candidates incl. IBIT, capped at 5% of the portfolio; Tier 1 rules, trend term off, −20% breaker on the whole portfolio**).
 IBIT before its Jan-2024 launch = BTC-USD aligned to US trading days minus a 0.25%/yr fee, spliced into real IBIT. All rows share the live config's window.
 Signal at the month-end close, fill at the next open. The breaker is simulated on the daily path.
 Data: Yahoo Finance adjusted daily OHLC. Past results do not guarantee future results.

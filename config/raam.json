@@ -3,11 +3,14 @@
   "portfolio": {
     "name": "Core & Shield",
     "core": {
-      "SPY": 0.3,
-      "AGG": 0.2
+      "QQQM": 0.5
+    },
+    "core_trend": {
+      "symbol": "QQQM",
+      "sma_months": 10
     },
     "shield_weight": 0.5,
-    "_note": "Core = fixed 60/40 half (30% SPY + 20% AGG), reset monthly. Shield = RAAM on shield_weight of the portfolio. max_weight caps a symbol's total portfolio weight (excess to cash). Set core {} and shield_weight 1.0 for RAAM alone.",
+    "_note": "Core = 50% QQQM (Nasdaq-100) held only while QQQM's month-end close is above its 10-month average (core_trend); otherwise the Core's 50% goes to BIL. Shield = RAAM on shield_weight of the portfolio. max_weight caps a symbol's total portfolio weight (excess to cash). Owner decision 2026-10-14, live from the 2026-10 signal (2 Nov rebalance); previous Core was a fixed 30% SPY + 20% AGG.",
     "max_weight": {
       "IBIT": 0.05
     }
@@ -79,10 +82,11 @@
   "execution": {
     "min_trade_usd": 25,
     "cash_buffer_pct": 0.5,
-    "max_order_pct_equity_risk_asset": 35,
+    "max_order_pct_equity_risk_asset": 55,
     "max_order_pct_equity_cash": 101,
     "fill_wait_seconds": 90,
-    "require_approval": false
+    "require_approval": false,
+    "_note_max_order": "55% so a fresh 50% QQQM Core buy (start, or re-entry after the trend filter or breaker) isn't blocked."
   },
   "guardrails": {
     "weights_sum_tolerance_pct": 0.5,
@@ -107,18 +111,18 @@
   },
   "_core_and_shield": "2026-09-24 Core & Shield: 50% fixed 60/40 core (SPY/AGG) + 50% RAAM shield. Per-order cap raised 25% -> 35% because core targets reach 30%.",
   "report_norms": {
-    "_note": "Core & Shield + IBIT (capped 5%) normal ranges from the 2015-2026 backtest (memory/BACKTEST-SUMMARY.md); used by scripts/report.py only.",
+    "_note": "QQQM trend Core + Shield (IBIT capped 5%) normal ranges from the 2015-2026 backtest (memory/BACKTEST-SUMMARY.md); used by scripts/report.py only.",
     "month_return_pct": [
-      -3,
-      3
+      -4,
+      4
     ],
     "month_return_extreme_pct": [
-      -5.7,
-      6.9
+      -8.7,
+      9.1
     ],
-    "cash_pct_max": 50,
-    "max_drawdown_pct": -14.1,
-    "down_capture_vs_6040_pct": 65
+    "cash_pct_max": 100,
+    "max_drawdown_pct": -15.4,
+    "down_capture_vs_6040_pct": 72
   },
   "_ibit": "2026-09-26 IBIT (spot Bitcoin ETF) added as 12th Shield candidate, capped at 5% of the portfolio (excess to BIL). Adopted before the first trade."
 }

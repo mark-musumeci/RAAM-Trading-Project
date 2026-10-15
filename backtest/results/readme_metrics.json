@@ -7,6 +7,40 @@
  "stats": {
   "full": {
    "Core & Shield": {
+    "cagr_pct": 11.9,
+    "vol_pct": 9.7,
+    "sharpe_rf0": 1.21,
+    "sharpe_vs_tbills": 1.01,
+    "sortino_vs_tbills": 1.77,
+    "months": 140,
+    "max_dd_pct": -11.7,
+    "peak": "2020-02-03",
+    "trough": "2020-04-01",
+    "months_peak_to_trough": 2,
+    "months_to_recover": 4,
+    "recovered": "2020-08-03",
+    "longest_under_water_months": 19,
+    "calmar": 1.02,
+    "down_capture_vs_6040_pct": 72.0
+   },
+   "Core & Shield without Bitcoin": {
+    "cagr_pct": 9.0,
+    "vol_pct": 9.0,
+    "sharpe_rf0": 1.01,
+    "sharpe_vs_tbills": 0.79,
+    "sortino_vs_tbills": 1.28,
+    "months": 140,
+    "max_dd_pct": -12.2,
+    "peak": "2020-02-03",
+    "trough": "2020-04-01",
+    "months_peak_to_trough": 2,
+    "months_to_recover": 4,
+    "recovered": "2020-08-03",
+    "longest_under_water_months": 23,
+    "calmar": 0.74,
+    "down_capture_vs_6040_pct": 74.0
+   },
+   "Previous live (60/40 Core)": {
     "cagr_pct": 9.3,
     "vol_pct": 7.8,
     "sharpe_rf0": 1.18,
@@ -22,23 +56,6 @@
     "longest_under_water_months": 24,
     "calmar": 0.84,
     "down_capture_vs_6040_pct": 63.0
-   },
-   "Core & Shield without Bitcoin": {
-    "cagr_pct": 6.5,
-    "vol_pct": 6.9,
-    "sharpe_rf0": 0.95,
-    "sharpe_vs_tbills": 0.66,
-    "sortino_vs_tbills": 1.0,
-    "months": 140,
-    "max_dd_pct": -11.1,
-    "peak": "2022-01-03",
-    "trough": "2022-10-03",
-    "months_peak_to_trough": 9,
-    "months_to_recover": 17,
-    "recovered": "2024-03-01",
-    "longest_under_water_months": 25,
-    "calmar": 0.59,
-    "down_capture_vs_6040_pct": 66.0
    },
    "60/40": {
     "cagr_pct": 9.2,
@@ -75,6 +92,40 @@
   },
   "2015-19": {
    "Core & Shield": {
+    "cagr_pct": 10.3,
+    "vol_pct": 8.3,
+    "sharpe_rf0": 1.22,
+    "sharpe_vs_tbills": 1.11,
+    "sortino_vs_tbills": 1.92,
+    "months": 59,
+    "max_dd_pct": -8.8,
+    "peak": "2015-06-01",
+    "trough": "2016-02-01",
+    "months_peak_to_trough": 8,
+    "months_to_recover": 12,
+    "recovered": "2017-02-01",
+    "longest_under_water_months": 19,
+    "calmar": 1.17,
+    "down_capture_vs_6040_pct": 86.0
+   },
+   "Core & Shield without Bitcoin": {
+    "cagr_pct": 5.1,
+    "vol_pct": 7.5,
+    "sharpe_rf0": 0.7,
+    "sharpe_vs_tbills": 0.58,
+    "sortino_vs_tbills": 0.84,
+    "months": 59,
+    "max_dd_pct": -11.4,
+    "peak": "2015-06-01",
+    "trough": "2016-07-01",
+    "months_peak_to_trough": 13,
+    "months_to_recover": 11,
+    "recovered": "2017-06-01",
+    "longest_under_water_months": 23,
+    "calmar": 0.45,
+    "down_capture_vs_6040_pct": 94.0
+   },
+   "Previous live (60/40 Core)": {
     "cagr_pct": 9.4,
     "vol_pct": 6.8,
     "sharpe_rf0": 1.36,
@@ -90,23 +141,6 @@
     "longest_under_water_months": 12,
     "calmar": 1.32,
     "down_capture_vs_6040_pct": 65.0
-   },
-   "Core & Shield without Bitcoin": {
-    "cagr_pct": 4.3,
-    "vol_pct": 5.2,
-    "sharpe_rf0": 0.83,
-    "sharpe_vs_tbills": 0.66,
-    "sortino_vs_tbills": 0.94,
-    "months": 59,
-    "max_dd_pct": -7.1,
-    "peak": "2018-09-04",
-    "trough": "2019-01-02",
-    "months_peak_to_trough": 4,
-    "months_to_recover": 6,
-    "recovered": "2019-07-01",
-    "longest_under_water_months": 16,
-    "calmar": 0.61,
-    "down_capture_vs_6040_pct": 72.0
    },
    "60/40": {
     "cagr_pct": 8.7,
@@ -143,6 +177,40 @@
   },
   "2020-26": {
    "Core & Shield": {
+    "cagr_pct": 13.1,
+    "vol_pct": 10.7,
+    "sharpe_rf0": 1.21,
+    "sharpe_vs_tbills": 0.95,
+    "sortino_vs_tbills": 1.7,
+    "months": 81,
+    "max_dd_pct": -11.7,
+    "peak": "2020-02-03",
+    "trough": "2020-04-01",
+    "months_peak_to_trough": 2,
+    "months_to_recover": 4,
+    "recovered": "2020-08-03",
+    "longest_under_water_months": 14,
+    "calmar": 1.12,
+    "down_capture_vs_6040_pct": 66.0
+   },
+   "Core & Shield without Bitcoin": {
+    "cagr_pct": 12.0,
+    "vol_pct": 9.9,
+    "sharpe_rf0": 1.2,
+    "sharpe_vs_tbills": 0.92,
+    "sortino_vs_tbills": 1.55,
+    "months": 81,
+    "max_dd_pct": -12.2,
+    "peak": "2020-02-03",
+    "trough": "2020-04-01",
+    "months_peak_to_trough": 2,
+    "months_to_recover": 4,
+    "recovered": "2020-08-03",
+    "longest_under_water_months": 14,
+    "calmar": 0.98,
+    "down_capture_vs_6040_pct": 66.0
+   },
+   "Previous live (60/40 Core)": {
     "cagr_pct": 9.2,
     "vol_pct": 8.5,
     "sharpe_rf0": 1.08,
@@ -157,23 +225,6 @@
     "recovered": "2024-02-01",
     "longest_under_water_months": 24,
     "calmar": 0.83,
-    "down_capture_vs_6040_pct": 63.0
-   },
-   "Core & Shield without Bitcoin": {
-    "cagr_pct": 8.1,
-    "vol_pct": 7.9,
-    "sharpe_rf0": 1.03,
-    "sharpe_vs_tbills": 0.68,
-    "sortino_vs_tbills": 1.05,
-    "months": 81,
-    "max_dd_pct": -11.1,
-    "peak": "2022-01-03",
-    "trough": "2022-10-03",
-    "months_peak_to_trough": 9,
-    "months_to_recover": 17,
-    "recovered": "2024-03-01",
-    "longest_under_water_months": 25,
-    "calmar": 0.73,
     "down_capture_vs_6040_pct": 63.0
    },
    "60/40": {
@@ -217,6 +268,23 @@
   ],
   "stats": {
    "Core & Shield without Bitcoin": {
+    "cagr_pct": 8.8,
+    "vol_pct": 8.9,
+    "sharpe_rf0": 1.0,
+    "sharpe_vs_tbills": 0.85,
+    "sortino_vs_tbills": 1.39,
+    "months": 223,
+    "max_dd_pct": -12.2,
+    "peak": "2020-02-03",
+    "trough": "2020-04-01",
+    "months_peak_to_trough": 2,
+    "months_to_recover": 4,
+    "recovered": "2020-08-03",
+    "longest_under_water_months": 23,
+    "calmar": 0.72,
+    "down_capture_vs_6040_pct": 68.0
+   },
+   "Previous live without Bitcoin": {
     "cagr_pct": 6.6,
     "vol_pct": 7.2,
     "sharpe_rf0": 0.93,
@@ -268,10 +336,10 @@
   }
  },
  "costs": {
-  "two_sided_turnover_per_year": 3.64,
-  "one_sided_turnover_per_month_pct": 15.2,
+  "two_sided_turnover_per_year": 5.07,
+  "one_sided_turnover_per_month_pct": 21.1,
   "backtest_cost_bps_per_side": 5,
-  "implied_cost_pct_per_year": 0.18,
+  "implied_cost_pct_per_year": 0.25,
   "live_slippage_first_rebalance": {
    "avg_bps": 0.0,
    "cost_usd": 0.4,

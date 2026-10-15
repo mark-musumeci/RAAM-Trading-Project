@@ -53,6 +53,11 @@ def variant_cfg(cfg: dict, spec: dict) -> dict:
     pf["max_weight"] = {k: v for k, v in (pf.get("max_weight") or {}).items() if k not in rm}
     if "core" in spec:
         pf["core"] = dict(spec["core"])
+    if "core_trend" in spec:                       # null = a fixed Core with no trend filter
+        if spec["core_trend"]:
+            pf["core_trend"] = dict(spec["core_trend"])
+        else:
+            pf.pop("core_trend", None)
     return c
 
 
@@ -60,7 +65,8 @@ def variant_targets(bars: dict, cfg: dict, spec: dict, as_of: dt.date) -> dict:
     """Portfolio targets for one variant: Core + shield_weight x RAAM picks (+ optional satellite), capped."""
     c = variant_cfg(cfg, spec)
     sig = raam.compute_signal(bars, c, as_of)
-    core, std_shield = raam.portfolio_parts(c)
+    _, std_shield = raam.portfolio_parts(c)
+    core = sig["portfolio"]["core"]                 # this month's Core, after any trend filter
     shield_w = float(spec.get("shield_weight", std_shield))
     t: dict[str, float] = {}
     for s, w in core.items():
