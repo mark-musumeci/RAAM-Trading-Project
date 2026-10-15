@@ -416,7 +416,7 @@ python docs/build_readme_assets.py                   # rebuild the README images
    - **Network:** custom. Allow `paper-api.alpaca.markets`, `data.alpaca.markets` and `discord.com`, plus default package managers.
    - **Setup script:** `python3 -m pip install -r requirements.txt`
 2. **Routines:**
-   - repo `musu-codes/RAAM-Trading-Project`;
+   - repo `mark-musumeci/RAAM-Trading-Project`;
    - the environment above;
    - no connectors;
    - prompts and crons from [routines/](routines/).
