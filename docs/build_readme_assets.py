@@ -261,7 +261,7 @@ def stress():
     p = load_monthly()
     y22 = p[p["entry"].dt.year == 2022]
     rows = [("2022 (real)", ((1 + y22["ret"]).prod() - 1) * 100, ((1 + y22["b6040"]).prod() - 1) * 100),
-            ("Jun 2008–Jun 2009 (real, no BTC)", s["crisis_2008"]["Core & Shield (no IBIT)"]["Total %"],
+            ("Jun 2008–Jun 2009 (real, no BTC)", s["crisis_2008"]["Core & Shield (no Bitcoin)"]["Total %"],
              s["crisis_2008"]["60/40"]["Total %"])]
     names = {"Crash day": "−20% crash day*", "Stocks and bonds": "Stocks & bonds fall*", "Stagflation": "Stagflation*"}
     for key, ev in t["shocks"].items():
@@ -332,7 +332,7 @@ def stages():
 
     def research(ax):
         lines = [("Flags", "none: no closure, merger, ticker change or halt"),
-                 ("Scanned", "iShares, Vanguard, State Street, Invesco funds\n+ IBIT custody & regulation checks"),
+                 ("Scanned", "iShares, Vanguard, State Street, Invesco funds\n+ Bitcoin ETF custody & regulation checks"),
                  ("Context", "September: yields up sharply; REITs and\nmaterials about −7%; Bitcoin held up"),
                  ("Logged", "memory/RESEARCH-LOG.md, with sources")]
         for i, (k, v) in enumerate(lines):

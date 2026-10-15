@@ -124,7 +124,7 @@ def test_nan_latest_close_halts(env):
 def test_missing_symbol_halts(env):
     full = env.fake.bars
     env.mp.setattr(env.fake, "bars", lambda symbols, *a, **k:
-                   {s: b for s, b in full(symbols, *a, **k).items() if s != "IBIT"})
+                   {s: b for s, b in full(symbols, *a, **k).items() if s != "BTC"})
     assert _signal_code(env) == 2
     assert not (env.mem / "signals" / "2026-09.json").exists()
 
@@ -143,10 +143,10 @@ def test_zero_price_in_lookback_halts(env):
 
 # ---------------------------------------------------------------- extreme but valid markets
 def test_bitcoin_melt_up_still_capped(env):
-    b = env.fake._bars["IBIT"]
+    b = env.fake._bars["BTC"]
     b[["o", "h", "l", "c"]] = b[["o", "h", "l", "c"]].mul(np.linspace(1, 6, len(b)), axis=0)
     targets = _signal(env)
-    assert targets.get("IBIT", 0) <= CFG["portfolio"]["max_weight"]["IBIT"] + 1e-9
+    assert targets.get("BTC", 0) <= CFG["portfolio"]["max_weight"]["BTC"] + 1e-9
     assert sum(targets.values()) == pytest.approx(1.0)
 
 
@@ -161,7 +161,7 @@ def test_everything_falling_sends_shield_to_cash(env):
 
 
 def test_nan_close_inside_lookback_halts(env):
-    b = env.fake._bars["TIP"]
+    b = env.fake._bars["SCHP"]
     b.iloc[-20, b.columns.get_loc("c")] = np.nan
     assert _signal_code(env) == 2
     assert not (env.mem / "signals" / "2026-09.json").exists()

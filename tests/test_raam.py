@@ -13,7 +13,7 @@ import raam  # noqa: E402
 
 CFG = raam.load_config()
 RISK = CFG["universe"]["risk_assets"]
-R11 = ["VV", "IJH", "IJR", "EFA", "EEM", "RWR", "DBC", "VAW", "AGG", "TIP", "IGOV"]  # fixed set for pure ranking tests
+R11 = ["VV", "IJH", "IJR", "EFA", "EEM", "RWR", "DBC", "VAW", "AGG", "SCHP", "IGOV"]  # fixed set for pure ranking tests
 CASH = CFG["universe"]["cash"]
 
 
@@ -216,7 +216,7 @@ def test_env_vars_win_and_dotenv_ignored_in_cloud(tmp_path, monkeypatch):
 def test_cash_hurdle_sends_weak_momentum_to_cash():
     M, V, C, T = _factors(range(1, 12))              # top-5 momenta are 11, 10, 9, 8, 7
     _, w = raam.rank_assets(M, V, C, T, CFG, hurdle=8.5)
-    assert w["IGOV"] == pytest.approx(0.2) and w["TIP"] == pytest.approx(0.2) and w["AGG"] == pytest.approx(0.2)
+    assert w["IGOV"] == pytest.approx(0.2) and w["SCHP"] == pytest.approx(0.2) and w["AGG"] == pytest.approx(0.2)
     assert w["VAW"] == 0.0 and w["DBC"] == 0.0       # 8 and 7 do not beat the 8.5% hurdle
     assert w[CASH] == pytest.approx(0.4)
 
@@ -267,34 +267,34 @@ def test_plan_accepts_core_targets():
 
 
 
-# ---------------------------------------------------------------- IBIT cap
-def test_ibit_is_in_universe_and_capped_in_config():
-    assert "IBIT" in RISK and CFG["portfolio"]["max_weight"]["IBIT"] == 0.05
+# ---------------------------------------------------------------- Bitcoin cap
+def test_bitcoin_is_in_universe_and_capped_in_config():
+    assert "BTC" in RISK and CFG["portfolio"]["max_weight"]["BTC"] == 0.05
 
 
 def test_cap_moves_excess_to_cash():
-    t = raam.combine_targets({"IBIT": 0.2, "VV": 0.2, "EFA": 0.2, "AGG": 0.2, CASH: 0.2}, CFG)
-    assert t["IBIT"] == pytest.approx(0.10)                  # 0.5 x 20% before the cap
+    t = raam.combine_targets({"BTC": 0.2, "VV": 0.2, "EFA": 0.2, "AGG": 0.2, CASH: 0.2}, CFG)
+    assert t["BTC"] == pytest.approx(0.10)                  # 0.5 x 20% before the cap
     capped, applied = raam.apply_caps(t, CFG)
-    assert capped["IBIT"] == pytest.approx(0.05)
+    assert capped["BTC"] == pytest.approx(0.05)
     assert capped[CASH] == pytest.approx(t[CASH] + 0.05)
     assert sum(capped.values()) == pytest.approx(1.0)
-    assert applied["IBIT"]["to_cash"] == pytest.approx(0.05)
+    assert applied["BTC"]["to_cash"] == pytest.approx(0.05)
 
 
-def test_no_cap_when_ibit_not_selected():
-    t = raam.combine_targets({"VV": 0.2, "EFA": 0.2, "AGG": 0.2, "TIP": 0.2, CASH: 0.2}, CFG)
+def test_no_cap_when_bitcoin_not_selected():
+    t = raam.combine_targets({"VV": 0.2, "EFA": 0.2, "AGG": 0.2, "SCHP": 0.2, CASH: 0.2}, CFG)
     capped, applied = raam.apply_caps(t, CFG)
     assert capped == t and applied == {}
 
 
-def test_signal_respects_ibit_cap_end_to_end():
+def test_signal_respects_bitcoin_cap_end_to_end():
     rng = np.random.default_rng(21)
     bars = {s: make_bars(100 * np.cumprod(1 + rng.normal(0.0002, 0.005, 400)))
             for s in raam.tradable_symbols(CFG)}
-    bars["IBIT"] = make_bars(100 * np.cumprod(1 + rng.normal(0.004, 0.01, 400)))   # strong momentum
+    bars["BTC"] = make_bars(100 * np.cumprod(1 + rng.normal(0.004, 0.01, 400)))   # strong momentum
     sig = raam.compute_signal(bars, CFG, bars["VV"].index[-1])
-    assert sig["targets"]["IBIT"] <= 0.05 + 1e-9
+    assert sig["targets"]["BTC"] <= 0.05 + 1e-9
     assert sum(sig["targets"].values()) == pytest.approx(1.0)
-    if sig["shield_targets"].get("IBIT", 0) > 0:
-        assert "IBIT" in sig["caps_applied"]
+    if sig["shield_targets"].get("BTC", 0) > 0:
+        assert "BTC" in sig["caps_applied"]

@@ -30,7 +30,7 @@ import backtest as bt  # noqa: E402
 raam = bt.raam
 
 EQUITY = ["SPY", "QQQM", "VV", "IJH", "IJR", "EFA", "EEM", "RWR", "VAW"]   # every equity ETF the live rules can hold
-BONDS = ["AGG", "TIP", "IGOV"]
+BONDS = ["AGG", "SCHP", "IGOV"]
 SHOCK_DATES = ["2016-11-15", "2017-09-15", "2019-07-15", "2021-06-15", "2023-11-15", "2025-08-15"]
 AFTER_DAYS = 63                     # trading days watched after a shock ends
 SEED = 20260927
@@ -38,14 +38,14 @@ SEED = 20260927
 # scenario -> {symbol: total return over the shock}, length in trading days
 SCENARIOS = {
     "Crash day (1987-style, −20% equities and Bitcoin in one day)":
-        ({**{s: -0.20 for s in EQUITY}, "IBIT": -0.20}, 1),
+        ({**{s: -0.20 for s in EQUITY}, bt.CRYPTO: -0.20}, 1),
     "Stocks and bonds fall together (equities −25%, bonds −15% over 6 months)":
-        ({**{s: -0.25 for s in EQUITY}, **{s: -0.15 for s in BONDS}, "IBIT": -0.25}, 126),
-    "Stagflation (equities −20%, AGG/IGOV −10%, TIP +3%, DBC +25% over 6 months)":
-        ({**{s: -0.20 for s in EQUITY}, "AGG": -0.10, "IGOV": -0.10, "TIP": 0.03, "DBC": 0.25,
-          "IBIT": -0.30}, 126),
+        ({**{s: -0.25 for s in EQUITY}, **{s: -0.15 for s in BONDS}, bt.CRYPTO: -0.25}, 126),
+    "Stagflation (equities −20%, AGG/IGOV −10%, TIPS +3%, DBC +25% over 6 months)":
+        ({**{s: -0.20 for s in EQUITY}, "AGG": -0.10, "IGOV": -0.10, "SCHP": 0.03, "DBC": 0.25,
+          bt.CRYPTO: -0.30}, 126),
 }
-BTC_CRASH = "Bitcoin −80% in a month while IBIT is held"
+BTC_CRASH = "Bitcoin −80% in a month while the Bitcoin ETF is held"
 
 _BARS = None
 
@@ -53,7 +53,7 @@ _BARS = None
 def _bars():
     global _BARS
     if _BARS is None:
-        _BARS = bt.build_ibit(bt.to_bars(bt.load_raw(False)))
+        _BARS = bt.build_crypto(bt.to_bars(bt.load_raw(False)))
     return _BARS
 
 
@@ -194,12 +194,12 @@ def main() -> None:
     with ProcessPoolExecutor(args.workers) as ex:
         res = dict(ex.map(job, specs))
 
-    # Bitcoin crash: pick months in which the live run actually held IBIT
+    # Bitcoin crash: pick months in which the live run actually held Bitcoin
     live = res["live"]
-    held = live["periods"][[("IBIT" in h) for h in live["periods"]["held"]]]
+    held = live["periods"][[(bt.CRYPTO in h) for h in live["periods"]["held"]]]
     picks = held.iloc[np.linspace(0, len(held) - 1, 6).round().astype(int)]
     btc = [{"key": f"shock {BTC_CRASH}|{e.isoformat()}", "cfg": cfg,
-            "shock": ({"IBIT": -0.80}, cal[cal.index(e) + 5], 21)} for e in picks["entry"]]
+            "shock": ({bt.CRYPTO: -0.80}, cal[cal.index(e) + 5], 21)} for e in picks["entry"]]
     with ProcessPoolExecutor(args.workers) as ex:
         res.update(dict(ex.map(job, btc)))
 
@@ -267,7 +267,7 @@ def main() -> None:
 
     # ---- 6: shocks
     shocks = {}
-    for name, (moves, days) in list(SCENARIOS.items()) + [(BTC_CRASH, ({"IBIT": -0.8}, 21))]:
+    for name, (moves, days) in list(SCENARIOS.items()) + [(BTC_CRASH, ({bt.CRYPTO: -0.8}, 21))]:
         rows = [(k, r) for k, r in res.items() if k.startswith(f"shock {name}|")]
         evals = []
         for k, r in rows:

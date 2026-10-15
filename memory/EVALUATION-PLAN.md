@@ -15,13 +15,13 @@
 | O5 | The monthly PDF report arrives in Discord on the last trading day | every month |
 | O6 | **Execution cost:** value-weighted average slippage per rebalance | ≤ 10 bps, and no single order > 30 bps |
 | O7 | After a rebalance, every holding is within ±2 percentage points of its target | every rebalance |
-| O8 | IBIT never exceeds 5% of the portfolio at a rebalance | every rebalance |
+| O8 | The Bitcoin ETF (BTC; IBIT before November 2026) never exceeds 5% of the portfolio at a rebalance | every rebalance |
 
 ## 2. Behaviour: does it act like the backtest? (from 3 months)
 | # | Criterion | Pass |
 |---|---|---|
 | B1 | Monthly return is within the backtest's extreme range, −8.7% to +9.1% | every month (outside = investigate) |
-| B2 | Cash (BIL) matches the rules: the Core is in BIL only when the trend filter is off, and Shield cash comes only from failed picks or the IBIT cap (up to 100% when both halves are defensive) | every month |
+| B2 | Cash (SGOV; BIL before November 2026) matches the rules: the Core is in cash only when the trend filter is off, and Shield cash comes only from failed picks or the Bitcoin cap (up to 100% when both halves are defensive) | every month |
 | B3 | Drawdown since inception stays above −20%, the circuit-breaker level. Backtest worst: −15.4% daily (2015–26); a 2008-type crisis realistically reaches −15% to −20% | always |
 | B4 | **Replication:** the same months run through `backtest/backtest.py` give returns close to the live account's | average absolute gap ≤ 0.3 pp per month |
 | B5 | In months when 60/40 falls, Core & Shield loses less than 60/40 (backtest norm: 72% as much). Some months will miss, so pass/fail is judged on the average across down months. | average ≤ 85% (allows for noise) |
@@ -71,3 +71,4 @@
 | 2026-10-14 | Shadow tracking of 4 pre-registered variants added (`config/shadow.json`). Evidence only: criteria and the live strategy unchanged. | owner |
 | 2026-10-14 | 5th shadow variant "+ Gold (13 candidates)" added, tracked from November. Planned adoption at the January checkpoint under the decision rule in section 5. Live strategy unchanged until then. | owner |
 | 2026-10-14 | **Restart for the new Core** (QQQM + 10-month trend filter, live from the 2 Nov rebalance). B1 range −8.7%/+9.1%, B2 rewritten (cash can reach 100% by design), B3 set to −20% (was −14.1%, judged too tight for a realistic crisis), B5 norm 72%. Checkpoints re-dated from the 2 Nov rebalance. Pass thresholds otherwise unchanged. No result of the new design existed when this was written. | owner |
+| 2026-10-15 | Lower-fee funds with the same exposures from the 2 Nov rebalance: SGOV (cash), SCHP and BTC replace BIL, TIP and IBIT. Same rules, so criteria, reference numbers and checkpoints are unchanged; O8 and B2 name the new funds. | owner |

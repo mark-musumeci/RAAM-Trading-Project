@@ -10,9 +10,9 @@
       "sma_months": 10
     },
     "shield_weight": 0.5,
-    "_note": "Core = 50% QQQM (Nasdaq-100) held only while QQQM's month-end close is above its 10-month average (core_trend); otherwise the Core's 50% goes to BIL. Shield = RAAM on shield_weight of the portfolio. max_weight caps a symbol's total portfolio weight (excess to cash). Owner decision 2026-10-14, live from the 2026-10 signal (2 Nov rebalance); previous Core was a fixed 30% SPY + 20% AGG.",
+    "_note": "Core = 50% QQQM (Nasdaq-100) held only while QQQM's month-end close is above its 10-month average (core_trend); otherwise the Core's 50% goes to the cash asset (SGOV). Shield = RAAM on shield_weight of the portfolio. max_weight caps a symbol's total portfolio weight (excess to cash). Owner decision 2026-10-14, live from the 2026-10 signal (2 Nov rebalance); previous Core was a fixed 30% SPY + 20% AGG.",
     "max_weight": {
-      "IBIT": 0.05
+      "BTC": 0.05
     }
   },
   "universe": {
@@ -26,15 +26,18 @@
       "DBC",
       "VAW",
       "AGG",
-      "TIP",
+      "SCHP",
       "IGOV",
+      "BTC"
+    ],
+    "cash": "SGOV",
+    "sell_only": [
+      "SPY",
+      "BIL",
+      "TIP",
       "IBIT"
     ],
-    "cash": "BIL",
-    "sell_only": [
-      "SPY"
-    ],
-    "_note_sell_only": "Holdings from earlier rules that the rebalance sells to zero and never buys. SPY was the previous Core (until the 2 Nov 2026 rebalance). Remove once sold.",
+    "_note_sell_only": "Holdings from earlier rules that the rebalance sells to zero and never buys. SPY was the previous Core; BIL, TIP and IBIT were replaced by the lower-fee SGOV, SCHP and BTC (owner decision 2026-10-15). All are sold at the 2 Nov 2026 rebalance. Remove once sold.",
     "asset_class": {
       "VV": "US Equities",
       "IJH": "US Equities",
@@ -45,10 +48,10 @@
       "DBC": "Commodities",
       "VAW": "Commodities",
       "AGG": "US Bonds",
-      "TIP": "US Bonds",
+      "SCHP": "US Bonds",
       "IGOV": "International Bonds",
-      "BIL": "Cash (T-bills)",
-      "IBIT": "Crypto (spot Bitcoin ETF)"
+      "SGOV": "Cash (T-bills, 0-3 month)",
+      "BTC": "Crypto (spot Bitcoin ETF, Grayscale Bitcoin Mini Trust)"
     }
   },
   "lookbacks": {
@@ -115,7 +118,7 @@
   },
   "_core_and_shield": "2026-09-24 Core & Shield: 50% fixed 60/40 core (SPY/AGG) + 50% RAAM shield. Per-order cap raised 25% -> 35% because core targets reach 30%.",
   "report_norms": {
-    "_note": "QQQM trend Core + Shield (IBIT capped 5%) normal ranges from the 2015-2026 backtest (memory/BACKTEST-SUMMARY.md); used by scripts/report.py only.",
+    "_note": "QQQM trend Core + Shield (Bitcoin capped 5%) normal ranges from the 2015-2026 backtest (memory/BACKTEST-SUMMARY.md); used by scripts/report.py only.",
     "month_return_pct": [
       -4,
       4
@@ -128,5 +131,6 @@
     "max_drawdown_pct": -15.4,
     "down_capture_vs_6040_pct": 72
   },
-  "_ibit": "2026-09-26 IBIT (spot Bitcoin ETF) added as 12th Shield candidate, capped at 5% of the portfolio (excess to BIL). Adopted before the first trade."
+  "_ibit": "2026-09-26 IBIT (spot Bitcoin ETF) added as 12th Shield candidate, capped at 5% of the portfolio (excess to BIL). Adopted before the first trade.",
+  "_low_fee_swaps": "2026-10-15 owner decision, live from the 2026-10 signal (2 Nov rebalance): same exposures, lower fees. Cash BIL (0.136%) -> SGOV (0.09%); TIP (0.18%) -> SCHP (0.03%); IBIT (0.25%) -> BTC, Grayscale Bitcoin Mini Trust (0.15%), still capped at 5%. DBC kept: PDBC is cheaper but trailed DBC by ~0.4pp/yr over 5 years."
 }

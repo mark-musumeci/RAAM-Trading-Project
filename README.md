@@ -14,14 +14,14 @@
 
 <table>
 <tr>
-<td align="center" width="25%"><h2>11.9%</h2>return per year<br><sub>60/40: 9.2%</sub></td>
-<td align="center" width="25%"><h2>1.01</h2>Sharpe vs T-bills<br><sub>60/40: 0.73</sub></td>
-<td align="center" width="25%"><h2>1.02</h2>Calmar ratio<br><sub>60/40: 0.48</sub></td>
+<td align="center" width="25%"><h2>11.8%</h2>return per year<br><sub>60/40: 9.2%</sub></td>
+<td align="center" width="25%"><h2>1.00</h2>Sharpe vs T-bills<br><sub>60/40: 0.73</sub></td>
+<td align="center" width="25%"><h2>1.01</h2>Calmar ratio<br><sub>60/40: 0.48</sub></td>
 <td align="center" width="25%"><h2>−11.7%</h2>worst month-end drop<br><sub>60/40: −19.2%</sub></td>
 </tr>
 </table>
 
-<sub>Backtest Feb 2015 – Sep 2026, after costs, of the rules live from 2 Nov 2026. At rf = 0 the Sharpe ratios are 1.21 vs 0.93. Without Bitcoin: 9.0%/yr, Sharpe vs T-bills 0.79. 2008–2026 without Bitcoin: 8.8%/yr vs 8.5%, Calmar 0.72 vs 0.28. The Core's Nasdaq-100 choice was made knowing it led 2010–26: see [Limitations](#limitations).</sub>
+<sub>Backtest Feb 2015 – Sep 2026, after costs, of the rules live from 2 Nov 2026. At rf = 0 the Sharpe ratios are 1.20 vs 0.93. Without Bitcoin: 8.9%/yr, Sharpe vs T-bills 0.78. 2008–2026 without Bitcoin: 8.8%/yr vs 8.5%, Calmar 0.72 vs 0.28. The Core's Nasdaq-100 choice was made knowing it led 2010–26: see [Limitations](#limitations).</sub>
 
 </div>
 
@@ -38,7 +38,7 @@
 |---|---|
 | **What** | Half the portfolio is a growth **Core**: QQQM (Nasdaq-100), held only while its month-end price is above its 10-month average, otherwise T-bills. The other half (**Shield**) holds the 5 strongest of 12 diversified ETFs, including spot Bitcoin capped at 5%, and moves to T-bills when nothing is trending. |
 | **Objective** | Beat a 60/40 on return with smaller drawdowns: the Core supplies growth, the Shield and the Core's trend filter supply the defence. |
-| **Edge, tested** | Calmar 1.02 vs 0.48 for 60/40 and 0.84 for the previous design. With the Shield's ranking, the strategy beats **99%** of 1,000 random-pick portfolios on Sharpe in both 2015–26 and 2008–26. |
+| **Edge, tested** | Calmar 1.01 vs 0.48 for 60/40 and 0.84 for the previous design. With the Shield's ranking, the strategy beats **98–99%** of 1,000 random-pick portfolios on Sharpe in both 2015–26 and 2008–26. |
 | **Governance** | Deterministic engine, pre-registered evaluation plan, shadow tracking of alternatives (including the previous design), full change log. The AI operates; it never decides. |
 | **Status** | Live on Alpaca paper since **1 Oct 2026**. The current Core went live at the **2 Nov 2026** rebalance; the 12-month evaluation restarted then, with the verdict due **Nov 2027**. |
 
@@ -46,19 +46,19 @@
 
 | | **Live rules** | Live without Bitcoin | Previous (60/40 Core) | 60/40 | SPY |
 |---|---:|---:|---:|---:|---:|
-| Return per year | **11.9%** | 9.0% | 9.3% | 9.2% | 14.1% |
+| Return per year | **11.8%** | 8.9% | 9.2% | 9.2% | 14.1% |
 | Volatility | 9.7% | 9.0% | 7.8% | 10.0% | 15.6% |
-| Sharpe ratio vs T-bills | **1.01** | 0.79 | 0.93 | 0.73 | 0.81 |
-| Sharpe ratio, rf = 0 | 1.21 | 1.01 | 1.18 | 0.93 | 0.93 |
-| Sortino ratio vs T-bills | **1.77** | 1.28 | 1.58 | 1.11 | 1.24 |
-| Calmar ratio | **1.02** | 0.74 | 0.84 | 0.48 | 0.61 |
-| Worst month-end drawdown | −11.7% | −12.2% | −11.1% | −19.2% | −23.3% |
+| Sharpe ratio vs T-bills | **1.00** | 0.78 | 0.92 | 0.73 | 0.81 |
+| Sharpe ratio, rf = 0 | 1.20 | 1.00 | 1.17 | 0.93 | 0.93 |
+| Sortino ratio vs T-bills | **1.75** | 1.25 | 1.55 | 1.11 | 1.24 |
+| Calmar ratio | **1.01** | 0.72 | 0.84 | 0.48 | 0.61 |
+| Worst month-end drawdown | −11.7% | −12.3% | −11.0% | −19.2% | −23.3% |
 | Worst daily drawdown | −15.4% | −16.1% | −14.1% | — | −33.7% |
 | Months to recover the worst drawdown | **4** | 4 | 16 | 16 | 15 |
-| 2022 | **−4.9%** | −3.8% | −8.8% | −15.2% | −18.0% |
-| Beta to 60/40 | 0.68 | 0.64 | 0.69 | 1.00 | — |
+| 2022 | **−4.7%** | −3.6% | −8.8% | −15.2% | −18.0% |
+| Beta to 60/40 | 0.68 | 0.64 | 0.68 | 1.00 | — |
 
-Over a longer, harder window **without Bitcoin** (Mar 2008 – Sep 2026, 223 months), the live rules returned **8.8%/yr** against 60/40's 8.5% and the previous design's 6.6%. Against T-bills the Sharpe was **0.85 vs 0.72**, Sortino **1.39 vs 1.06** and Calmar **0.72 vs 0.28**, with a worst month-end drawdown of **−12.2% vs −30.2%**.
+Over a longer, harder window **without Bitcoin** (Mar 2008 – Sep 2026, 223 months), the live rules returned **8.8%/yr** against 60/40's 8.5% and the previous design's 6.5%. Against T-bills the Sharpe was **0.85 vs 0.72**, Sortino **1.38 vs 1.06** and Calmar **0.72 vs 0.28**, with a worst month-end drawdown of **−12.3% vs −30.2%**.
 
 ---
 
@@ -91,8 +91,8 @@ Over a longer, harder window **without Bitcoin** (Mar 2008 – Sep 2026, 223 mon
 
 | Half | Weight | Holdings | Rule |
 |---|---|---|---|
-| **Core** | 50% | QQQM, or T-bills (BIL) | Held while QQQM's month-end close is above the average of its last 10 month-end closes; otherwise the Core's 50% sits in BIL. Checked every month |
-| **Shield** | 50% | 5 slots × 10%, chosen from 12 candidates | Re-ranked every month; failed slots go to BIL (T-bills) |
+| **Core** | 50% | QQQM, or T-bills (SGOV) | Held while QQQM's month-end close is above the average of its last 10 month-end closes; otherwise the Core's 50% sits in SGOV. Checked every month |
+| **Shield** | 50% | 5 slots × 10%, chosen from 12 candidates | Re-ranked every month; failed slots go to SGOV (T-bills) |
 
 **Shield candidates** (the 7Twelve multi-asset set plus spot Bitcoin):
 
@@ -102,10 +102,12 @@ Over a longer, harder window **without Bitcoin** (Mar 2008 – Sep 2026, 223 mon
 | International equities | EFA, EEM |
 | Real estate | RWR |
 | Commodities and resources | DBC, VAW |
-| US bonds and inflation-protected | AGG, TIP |
+| US bonds and inflation-protected | AGG, SCHP |
 | International government bonds | IGOV |
-| Crypto | IBIT, **capped at 5% of the portfolio** |
-| Cash (not ranked) | BIL |
+| Crypto | BTC (Grayscale Bitcoin Mini Trust), **capped at 5% of the portfolio** |
+| Cash (not ranked) | SGOV |
+
+Where a cheaper fund gives the same exposure, the bot holds the cheaper one: QQQM over QQQ, SGOV over BIL, SCHP over TIP, BTC over IBIT. DBC stays because PDBC, its lower-fee rival, trailed it by about 0.4 pp a year.
 
 **The monthly decision** is computed after the close on the last trading day, and traded at the next morning's session (~10:45 ET):
 
@@ -115,7 +117,7 @@ Over a longer, harder window **without Bitcoin** (Mar 2008 – Sep 2026, 223 mon
 | Volatility | EWMA (λ = 0.94), annualised, 10-day smoothed | lowest |
 | Correlation | average 84-day correlation with the other 11 | lowest |
 
-`Score = ⅓·Rank(M) + ⅓·Rank(V) + ⅓·Rank(C)`. The 5 lowest scores are selected. A selected ETF keeps its 10% slot only if its momentum beats T-bill (BIL) momentum; otherwise the slot goes to BIL. Full rules: [memory/TRADING-STRATEGY.md](memory/TRADING-STRATEGY.md).
+`Score = ⅓·Rank(M) + ⅓·Rank(V) + ⅓·Rank(C)`. The 5 lowest scores are selected. A selected ETF keeps its 10% slot only if its momentum beats T-bill (SGOV) momentum; otherwise the slot goes to SGOV. Full rules: [memory/TRADING-STRATEGY.md](memory/TRADING-STRATEGY.md).
 
 ---
 
@@ -124,7 +126,7 @@ Over a longer, harder window **without Bitcoin** (Mar 2008 – Sep 2026, 223 mon
 Each stage has one job and one owner. These are the actual outputs from the first live month: the 30 Sep 2026 signal and the 1 Oct 2026 trades. That month still used the **previous 60/40 Core**; from November the Core is QQQM with its trend filter, and every signal records the filter's state.
 
 ### 1 · Research gate
-- Claude scans all 14 funds for closures, mergers, ticker or index changes and halts, plus custody and regulatory risks for IBIT.
+- Claude scans all 14 funds for closures, mergers, ticker or index changes and halts, plus custody and regulatory risks for the Bitcoin ETF.
 - A structural flag **stops** the signal and raises a ⚠️ alert. Market news is logged as context and never changes a pick.
 
 ![Research gate](docs/images/stage_research.png)
@@ -164,8 +166,7 @@ Each stage has one job and one owner. These are the actual outputs from the firs
 | Window | Feb 2015 – Sep 2026, 140 monthly rebalances. Also Mar 2008 – Sep 2026 without Bitcoin (IGOV extended with BWX before 2009) |
 | Execution | Signal at the month-end close; fill at the next session's open; held to the next rebalance |
 | Costs | 5 bps per side on turnover. No management fee, financing or taxes |
-| Bitcoin before 2024 | BTC-USD on US trading days, minus IBIT's 0.25% fee, spliced into real IBIT from its January 2024 launch |
-| QQQM before Oct 2020 | QQQ (the same Nasdaq-100 index), spliced into real QQQM at launch; QQQM's 0.05%/yr lower fee is ignored |
+| Funds younger than the window | Bitcoin: BTC-USD on US trading days, minus BTC's 0.15% fee, spliced into the real fund from its July 2024 launch. QQQM before Oct 2020 = QQQ, SGOV before May 2020 = BIL, SCHP before Aug 2010 = TIP (same exposures, fee advantage ignored) |
 | Circuit breaker | Simulated on the daily path |
 | Benchmarks | 60/40 = 60% SPY + 40% AGG, rebalanced monthly; SPY total return |
 | Sharpe ratio | Shown both against T-bills (BIL, 2.0%/yr over the window) and at rf = 0 |
@@ -181,12 +182,12 @@ Each stage has one job and one owner. These are the actual outputs from the firs
 
 ![Growth of $100,000](docs/images/growth.png)
 
-The live rules beat 60/40 by **2.7%/yr** with slightly lower volatility (9.7% vs 10.0%) and a **39% smaller** worst month-end drawdown. They took **72%** of 60/40's losses in 60/40's down months, and recovered from the worst drawdown in 4 months against 16.
+The live rules beat 60/40 by **2.6%/yr** with slightly lower volatility (9.7% vs 10.0%) and a **39% smaller** worst month-end drawdown. They took **72%** of 60/40's losses in 60/40's down months, and recovered from the worst drawdown in 4 months against 16.
 
 ![Calendar-year returns](docs/images/calendar_years.png)
 
-- **Ahead in 8 of 12 years**, including 2022 (−4.9% vs −15.2%), when the Core's trend filter moved it into T-bills.
-- **Behind in 2015, 2016, 2019 and 2025:** choppy or strongly rising markets where the filter or the Shield's caution cost return.
+- **Ahead in 7 of 12 calendar years**, including 2022 (−4.7% vs −15.2%), when the Core's trend filter moved it into T-bills.
+- **Behind in 2015, 2016, 2019 and 2025** (and by 0.2 pp in 2026 to September): choppy or strongly rising markets where the filter or the Shield's caution cost return.
 
 ### Early vs late period
 
@@ -194,11 +195,11 @@ The design choices used the whole 2015–2026 history, so neither half is truly 
 
 | | 2015–19 Live rules | 2015–19 Previous | 2015–19 60/40 | **2020–26 Live rules** | **2020–26 Previous** | **2020–26 60/40** |
 |---|---:|---:|---:|---:|---:|---:|
-| Return per year | 10.3% | 9.4% | 8.7% | **13.1%** | **9.2%** | **9.5%** |
-| Sharpe vs T-bills | 1.11 | 1.23 | 1.01 | **0.95** | **0.75** | **0.61** |
-| Sortino vs T-bills | 1.92 | 2.31 | 1.57 | **1.70** | **1.24** | **0.92** |
-| Calmar | 1.17 | 1.32 | 1.04 | **1.12** | **0.83** | **0.49** |
-| Worst month-end drawdown | −8.8% | −7.1% | −8.4% | **−11.7%** | **−11.1%** | **−19.2%** |
+| Return per year | 10.3% | 9.4% | 8.7% | **12.9%** | **9.0%** | **9.5%** |
+| Sharpe vs T-bills | 1.11 | 1.23 | 1.01 | **0.94** | **0.74** | **0.61** |
+| Sortino vs T-bills | 1.92 | 2.31 | 1.57 | **1.67** | **1.20** | **0.92** |
+| Calmar | 1.17 | 1.32 | 1.04 | **1.10** | **0.82** | **0.49** |
+| Worst month-end drawdown | −8.8% | −7.1% | −8.4% | **−11.7%** | **−11.0%** | **−19.2%** |
 
 The new Core's advantage is **concentrated in 2020–26**. In 2015–19 it was slightly worse than the previous design on every risk-adjusted measure. That is the honest shape of the result: a design that did best in the tech-led, trend-friendly 2020s.
 
@@ -206,12 +207,12 @@ Source: [backtest/results/readme_metrics.json](backtest/results/readme_metrics.j
 
 ### Choosing the Core
 
-Every Core was tested with the same Shield, rules and costs (calmer is better):
+Every Core was tested with the same Shield, rules and costs (higher Calmar is better). The first two rows use the current funds; the others were tested before the switch to lower-fee funds, which moved the live row by 0.01:
 
 | Core | Calmar 2015–26 | Calmar 2008–26 (no Bitcoin) | Return 2015–26 |
 |---|---:|---:|---:|
-| **QQQM (Nasdaq-100) + 10-month trend filter, live** | **1.02** | **0.72** | **11.9%** |
-| Previous: fixed 60/40 (30% SPY + 20% AGG) | 0.84 | 0.35 | 9.3% |
+| **QQQM (Nasdaq-100) + 10-month trend filter, live** | **1.01** | **0.72** | **11.8%** |
+| Previous: fixed 60/40 (30% SPY + 20% AGG) | 0.84 | 0.34 | 9.2% |
 | SPY, fixed | 0.82 | 0.26 | 11.8% |
 | SPY + trend filter | 0.61 | 0.50 | 8.3% |
 | VTI + trend filter | 0.72 | 0.50 | 8.8% |
@@ -227,11 +228,11 @@ The Shield's ranking was compared with 1,000 portfolios whose Shield holds **5 r
 
 | Test | 2015–26 (with Bitcoin) | 2008–26 (no Bitcoin) |
 |---|---:|---:|
-| Beats random on Sharpe | **99%** | **99%** |
-| Beats random on down-market defence | **99%** | **100%** |
+| Beats random on Sharpe | **99%** | **98%** |
+| Beats random on down-market defence | **98%** | **100%** |
 | Beats random on worst daily drop | 99% | 98% |
-| Beats random on return | 99% | 73% |
-| Shield on its own: beats random on Sharpe | 96% | 94% |
+| Beats random on return | 98% | 66% |
+| Shield on its own: beats random on Sharpe | 95% | 92% |
 
 **Which parts matter:**
 - *Momentum alone* earns more but defends far worse: 91% of 60/40's down-month losses against 72%, with a −18.9% worst day against −15.4%. The volatility and correlation ranks are what make the Shield defensive.
@@ -245,11 +246,11 @@ Source: [backtest/results/ROBUSTNESS.md](backtest/results/ROBUSTNESS.md).
 
 | Question | Finding |
 |---|---|
-| **Trading costs** | The edge over 60/40 holds to about 25 bps per trade (Sharpe, rf = 0: 1.09 vs ~0.92) and is nearly gone at 50 bps (0.95). |
-| **Parameter sensitivity** | **13 of 13** nearby settings (lookbacks 63–126 days, hold 4–6, λ, factor weights ±10 pp) still beat 60/40's Sharpe; the range is 1.12–1.27. It is not a lucky peak. |
-| **Late execution** | Filling 2–5 days after the signal costs a little (Sharpe 1.20 → 1.08 at 5 days) but stays ahead of 60/40. |
-| **Any single year** | It beat 60/40 on return in **59%** of rolling 12-month windows, and in **all 14** windows where 60/40 lost money. |
-| **Monte Carlo** | Across 5,000 bootstrapped 10-year paths: **89%** chance of a higher Sharpe than 60/40, **80%** chance of a smaller worst drawdown. Any single year: 38% chance of trailing 60/40. |
+| **Trading costs** | The edge over 60/40 holds to about 25 bps per trade (Sharpe, rf = 0: 1.08 vs ~0.92) and is nearly gone at 50 bps (0.94). |
+| **Parameter sensitivity** | **13 of 13** nearby settings (lookbacks 63–126 days, hold 4–6, λ, factor weights ±10 pp) still beat 60/40's Sharpe; the range is 1.08–1.28. It is not a lucky peak. |
+| **Late execution** | Filling 2–5 days after the signal costs a little (Sharpe 1.19 → 1.07 at 5 days) but stays ahead of 60/40. |
+| **Any single year** | It beat 60/40 on return in **58%** of rolling 12-month windows, and in **all 14** windows where 60/40 lost money. |
+| **Monte Carlo** | Across 5,000 bootstrapped 10-year paths: **88%** chance of a higher Sharpe than 60/40, **80%** chance of a smaller worst drawdown. Any single year: 39% chance of trailing 60/40. |
 | **Simulated crash day (−20%)** | Average loss −13.2% vs 60/40's −16.2%. **Worse than the previous design (−9.3%)**: the Nasdaq-100 Core is fully exposed until the monthly filter reacts. |
 | **Stocks and bonds falling together (6 months)** | −5.7% vs 60/40's −22.3% (previous design −10.3%): the trend filter steps aside. |
 | **Stagflation (6 months)** | −4.9% vs −17.3%. |
@@ -261,11 +262,11 @@ Source: [backtest/results/STRESS.md](backtest/results/STRESS.md).
 
 | | Beta to 60/40 | Alpha / yr (rf = T-bills) |
 |---|---:|---:|
-| Live rules | **0.68** | **+4.9%** (t ≈ 2.3) |
-| Live rules without Bitcoin | 0.64 | +2.4% (t ≈ 1.3) |
-| Previous design (60/40 Core) | 0.69 | +2.2% (t ≈ 2.0) |
+| Live rules | **0.68** | **+4.7%** (t ≈ 2.3) |
+| Live rules without Bitcoin | 0.64 | +2.3% (t ≈ 1.2) |
+| Previous design (60/40 Core) | 0.68 | +2.1% (t ≈ 1.9) |
 
-Market exposure is about the same as before, but more of the return now comes from the Core's growth and trend timing and less from Bitcoin. Part of the alpha is the Nasdaq-100's strong 2010s, which should not be expected to repeat at the same size.
+Market exposure is the same as before, but more of the return now comes from the Core's growth and trend timing and less from Bitcoin. Part of the alpha is the Nasdaq-100's strong 2010s, which should not be expected to repeat at the same size. Source: `attribution_vs_6040` in [readme_metrics.json](backtest/results/readme_metrics.json).
 
 ---
 
@@ -353,7 +354,7 @@ flowchart LR
 - One deterministic engine: the same data always gives the same targets.
 - Every command prints a single JSON object with `ok` / `noop` / `halt` / `error`.
 - Dry-run modes everywhere; idempotent rebalances (a month can't be traded twice).
-- **80 tests** with no network, including fault drills for broker errors, partial fills and bad data, and the Core trend filter.
+- **83 tests** with no network, including fault drills for broker errors, partial fills and bad data, and the Core trend filter.
 
 ---
 
@@ -362,7 +363,7 @@ flowchart LR
 - **A bet on the Nasdaq-100.** The Core was chosen after seeing the Nasdaq-100 lead 2010–26. In the 2000–02 dot-com crash the trend-filtered index still fell about 36% before stepping aside, roughly an extra −18% on this portfolio. Over 1999–2026, a trend-filtered S&P 500 had the better Calmar.
 - **One-day crashes.** In simulated −20% crash days it lost about 13%, more than the previous design (9%), because the Core is fully exposed until the monthly filter reacts. The −5% daily breaker then holds cash until the next rebalance and can miss a fast rebound.
 - **Whipsaw.** In choppy markets the trend filter can sell low and buy back higher. In 2015–19 the new design was slightly worse than the previous one.
-- **Bitcoin.** Less dependent than before (9.0%/yr without it), but Bitcoin history before 2024 is simulated from BTC-USD minus IBIT's fee.
+- **Bitcoin.** Less dependent than before (8.9%/yr without it), but Bitcoin history before 2024 is simulated from BTC-USD minus the fund's fee.
 - **Hindsight and sample size.** Several design choices were made after seeing 2015–2026 data. With ~11 years, a Sharpe estimate is only accurate to about ±0.3.
 - **Paper, not live.** Paper fills do not capture real market impact. Taxes are ignored, and turnover is about 21% a month.
 
@@ -396,7 +397,7 @@ flowchart LR
 ```bash
 python -m pip install -r requirements.txt
 cp env.template .env                                # Alpaca paper keys, Discord webhook
-python -m pytest -q                                  # 80 tests, no network
+python -m pytest -q                                  # 83 tests, no network
 python scripts/raam.py calendar
 python scripts/raam.py signal --force --dry-run      # today's ranks, nothing saved
 python scripts/raam.py rebalance --force --dry-run   # the orders it would place

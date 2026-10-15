@@ -1,5 +1,5 @@
 {
-  "_note": "Pre-registered shadow variants (owner decision 2026-10-14). Each month-end scripts/shadow.py computes what each variant would hold, from the same data as the live signal, and tracks its return. Nothing here is ever traded. Change this list only by owner decision, never because of results already seen; a new variant starts tracking from its first recorded month. From the 2026-10 signal (November) the live rules use the QQQM trend Core (owner decision 2026-10-14), so variants are defined relative to that; the old fixed 60/40 Core is tracked as 'Previous live'. Records before November used the old live rules.",
+  "_note": "Pre-registered shadow variants (owner decision 2026-10-14). Each month-end scripts/shadow.py computes what each variant would hold, from the same data as the live signal, and tracks its return. Nothing here is ever traded. Change this list only by owner decision, never because of results already seen; a new variant starts tracking from its first recorded month. From the 2026-10 signal (November) the live rules use the QQQM trend Core (owner decision 2026-10-14), so variants are defined relative to that; the old fixed 60/40 Core is tracked as 'Previous live'. Records before November used the old live rules. From the 2026-10 signal the universe uses the lower-fee SGOV (cash), SCHP and BTC in place of BIL, TIP and IBIT (owner decision 2026-10-15); every variant inherits them.",
   "start_month": "2026-10",
   "cost_bps_per_side": 5,
   "variants": {
@@ -15,9 +15,9 @@
       "core_trend": null
     },
     "No Bitcoin": {
-      "_why": "How much of the result is IBIT.",
+      "_why": "How much of the result is Bitcoin (IBIT until October 2026, BTC from November).",
       "remove": [
-        "IBIT"
+        "BTC"
       ]
     },
     "Core 50% SPY": {
@@ -36,18 +36,18 @@
       "core_trend": null
     },
     "Bitcoin satellite": {
-      "_why": "IBIT outside the ranking: 5% IBIT when its momentum beats cash, else BIL; the Shield (45%) ranks the other 11. Removes the half-empty IBIT slot.",
+      "_why": "Bitcoin (BTC) outside the ranking: 5% Bitcoin (BTC) when its momentum beats cash, else cash; the Shield (45%) ranks the other 11. Removes the half-empty Bitcoin (BTC) slot.",
       "remove": [
-        "IBIT"
+        "BTC"
       ],
       "shield_weight": 0.45,
       "satellite": {
-        "symbol": "IBIT",
+        "symbol": "BTC",
         "weight": 0.05
       }
     },
     "+ Gold (13 candidates)": {
-      "_why": "Owner decision 2026-10-14: GLD as an ordinary 13th Shield candidate (IBIT keeps its 5% cap). Tracked from the 2026-10 signal (November). Planned for adoption at the 3-month checkpoint (Jan 2027). Backtest 2015-26: 9.4%/yr, Sharpe vs T-bills 0.97 vs 0.93 live; 2008-26 without Bitcoin: worse crash tail (worst month-end -23.5% vs -19.0%).",
+      "_why": "Owner decision 2026-10-14: GLD as an ordinary 13th Shield candidate (Bitcoin keeps its 5% cap). Tracked from the 2026-10 signal (November). Planned for adoption at the 3-month checkpoint (Jan 2027). Backtest 2015-26: 9.4%/yr, Sharpe vs T-bills 0.97 vs 0.93 live; 2008-26 without Bitcoin: worse crash tail (worst month-end -23.5% vs -19.0%).",
       "add": [
         "GLD"
       ]

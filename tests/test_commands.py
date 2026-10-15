@@ -316,3 +316,17 @@ def test_preflight_does_not_warn_about_sell_only_holdings(env):
     env.fake._positions = {"SPY": {"qty": 300.0, "market_value": 30_000.0}}
     out = raam.cmd_preflight(args(), CFG)
     assert out["status"] == "ok" and not any("SPY" in w for w in out["warnings"])
+
+
+def test_rebalance_swaps_replaced_funds(env):
+    """BIL, TIP and IBIT were replaced by SGOV, SCHP and BTC: the switch sells them all and never buys them."""
+    raam.cmd_signal(args(date="2026-09-30"), CFG)
+    env.fake._positions = {"BIL": {"qty": 100.0, "market_value": 9_000.0},
+                           "TIP": {"qty": 50.0, "market_value": 5_500.0},
+                           "IBIT": {"qty": 80.0, "market_value": 4_800.0}}
+    out = raam.cmd_rebalance(args(date="2026-10-01"), CFG)
+    assert out["status"] == "ok", out
+    for sym in ("BIL", "TIP", "IBIT"):
+        orders = [o for o in env.fake.submitted if o["symbol"] == sym]
+        assert len(orders) == 1 and orders[0]["side"] == "sell", sym
+    assert not any(o["side"] == "buy" and o["symbol"] in ("BIL", "TIP", "IBIT") for o in env.fake.submitted)

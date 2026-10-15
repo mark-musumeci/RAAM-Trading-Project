@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Does the RAAM ranking have real skill? Context only: nothing here changes the strategy.
 
-Test 1 - random picks: keep every rule identical (Core, cash test, IBIT cap, breaker, costs, dates)
+Test 1 - random picks: keep every rule identical (Core, cash test, Bitcoin cap, breaker, costs, dates)
 but let the Shield hold 5 *random* candidates each month, 1,000 times. If the real ranking beats
 ~95% of random portfolios, the price ranking is a genuine edge; if it sits mid-pack, the value comes
 from the universe, the cash test and the Core. Two simpler rules are added to see which part matters:
   - momentum only: the 5 highest-momentum candidates (no volatility or correlation ranks)
   - no ranking: all 12 candidates, equal slots, each with the cash test
-Test 2 - longer history without Bitcoin: 2008-2026 (IGOV extended with BWX), live rules minus IBIT.
+Test 2 - longer history without Bitcoin: 2008-2026 (IGOV extended with BWX), live rules minus Bitcoin.
 
 Both windows are scored at portfolio level (Core & Shield) and for the Shield on its own.
 Usage: python backtest/robustness.py [--n 1000] [--workers N]
@@ -37,20 +37,20 @@ _W: dict = {}
 def configs() -> dict:
     live = raam.load_config()
     noibit = copy.deepcopy(live)
-    noibit["universe"]["risk_assets"] = [s for s in live["universe"]["risk_assets"] if s != "IBIT"]
+    noibit["universe"]["risk_assets"] = [s for s in live["universe"]["risk_assets"] if s != bt.CRYPTO]
     noibit["portfolio"]["max_weight"] = {}
 
     def alone(c, cap):
         a = copy.deepcopy(c)
         a["portfolio"] = {"name": "Shield alone", "core": {}, "shield_weight": 1.0,
-                          "max_weight": {"IBIT": cap} if cap else {}}
+                          "max_weight": {bt.CRYPTO: cap} if cap else {}}
         return a
     return {"A": {"port": live, "shield": alone(live, 0.10)},
             "B": {"port": noibit, "shield": alone(noibit, None)}}
 
 
 def bars_for(win: str) -> dict:
-    base = bt.build_ibit(bt.to_bars(bt.load_raw(False)))
+    base = bt.build_crypto(bt.to_bars(bt.load_raw(False)))
     return base if win == "A" else bt.splice_igov(base)
 
 
@@ -189,7 +189,7 @@ def write_report(out: dict, n: int) -> None:
     f = lambda v, d=1: "n/a" if v is None else (f"−{abs(v):.{d}f}" if v < 0 else f"{v:.{d}f}")  # noqa: E731
     L = [f"# Robustness: does the ranking have skill?", "",
          f"Generated {dt.date.today().isoformat()} by `backtest/robustness.py`. Same engine, data, costs (5 bps), "
-         "dates, cash test, IBIT cap and breaker as the live backtest. **Context only:** nothing here changes "
+         "dates, cash test, Bitcoin cap and breaker as the live backtest. **Context only:** nothing here changes "
          "the strategy or the evaluation criteria.", ""]
     for win, w in out.items():
         L += [f"## Window {win}: {WINDOWS[win]} (from {w['start']}, {w['months']} months)", ""]

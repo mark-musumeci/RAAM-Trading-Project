@@ -25,7 +25,7 @@ class ShadowFake(FakeWithHistory):
     def __init__(self):
         super().__init__()
         rng = np.random.default_rng(3)
-        g = self._bars["TIP"].copy()                     # a stand-in price series for GLD
+        g = self._bars["SCHP"].copy()                     # a stand-in price series for GLD
         self._bars["GLD"] = g * 1.7
         extra = [d for d in OCT_DAYS + NOV_DAYS if d <= dt.date(2026, 11, 6)]
         for s, b in self._bars.items():
@@ -67,15 +67,15 @@ def test_records_variants_and_writes_log(senv):
     assert v["Live model"]["targets"] == {s: w for s, w in live["targets"].items() if w > 0}
     for name, x in v.items():
         assert sum(x["targets"].values()) == pytest.approx(1.0, abs=1e-6), name
-        assert x["targets"].get("IBIT", 0) <= 0.05 + 1e-9, name
-    assert "IBIT" not in v["No Bitcoin"]["targets"]
+        assert x["targets"].get("BTC", 0) <= 0.05 + 1e-9, name
+    assert "BTC" not in v["No Bitcoin"]["targets"]
     gold = v["+ Gold (13 candidates)"]
     assert len(gold["shield_picks"]) >= 1 and sum(gold["targets"].values()) == pytest.approx(1.0)
     assert v["Core 50% SPY"]["targets"]["SPY"] >= 0.5
     assert v["Core 40% SPY / 10% AGG"]["targets"]["SPY"] >= 0.4
     sat = v["Bitcoin satellite"]
-    assert "IBIT" not in sat["shield_picks"]
-    assert sat["targets"].get("IBIT", 0) in (0, pytest.approx(0.05))
+    assert "BTC" not in sat["shield_picks"]
+    assert sat["targets"].get("BTC", 0) in (0, pytest.approx(0.05))
     row = out["months"][0]
     assert row["month"] == "2026-10" and row["complete"] is False
     assert set(row["returns_pct"]) == set(SCFG["variants"]) | {"60/40", "Live account"}

@@ -10,12 +10,12 @@ Month-end signal. Follow the SOP in CLAUDE.md.
 3. Run `python3 scripts/raam.py signal`. Add `--dry-run`, `--force` and `--date` as the arguments request.
 4. Check the output:
    - `status` is `ok`;
-   - 12 rows (11 ETFs + IBIT), 5 selected;
-   - `shield_targets` (RAAM) sum to 100%, and every non-zero Shield weight is 20%, or a multiple of 20% for BIL;
+   - 12 rows (11 ETFs + BTC), 5 selected;
+   - `shield_targets` (RAAM) sum to 100%, and every non-zero Shield weight is 20%, or a multiple of 20% for SGOV;
    - `targets` (the whole portfolio) sum to 100%;
    - each target equals this month's Core (`portfolio.core`) plus 0.5 × its Shield weight, except where `caps_applied` shows a cap.
-   - **Core trend filter (`core_trend`):** if `on` is true, the Core is QQQM 50% and QQQM's target is at least 50%. If `on` is false, the Core's 50% is in BIL and QQQM's target is 0%. Check that `month_end_close` vs `sma` agrees with `on`.
-   - **IBIT is at most 5% of the portfolio.** If the Shield picked it, `caps_applied.IBIT` shows the excess moved to BIL.
+   - **Core trend filter (`core_trend`):** if `on` is true, the Core is QQQM 50% and QQQM's target is at least 50%. If `on` is false, the Core's 50% is in SGOV and QQQM's target is 0%. Check that `month_end_close` vs `sma` agrees with `on`.
+   - **BTC is at most 5% of the portfolio.** If the Shield picked it, `caps_applied.BTC` shows the excess moved to SGOV.
 
    If anything fails, send ⚠️ and stop.
 5. In `memory/SIGNAL-LOG.md`, under the section the script just wrote, add a 2–4 line **"Context"** note:
@@ -31,4 +31,4 @@ Month-end signal. Follow the SOP in CLAUDE.md.
    - It records what the pre-registered variants in `config/shadow.json` would hold next month, then refreshes `memory/SHADOW-LOG.md`. Nothing is traded.
    - Context only: never cite it as a reason for anything.
    - If it returns `error` or `halt`, add `shadow: <reason>` to the Discord message and carry on. It never blocks the signal.
-8. Discord: `RAAM signal <month> → <effective month> | Shield: VV, EFA, RWR + BIL 40% | Core: QQQM ON (or OFF → BIL) | Portfolio: QQQM 50%, DBC 10%, ... | changes: +X -Y | executes next trading day ~09:45–10:45 ET`.
+8. Discord: `RAAM signal <month> → <effective month> | Shield: VV, EFA, RWR + SGOV 40% | Core: QQQM ON (or OFF → SGOV) | Portfolio: QQQM 50%, DBC 10%, ... | changes: +X -Y | executes next trading day ~09:45–10:45 ET`.

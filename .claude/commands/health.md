@@ -6,7 +6,7 @@ Daily health check (runs every trading day after the close). Follow the SOP in C
 
 1. Run `python3 scripts/raam.py health` (add `--dry-run` if `$ARGUMENTS` contains `dry_run`).
 2. Read the JSON:
-   - `alerts` non-empty → this run is a ⚠️ run. If the circuit breaker just tripped, say clearly that the next morning run will move the portfolio to 100% BIL, and that it re-enters automatically at the next monthly rebalance.
+   - `alerts` non-empty → this run is a ⚠️ run. If the circuit breaker just tripped, say clearly that the next morning run will move the portfolio to 100% SGOV (the cash asset), and that it re-enters automatically at the next monthly rebalance.
    - A position dropped more than 5% today, or anything else looks unusual → run a quick `/research` on that ETF, focused on today's news. Summarise the cause in one line. Do not act on it.
 3. Update the "Latest health" section of `memory/PROJECT-STATUS.md`:
    - equity, day change, drawdown, high-water mark and breaker state;

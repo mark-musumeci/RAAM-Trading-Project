@@ -102,6 +102,8 @@ def build(client, cfg: dict, month: str, as_of: dt.date) -> tuple[dict, dict]:
     held_sig = json.loads(held_path.read_text(encoding="utf-8")) if held_path.exists() else None
     held = {s: w for s, w in (held_sig or {}).get("targets", {}).items() if w > 0} \
         if held_sig and held_sig.get("executed") else {}
+    # the cash asset the held signal used (it changed from BIL to SGOV in November 2026)
+    cash = ((held_sig or {}).get("momentum_hurdle") or {}).get("cash_asset") or cash
     next_path = raam.signal_path(raam.month_key(end))
     next_sig = json.loads(next_path.read_text(encoding="utf-8")) if next_path.exists() else None
 
@@ -181,7 +183,7 @@ def build(client, cfg: dict, month: str, as_of: dt.date) -> tuple[dict, dict]:
                        f"most backtest months were {lo:+g}% to {hi:+g}%"))
     cash_pct = round(held.get(cash, 0.0) * 100, 1) if held else None
     cmax = norms.get("cash_pct_max", 50)
-    checks.append(("Cash (BIL) held", "n/a" if cash_pct is None else f"{cash_pct:.0f}%",
+    checks.append((f"Cash ({cash}) held", "n/a" if cash_pct is None else f"{cash_pct:.0f}%",
                    "na" if cash_pct is None else ("normal" if cash_pct <= cmax else "outside"),
                    f"backtest range 0–{cmax}%"))
     dd_floor = norms.get("max_drawdown_pct", -14.6)
@@ -207,7 +209,7 @@ def build(client, cfg: dict, month: str, as_of: dt.date) -> tuple[dict, dict]:
         "month_return_pct": month_ret, "benchmarks_month_pct": b_month,
         "vs_6040_month_pct": None if month_ret is None or b64 is None else round(month_ret - b64, 3),
         "since_inception_pct": since, "benchmarks_since_inception_pct": b_since,
-        "max_drawdown_pct": max_dd, "cash_held_pct": cash_pct,
+        "max_drawdown_pct": max_dd, "cash_held_pct": cash_pct, "cash_symbol": cash,
         "holdings": rows, "next_allocation": next_rows,
         "next_month": next_sig["effective_month"] if next_sig else None,
         "checks": [{"check": c[0], "value": c[1], "status": c[2], "reference": c[3]} for c in checks],
@@ -326,7 +328,7 @@ def render(metrics: dict, series: dict, notes: list[str], path: pathlib.Path) ->
             ("60/40 benchmark", fmt_pct(b.get("60/40")), INK),
             ("Difference", "n/a" if diff is None else f"{diff:+.2f} pp",
              INK if diff is None else (GOOD_TEXT if diff >= 0 else BAD_TEXT)),
-            ("Cash (BIL) held", "n/a" if metrics["cash_held_pct"] is None
+            (f"Cash ({metrics.get('cash_symbol', 'T-bills')}) held", "n/a" if metrics["cash_held_pct"] is None
              else f"{metrics['cash_held_pct']:.0f}%", INK),
             ("Max drawdown", fmt_pct(metrics["max_drawdown_pct"], signed=False), INK)]
     for i, (k, v, col) in enumerate(card):
@@ -429,7 +431,7 @@ def render(metrics: dict, series: dict, notes: list[str], path: pathlib.Path) ->
 
     fig.text(L, 0.026, "Paper trading, not investment advice. Past and backtested results do not "
              "guarantee future results.", fontsize=6.3, color=MUTED)
-    fig.text(L, 0.014, "Backtest 2015–2026 (QQQM trend Core + Shield): 11.9%/yr, Sharpe vs T-bills 1.0, worst "
+    fig.text(L, 0.014, "Backtest 2015–2026 (QQQM trend Core + Shield): 11.8%/yr, Sharpe vs T-bills 1.0, worst "
              "month-end −11.7% · 60/40 9.2%/yr, 0.73, −19.2%.",
              fontsize=6.3, color=MUTED)
     path.parent.mkdir(parents=True, exist_ok=True)

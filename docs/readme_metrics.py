@@ -68,10 +68,20 @@ def stats(r: np.ndarray, rf: np.ndarray, dates: list, bench: np.ndarray | None =
     return out
 
 
+def attribution(y: np.ndarray, x: np.ndarray) -> dict:
+    """OLS y = a + b*x on monthly excess returns: beta, annualised alpha and its t-statistic."""
+    X = np.column_stack([np.ones_like(x), x])
+    coef, *_ = np.linalg.lstsq(X, y, rcond=None)
+    resid = y - X @ coef
+    se = np.sqrt(resid @ resid / (len(y) - 2) * np.linalg.inv(X.T @ X)[0, 0])
+    return {"beta": round(float(coef[1]), 2), "alpha_pct_per_year": round(float(coef[0] * 12 * 100), 1),
+            "alpha_t": round(float(coef[0] / se), 1)}
+
+
 def main() -> None:
     p = pd.read_csv(RES / "monthly_live.csv", parse_dates=["entry", "exit"])
     p["entry"], p["exit"] = p["entry"].dt.date, p["exit"].dt.date
-    bars = bt.build_ibit(bt.to_bars(bt.load_raw(False)))
+    bars = bt.build_crypto(bt.to_bars(bt.load_raw(False)))
     rf = rf_series(p, bars)
     cfg = raam.load_config()
     noibit = bt.variants(cfg)[bt.NOIBIT][0]
@@ -117,6 +127,14 @@ def main() -> None:
                     "backtest_cost_bps_per_side": 5,
                     "implied_cost_pct_per_year": round(float(turn.mean() * 12 * 5 / 1e4 * 100), 2),
                     "live_slippage_first_rebalance": raam.slippage_summary(sig["executed"]["fills"])}
+    # attribution vs 60/40 (excess over T-bills, monthly OLS) and calendar-year returns (by entry year)
+    bench_ex = p["b6040"].values - rf
+    out["attribution_vs_6040"] = {name: attribution(r - rf, bench_ex)
+                                  for name, r in series.items() if name not in ("60/40", "SPY")}
+    years = np.array([e.year for e in p["entry"]])
+    out["calendar_years_pct"] = {
+        name: {int(y): round(float((np.prod(1 + r[years == y]) - 1) * 100), 1) for y in sorted(set(years))}
+        for name, r in series.items()}
     path = RES / "readme_metrics.json"
     path.write_text(json.dumps(out, indent=1) + "\n", encoding="utf-8")
     sys.stdout.reconfigure(encoding="utf-8")
