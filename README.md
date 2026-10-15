@@ -168,6 +168,8 @@ The pattern is the design working:
 
 ### Is the ranking skill or luck?
 
+![Random-picks test](docs/images/random_picks.png)
+
 The live ranking was compared with 1,000 portfolios whose Shield holds **5 random candidates** each month, with every other rule identical.
 
 | Test | 2015–26 (with Bitcoin) | 2008–26 (no Bitcoin) |
