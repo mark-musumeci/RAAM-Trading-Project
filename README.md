@@ -6,7 +6,7 @@
 
 ![Paper trading](https://img.shields.io/badge/paper_trading-live_since_1_Oct_2026-1baf7a)
 ![Rebalance](https://img.shields.io/badge/rebalance-monthly-2a78d6)
-![Tests](https://img.shields.io/badge/tests-76_passing-1baf7a)
+![Tests](https://img.shields.io/badge/tests-pytest_suite-1baf7a)
 ![Python](https://img.shields.io/badge/python-3.11%2B-2a78d6)
 ![Benchmark](https://img.shields.io/badge/benchmark-60%2F40-898781)
 
@@ -15,13 +15,13 @@
 <table>
 <tr>
 <td align="center" width="25%"><h2>9.3%</h2>return per year<br><sub>60/40: 9.2%</sub></td>
-<td align="center" width="25%"><h2>1.18</h2>Sharpe ratio<br><sub>60/40: 0.93</sub></td>
+<td align="center" width="25%"><h2>0.93</h2>Sharpe vs T-bills<br><sub>60/40: 0.73</sub></td>
 <td align="center" width="25%"><h2>−11.1%</h2>worst month-end drop<br><sub>60/40: −19.2%</sub></td>
 <td align="center" width="25%"><h2>97%</h2>of random portfolios beaten<br><sub>on Sharpe, 1,000 runs</sub></td>
 </tr>
 </table>
 
-<sub>Backtest Feb 2015 – Sep 2026, after costs. Without Bitcoin, 2008–2026: 6.6%/yr, Sharpe 0.93, worst month-end drop −19.0% (60/40: 8.5%, 0.85, −30.2%).</sub>
+<sub>Backtest Feb 2015 – Sep 2026, after costs. At rf = 0 the Sharpe ratios are 1.18 vs 0.93. Most of the edge comes from Bitcoin: without it, Sharpe vs T-bills is 0.66, below 60/40's 0.73, and 2008–2026 returned 6.6%/yr vs 8.5% with a worst month-end drop of −19.0% vs −30.2%.</sub>
 
 </div>
 
@@ -42,17 +42,19 @@
 | **Governance** | Deterministic engine, pre-registered evaluation plan, shadow tracking of alternatives, full change log. The AI operates; it never decides. |
 | **Status** | Live on Alpaca paper since **1 Oct 2026**. Checkpoints at 1, 3, 6 and 12 months; the verdict is due **Oct 2027**. |
 
-**Key statistics.** Backtest Feb 2015 – Sep 2026 (140 months): 5 bps per trade, next-open fills, Sharpe with rf = 0.
+**Key statistics.** Backtest Feb 2015 – Sep 2026 (140 months): 5 bps per trade, next-open fills. T-bills (BIL) returned 2.0%/yr over the window.
 
 | | **Core & Shield** | C&S without Bitcoin | 60/40 | SPY |
 |---|---:|---:|---:|---:|
 | Return per year | **9.3%** | 6.5% | 9.2% | 14.1% |
 | Volatility | **7.8%** | 6.9% | 10.0% | 15.6% |
-| Sharpe ratio | **1.18** | 0.95 | 0.93 | 0.93 |
+| Sharpe ratio vs T-bills | **0.93** | 0.66 | 0.73 | 0.81 |
+| Sharpe ratio, rf = 0 | 1.18 | 0.95 | 0.93 | 0.93 |
 | Worst month-end drawdown | **−11.1%** | −11.1% | −19.2% | −23.3% |
 | Worst daily drawdown | −14.1% | −14.6% | — | −33.7% |
 | 2022 | **−8.8%** | ≈ −8% | −15.2% | −18.0% |
-| Beta to 60/40 | 0.69 | — | 1.00 | — |
+| Longest time under water | 24 months | 25 months | 24 months | 23 months |
+| Beta to 60/40 | 0.69 | 0.65 | 1.00 | — |
 
 Over a longer, harder window **without Bitcoin** (Mar 2008 – Sep 2026, 223 months), Core & Shield returned **6.6%/yr** against 60/40's 8.5%. Its Sharpe was **0.93 vs 0.85**, and its worst month-end drawdown **−19.0% vs −30.2%**. That is the honest base case: a defensive product that gives up some return in bull markets.
 
@@ -151,6 +153,23 @@ Each stage has one job and one owner. These are the actual outputs from the firs
 
 ---
 
+## Methodology and assumptions
+
+| Item | Assumption |
+|---|---|
+| Engine | The backtest calls the live `compute_signal()`: the code that trades is the code that was tested |
+| Data | Yahoo Finance daily prices, adjusted for splits and dividends |
+| Window | Feb 2015 – Sep 2026, 140 monthly rebalances. Also Mar 2008 – Sep 2026 without Bitcoin (IGOV extended with BWX before 2009) |
+| Execution | Signal at the month-end close; fill at the next session's open; held to the next rebalance |
+| Costs | 5 bps per side on turnover. No management fee, financing or taxes |
+| Bitcoin before 2024 | BTC-USD on US trading days, minus IBIT's 0.25% fee, spliced into real IBIT from its January 2024 launch |
+| Circuit breaker | Simulated on the daily path |
+| Benchmarks | 60/40 = 60% SPY + 40% AGG, rebalanced monthly; SPY total return |
+| Sharpe ratio | Shown both against T-bills (BIL, 2.0%/yr over the window) and at rf = 0 |
+| Known biases | Several design choices (dropping the trend factor, the 50/50 split, adding Bitcoin) were made after seeing this data, so there is no clean out-of-sample period. Treat all backtest figures as optimistic; the live paper record is the real test. |
+
+---
+
 ## Evidence
 
 ### Backtest
@@ -165,6 +184,22 @@ The pattern is the design working:
 - **ahead in falling markets**, 2022 most clearly;
 - **behind in strong equity years** (2019, 2023–2025);
 - 2018 was worse than 60/40 because Bitcoin's crash hit while it was held. Without Bitcoin, 2018 was about level.
+
+### Early vs late period
+
+The design choices used the whole 2015–2026 history, so neither half is truly out of sample. Splitting it still shows whether the result depends on one era:
+
+| | 2015–19 Core & Shield | 2015–19 60/40 | **2020–26 Core & Shield** | **2020–26 60/40** |
+|---|---:|---:|---:|---:|
+| Return per year | 9.4% | 8.7% | **9.2%** | **9.5%** |
+| Sharpe vs T-bills | 1.23 | 1.01 | **0.75** | **0.61** |
+| Worst month-end drawdown | −7.1% | −8.4% | **−11.1%** | **−19.2%** |
+| Share of 60/40's down-month losses | 65% | — | **63%** | — |
+| Without Bitcoin: Sharpe vs T-bills | 0.66 | — | **0.68** | — |
+
+Risk-adjusted performance was weaker in 2020–26 but **stayed ahead of 60/40**. The defence held up: −11% against −19% in 2022. The worst drawdown took 9 months to bottom and 16 to recover, about as long as 60/40's, but at little more than half the depth.
+
+Source: [backtest/results/readme_metrics.json](backtest/results/readme_metrics.json), built by `docs/readme_metrics.py`.
 
 ### Is the ranking skill or luck?
 
@@ -226,6 +261,19 @@ The strategy's main product is **lower market exposure with smaller drawdowns**.
 | **Change control** | Rules change only by owner decision, with evidence, in a dated change log. |
 | **AI boundaries** | Claude runs the routines, writes the logs and may **halt**. It never changes targets, picks, timing or rules. All maths and orders live in one deterministic script. |
 | **Secrets** | API keys live only in the cloud environment's variables, never in files, commits or messages. |
+
+---
+
+## Costs, capacity and taxes
+
+| | |
+|---|---|
+| **Turnover** | About 15% of the portfolio is replaced each month (3.6× a year, two-sided) |
+| **Trading cost in the backtest** | 5 bps per side ≈ 0.18% a year. Still ahead of 60/40 on Sharpe (rf = 0) even at 50 bps per side |
+| **Live slippage, first rebalance** | Value-weighted average about 0 bps (range −10.5 to +6.2 bps across 5 orders) |
+| **Capacity** | All 14 holdings are liquid US-listed ETFs; one monthly rebalance. Capacity is not a constraint at personal or small-fund scale |
+| **Fund fees** | Inside the ETF prices, so included. No management or advisory fee is modelled |
+| **Taxes** | Not modelled. Monthly turnover would create short-term gains in a taxable account, so it suits tax-advantaged accounts best |
 
 ---
 
@@ -330,6 +378,7 @@ python scripts/raam.py calendar
 python scripts/raam.py signal --force --dry-run      # today's ranks, nothing saved
 python scripts/raam.py rebalance --force --dry-run   # the orders it would place
 python backtest/backtest.py                          # rebuild the backtest report
+python docs/readme_metrics.py                        # rebuild the README's extra figures
 python docs/build_readme_assets.py                   # rebuild the README images
 ```
 
