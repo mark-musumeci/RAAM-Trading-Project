@@ -252,6 +252,7 @@
         "loss %": -12.35722472975449,
         "no-shock loss %": 0.7563129746452457,
         "60/40 loss %": -13.272793153464491,
+        "SPY loss %": -19.527226023258393,
         "breaker": true,
         "recovery days": 182,
         "trip": [
@@ -265,6 +266,7 @@
         "loss %": -12.375576538186783,
         "no-shock loss %": 0.06916371968881396,
         "60/40 loss %": -14.122825161871788,
+        "SPY loss %": -19.975886734649773,
         "breaker": true,
         "recovery days": 570,
         "trip": [
@@ -278,6 +280,7 @@
         "loss %": -13.542886985701141,
         "no-shock loss %": -4.017880755125702,
         "60/40 loss %": -17.68997013131226,
+        "SPY loss %": -24.478288555015958,
         "breaker": true,
         "recovery days": 310,
         "trip": [
@@ -291,6 +294,7 @@
         "loss %": -15.138653152212378,
         "no-shock loss %": -1.4749320118335296,
         "60/40 loss %": -17.16122472847773,
+        "SPY loss %": -21.68981680976232,
         "breaker": true,
         "recovery days": 612,
         "trip": [
@@ -304,6 +308,7 @@
         "loss %": -11.258455362136921,
         "no-shock loss %": -0.09472872596085757,
         "60/40 loss %": -16.524958992178185,
+        "SPY loss %": -19.830641313449384,
         "breaker": true,
         "recovery days": 264,
         "trip": [
@@ -317,6 +322,7 @@
         "loss %": -14.378101857636272,
         "no-shock loss %": -1.7113946351014708,
         "60/40 loss %": -18.323525628148808,
+        "SPY loss %": -21.16597788506511,
         "breaker": true,
         "recovery days": null,
         "trip": [
@@ -332,6 +338,7 @@
         "loss %": -2.081090654507056,
         "no-shock loss %": 0.7563129746452457,
         "60/40 loss %": -16.170290544915556,
+        "SPY loss %": -17.50244823724032,
         "breaker": false,
         "recovery days": 28,
         "trip": null
@@ -341,6 +348,7 @@
         "loss %": -1.41171819276239,
         "no-shock loss %": 0.06916371968881396,
         "60/40 loss %": -20.10194423386531,
+        "SPY loss %": -21.694598710196455,
         "breaker": false,
         "recovery days": 12,
         "trip": null
@@ -350,6 +358,7 @@
         "loss %": -10.582663249192347,
         "no-shock loss %": -6.650000826508295,
         "60/40 loss %": -35.377285963580476,
+        "SPY loss %": -43.52129698398619,
         "breaker": false,
         "recovery days": 194,
         "trip": null
@@ -359,6 +368,7 @@
         "loss %": -9.29188733747306,
         "no-shock loss %": -1.4749320118335296,
         "60/40 loss %": -24.457699187660285,
+        "SPY loss %": -25.85333815209686,
         "breaker": false,
         "recovery days": 360,
         "trip": null
@@ -368,6 +378,7 @@
         "loss %": -3.573423338290016,
         "no-shock loss %": -0.09472872596085757,
         "60/40 loss %": -13.369887876373665,
+        "SPY loss %": -13.630204297279436,
         "breaker": false,
         "recovery days": 53,
         "trip": null
@@ -377,6 +388,7 @@
         "loss %": -7.5474083548836335,
         "no-shock loss %": -1.7113946351014708,
         "60/40 loss %": -24.14753229412635,
+        "SPY loss %": -25.88605732356263,
         "breaker": false,
         "recovery days": 208,
         "trip": null
@@ -388,6 +400,7 @@
         "loss %": -1.6443442299987066,
         "no-shock loss %": 0.7563129746452457,
         "60/40 loss %": -10.798351219451408,
+        "SPY loss %": -12.002611453056334,
         "breaker": false,
         "recovery days": 9,
         "trip": null
@@ -397,6 +410,7 @@
         "loss %": -2.1460245406605294,
         "no-shock loss %": 0.06916371968881396,
         "60/40 loss %": -14.967035735762934,
+        "SPY loss %": -16.474238624209548,
         "breaker": false,
         "recovery days": 4,
         "trip": null
@@ -406,6 +420,7 @@
         "loss %": -9.459870484094502,
         "no-shock loss %": -6.650000826508295,
         "60/40 loss %": -31.247728504683593,
+        "SPY loss %": -39.75605011625193,
         "breaker": false,
         "recovery days": 184,
         "trip": null
@@ -415,6 +430,7 @@
         "loss %": -5.071040628717249,
         "no-shock loss %": -1.4749320118335296,
         "60/40 loss %": -19.55139851673976,
+        "SPY loss %": -20.910227362236643,
         "breaker": false,
         "recovery days": 319,
         "trip": null
@@ -424,6 +440,7 @@
         "loss %": -6.962361276147422,
         "no-shock loss %": -0.09472872596085757,
         "60/40 loss %": -8.221404963748114,
+        "SPY loss %": -8.389835313536253,
         "breaker": false,
         "recovery days": 64,
         "trip": null
@@ -433,6 +450,7 @@
         "loss %": -4.2307300520004425,
         "no-shock loss %": -1.7113946351014708,
         "60/40 loss %": -19.183303145233033,
+        "SPY loss %": -20.945127811800123,
         "breaker": false,
         "recovery days": 71,
         "trip": null
@@ -444,6 +462,7 @@
         "loss %": -10.14322759986257,
         "no-shock loss %": -6.560533002978408,
         "60/40 loss %": -6.60903223636371,
+        "SPY loss %": -9.944678848460342,
         "breaker": false,
         "recovery days": 324,
         "trip": null
@@ -453,6 +472,7 @@
         "loss %": -4.098149005729523,
         "no-shock loss %": -0.8372171604128953,
         "60/40 loss %": 0.25022930225375717,
+        "SPY loss %": 0.4503976626599737,
         "breaker": false,
         "recovery days": 29,
         "trip": null
@@ -462,6 +482,7 @@
         "loss %": -3.265109849057324,
         "no-shock loss %": -1.8828887702225905,
         "60/40 loss %": -2.7750447994634886,
+        "SPY loss %": -3.750856411556658,
         "breaker": false,
         "recovery days": 11,
         "trip": null
@@ -471,6 +492,7 @@
         "loss %": -3.7430994960090946,
         "no-shock loss %": -1.0794338258401148,
         "60/40 loss %": -2.110843121423045,
+        "SPY loss %": -2.784538743816556,
         "breaker": false,
         "recovery days": 12,
         "trip": null
@@ -480,6 +502,7 @@
         "loss %": -3.069718354120965,
         "no-shock loss %": 0.5184966798515989,
         "60/40 loss %": -1.1638057817403347,
+        "SPY loss %": -0.4457450447740041,
         "breaker": false,
         "recovery days": 30,
         "trip": null
@@ -489,6 +512,7 @@
         "loss %": -7.970306559222484,
         "no-shock loss %": -4.692656693935248,
         "60/40 loss %": -11.589659443038514,
+        "SPY loss %": -13.534258216274953,
         "breaker": false,
         "recovery days": 70,
         "trip": null

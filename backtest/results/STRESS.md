@@ -76,7 +76,7 @@ Each shock is injected into the price data at several dates (a permanent level s
 | 2023-11-15 | -11.3% | -0.1% | -11.2 pp | -16.5% | tripped 2023-11-15 | 264 |
 | 2025-08-15 | -14.4% | -1.7% | -12.7 pp | -18.3% | tripped 2025-08-15 | not yet |
 
-Average loss: C&S -13.2% vs 60/40 -16.2% (C&S took 81% of 60/40's loss). Worst: C&S -15.1%, 60/40 -18.3%.
+Average loss: C&S -13.2% vs 60/40 -16.2% (C&S took 81% of 60/40's loss). Worst: C&S -15.1%, 60/40 -18.3%. SPY average -21.1%.
 
 ### Stocks and bonds fall together (equities −25%, bonds −15% over 6 months)
 
@@ -89,7 +89,7 @@ Average loss: C&S -13.2% vs 60/40 -16.2% (C&S took 81% of 60/40's loss). Worst: 
 | 2023-11-15 | -3.6% | -0.1% | -3.5 pp | -13.4% | no | 53 |
 | 2025-08-15 | -7.5% | -1.7% | -5.8 pp | -24.1% | no | 208 |
 
-Average loss: C&S -5.7% vs 60/40 -22.3% (C&S took 26% of 60/40's loss). Worst: C&S -10.6%, 60/40 -35.4%.
+Average loss: C&S -5.7% vs 60/40 -22.3% (C&S took 26% of 60/40's loss). Worst: C&S -10.6%, 60/40 -35.4%. SPY average -24.7%.
 
 ### Stagflation (equities −20%, AGG/IGOV −10%, TIPS +3%, DBC +25% over 6 months)
 
@@ -102,7 +102,7 @@ Average loss: C&S -5.7% vs 60/40 -22.3% (C&S took 26% of 60/40's loss). Worst: C
 | 2023-11-15 | -7.0% | -0.1% | -6.9 pp | -8.2% | no | 64 |
 | 2025-08-15 | -4.2% | -1.7% | -2.5 pp | -19.2% | no | 71 |
 
-Average loss: C&S -4.9% vs 60/40 -17.3% (C&S took 28% of 60/40's loss). Worst: C&S -9.5%, 60/40 -31.2%.
+Average loss: C&S -4.9% vs 60/40 -17.3% (C&S took 28% of 60/40's loss). Worst: C&S -9.5%, 60/40 -31.2%. SPY average -19.7%.
 
 ### Bitcoin −80% in a month while the Bitcoin ETF is held
 

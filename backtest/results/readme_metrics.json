@@ -437,5 +437,54 @@
    "2025": 17.7,
    "2026": 13.4
   }
+ },
+ "comparison": {
+  "Core & Shield": {
+   "growth_of_100k": 366700.0,
+   "best_year_pct": 38.9,
+   "worst_year_pct": -4.7,
+   "months_up_pct": 66.0,
+   "share_of_spy_down_months_pct": 46.0,
+   "share_of_spy_up_months_pct": 63.0,
+   "beta_to_spy": 0.44,
+   "rolling_12m_windows_losing_pct": 15.0,
+   "full_years_ahead_of_6040": "7 of 11",
+   "full_years_ahead_of_spy": "4 of 11",
+   "years_spy_fell": {
+    "2018": [
+     -0.8,
+     -3.3,
+     -6.4
+    ],
+    "2022": [
+     -4.7,
+     -15.2,
+     -18.0
+    ]
+   },
+   "rolling_12m_beat_6040_pct": 57.0,
+   "rolling_12m_beat_spy_pct": 31.0,
+   "rolling_12m_when_spy_fell_beat_spy": "14 of 18"
+  },
+  "60/40": {
+   "growth_of_100k": 278100.0,
+   "best_year_pct": 23.7,
+   "worst_year_pct": -15.2,
+   "months_up_pct": 69.0,
+   "share_of_spy_down_months_pct": 65.0,
+   "share_of_spy_up_months_pct": 64.0,
+   "beta_to_spy": 0.63,
+   "rolling_12m_windows_losing_pct": 12.0
+  },
+  "SPY": {
+   "growth_of_100k": 468000.0,
+   "best_year_pct": 34.0,
+   "worst_year_pct": -18.0,
+   "months_up_pct": 70.0,
+   "share_of_spy_down_months_pct": 100.0,
+   "share_of_spy_up_months_pct": 100.0,
+   "beta_to_spy": 1.0,
+   "rolling_12m_windows_losing_pct": 14.0
+  }
  }
 }

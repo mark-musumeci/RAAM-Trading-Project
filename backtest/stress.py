@@ -87,6 +87,7 @@ def job(spec: dict) -> tuple[str, dict]:
     if spec.get("shock"):
         out["b6040_daily"] = 0.6 * bars["SPY"]["c"] / bars["SPY"]["c"].iloc[0] + \
             0.4 * bars["AGG"]["c"] / bars["AGG"]["c"].iloc[0]
+        out["spy_daily"] = bars["SPY"]["c"] / bars["SPY"]["c"].iloc[0]
     return spec["key"], out
 
 
@@ -137,11 +138,13 @@ def shock_eval(r: dict, base: dict, start: dt.date, days: int) -> dict:
     rec = next((k for k, v in enumerate(d.iloc[it:]) if v >= v0), None) if trough < 0 else 0
     b = r["b6040_daily"].reindex(cal)
     b_trough = b.iloc[i0: i1 + 1].min() / b.iloc[i0 - 1] - 1
+    q = r["spy_daily"].reindex(cal)
+    spy_trough = q.iloc[i0: i1 + 1].min() / q.iloc[i0 - 1] - 1
     bd = base["daily"]                     # same window, no shock: isolates the shock's effect
     base_trough = bd.iloc[i0: i1 + 1].min() / bd.iloc[i0 - 1] - 1
     trips = [t for t in r["trips"] if cal[i0].isoformat() <= t[0] <= cal[i1].isoformat()]
     return {"date": start.isoformat(), "loss %": trough * 100, "no-shock loss %": base_trough * 100,
-            "60/40 loss %": b_trough * 100, "breaker": bool(trips),
+            "60/40 loss %": b_trough * 100, "SPY loss %": spy_trough * 100, "breaker": bool(trips),
             "recovery days": rec, "trip": trips[0] if trips else None}
 
 
@@ -364,7 +367,8 @@ def main() -> None:
         else:
             lines += ["", f"Average loss: C&S {np.mean(ls):.1f}% vs 60/40 {np.mean(bs):.1f}% "
                       f"(C&S took {np.mean(ls) / np.mean(bs) * 100:.0f}% of 60/40's loss). "
-                      f"Worst: C&S {min(ls):.1f}%, 60/40 {min(bs):.1f}%.", ""]
+                      f"Worst: C&S {min(ls):.1f}%, 60/40 {min(bs):.1f}%. "
+                      f"SPY average {np.mean([e['SPY loss %'] for e in evals]):.1f}%.", ""]
     report = "\n".join(lines) + "\n"
     bt.OUT.mkdir(parents=True, exist_ok=True)
     (bt.OUT / "STRESS.md").write_text(report, encoding="utf-8")

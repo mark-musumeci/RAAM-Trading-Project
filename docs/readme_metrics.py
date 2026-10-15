@@ -78,6 +78,40 @@ def attribution(y: np.ndarray, x: np.ndarray) -> dict:
             "alpha_t": round(float(coef[0] / se), 1)}
 
 
+def comparison(p: pd.DataFrame, cal_years: dict) -> dict:
+    """Live rules vs 60/40 vs SPY in plain terms: money, years, rolling windows and loss sharing."""
+    cols = {"Core & Shield": "ret", "60/40": "b6040", "SPY": "spy"}
+    spy = p["spy"].values
+    down, up = spy < 0, spy > 0
+    out = {}
+    for name, col in cols.items():
+        r = p[col].values
+        yrs = cal_years[name]
+        full = {y: v for y, v in yrs.items() if y != max(yrs)}            # last year is partial
+        roll = (1 + p[col]).rolling(12).apply(np.prod, raw=True) - 1
+        out[name] = {
+            "growth_of_100k": round(float(100_000 * np.prod(1 + r)), -2),
+            "best_year_pct": max(full.values()), "worst_year_pct": min(full.values()),
+            "months_up_pct": round(float((r > 0).mean() * 100), 0),
+            "share_of_spy_down_months_pct": round(float(r[down].mean() / spy[down].mean() * 100), 0),
+            "share_of_spy_up_months_pct": round(float(r[up].mean() / spy[up].mean() * 100), 0),
+            "beta_to_spy": round(float(np.cov(r, spy, ddof=1)[0, 1] / spy.var(ddof=1)), 2),
+            "rolling_12m_windows_losing_pct": round(float((roll.dropna() < 0).mean() * 100), 0),
+        }
+    cs, b, s = (cal_years[n] for n in cols)
+    n_full = len(cs) - 1
+    out["Core & Shield"]["full_years_ahead_of_6040"] = f"{sum(cs[y] > b[y] for y in list(cs)[:-1])} of {n_full}"
+    out["Core & Shield"]["full_years_ahead_of_spy"] = f"{sum(cs[y] > s[y] for y in list(cs)[:-1])} of {n_full}"
+    out["Core & Shield"]["years_spy_fell"] = {y: [cs[y], b[y], s[y]] for y in cs if s[y] < 0}
+    r12 = {n: ((1 + p[c]).rolling(12).apply(np.prod, raw=True) - 1).dropna() for n, c in cols.items()}
+    out["Core & Shield"]["rolling_12m_beat_6040_pct"] = round(float((r12["Core & Shield"] > r12["60/40"]).mean() * 100), 0)
+    out["Core & Shield"]["rolling_12m_beat_spy_pct"] = round(float((r12["Core & Shield"] > r12["SPY"]).mean() * 100), 0)
+    fell = r12["SPY"] < 0
+    out["Core & Shield"]["rolling_12m_when_spy_fell_beat_spy"] = (
+        f"{int((r12['Core & Shield'][fell] > r12['SPY'][fell]).sum())} of {int(fell.sum())}")
+    return out
+
+
 def main() -> None:
     p = pd.read_csv(RES / "monthly_live.csv", parse_dates=["entry", "exit"])
     p["entry"], p["exit"] = p["entry"].dt.date, p["exit"].dt.date
@@ -135,6 +169,7 @@ def main() -> None:
     out["calendar_years_pct"] = {
         name: {int(y): round(float((np.prod(1 + r[years == y]) - 1) * 100), 1) for y in sorted(set(years))}
         for name, r in series.items()}
+    out["comparison"] = comparison(p, out["calendar_years_pct"])
     path = RES / "readme_metrics.json"
     path.write_text(json.dumps(out, indent=1) + "\n", encoding="utf-8")
     sys.stdout.reconfigure(encoding="utf-8")

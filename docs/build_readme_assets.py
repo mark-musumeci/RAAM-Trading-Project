@@ -181,11 +181,11 @@ def growth(p):
         eq = pd.Series(np.r_[1.0, (1 + p[col]).cumprod().values] * 100_000)
         ax.plot(x, eq, color=c, linewidth=lw, solid_capstyle="round")
         ends[name] = eq.iloc[-1]
-        if col != "spy":
-            dd = (eq / eq.cummax() - 1) * 100
-            ax2.plot(x, dd, color=c, linewidth=lw * 0.75)
-            ax2.fill_between(x, dd, 0, color=c, alpha=0.14 if col == "ret" else 0.07, linewidth=0)
-            ends[name + "_dd"] = dd.min()
+        dd = (eq / eq.cummax() - 1) * 100
+        ax2.plot(x, dd, color=c, linewidth=lw * 0.75)
+        if col == "ret":
+            ax2.fill_between(x, dd, 0, color=c, alpha=0.16, linewidth=0)
+        ends[name + "_dd"] = dd.min()
     ax.set_yscale("log")
     logs = spread_labels([np.log10(ends[n]) for n, *_ in series], 0.05)
     for (name, *_), ly in zip(series, logs):
@@ -199,30 +199,33 @@ def growth(p):
     ax.legend(handles, [s[0] for s in series], frameon=False, fontsize=LABEL, loc="upper left", labelcolor=INK2)
     ax2.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: pct(v, 0)))
     ax2.set_yticks([0, -10, -20])
+    ax2.set_ylim(min(ends[n + "_dd"] for n, *_ in series) * 1.12, 2)
     ax2.text(0.0, 1.06, "Drawdown from peak (month-end)", transform=ax2.transAxes, fontsize=LABEL, color=INK2)
     ax2.text(x.iloc[-1] + pd.Timedelta(days=45), -9.5,
-             f"worst\nC&S  {pct(ends['Core & Shield_dd'])}\n60/40  {pct(ends['60/40_dd'])}",
+             f"worst\nC&S  {pct(ends['Core & Shield_dd'])}\n60/40  {pct(ends['60/40_dd'])}\n"
+             f"SPY  {pct(ends['SPY_dd'])}",
              fontsize=LABEL, color=INK, va="center", linespacing=1.35)
     save(fig, "growth.png")
 
 
 def years(p):
-    cy = p.assign(year=p["entry"].dt.year).groupby("year").agg(
-        cs=("ret", lambda r: ((1 + r).prod() - 1) * 100), b=("b6040", lambda r: ((1 + r).prod() - 1) * 100))
+    yr = lambda r: ((1 + r).prod() - 1) * 100
+    cy = p.assign(year=p["entry"].dt.year).groupby("year").agg(cs=("ret", yr), b=("b6040", yr), s=("spy", yr))
     fig = plt.figure(figsize=(13, 6))
     fig.patch.set_facecolor(SURFACE)
-    title(fig, "Calendar-year returns vs 60/40", "Ahead when markets fall, behind in strong equity years · 2026 to September")
+    title(fig, "Calendar-year returns: Core & Shield vs 60/40 vs SPY",
+          "Smaller losses in the down years (2018, 2022); behind SPY in strong years · 2026 to September")
     ax = fig.add_axes([0.07, 0.1, 0.91, 0.66])
     style(ax)
     xs = np.arange(len(cy))
-    w = 0.38
-    ax.bar(xs - w / 2 - 0.015, cy["cs"], w, color=CS, label="Core & Shield")
-    ax.bar(xs + w / 2 + 0.015, cy["b"], w, color=B6040, label="60/40")
+    w = 0.27
+    ax.bar(xs - w - 0.02, cy["cs"], w, color=CS, label="Core & Shield")
+    ax.bar(xs, cy["b"], w, color=B6040, label="60/40")
+    ax.bar(xs + w + 0.02, cy["s"], w, color=SPY, label="SPY")
     ax.axhline(0, color=BASELINE, linewidth=1)
-    for i, (a, b) in enumerate(zip(cy["cs"], cy["b"])):
-        ax.text(i - w / 2, a + (0.8 if a >= 0 else -0.8), f"{a:.0f}".replace("-", "−") if abs(a) >= 0.5 else "0",
-                ha="center",
-                va="bottom" if a >= 0 else "top", fontsize=12, color=INK2)
+    for i, a in enumerate(cy["cs"]):
+        ax.text(i - w - 0.02, a + (0.8 if a >= 0 else -0.8), f"{a:.0f}".replace("-", "−") if abs(a) >= 0.5 else "0",
+                ha="center", va="bottom" if a >= 0 else "top", fontsize=11.5, color=INK2, fontweight="bold")
     ax.set_xticks(xs, [str(y) for y in cy.index])
     ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: pct(v, 0)))
     ax.legend(frameon=False, fontsize=LABEL, loc="upper right", labelcolor=INK2)
@@ -260,31 +263,33 @@ def stress():
     s = json.load(open(RES / "summary.json", encoding="utf-8"))
     p = load_monthly()
     y22 = p[p["entry"].dt.year == 2022]
-    rows = [("2022 (real)", ((1 + y22["ret"]).prod() - 1) * 100, ((1 + y22["b6040"]).prod() - 1) * 100),
+    tot = lambda r: ((1 + r).prod() - 1) * 100
+    rows = [("2022 (real)", tot(y22["ret"]), tot(y22["b6040"]), tot(y22["spy"])),
             ("Jun 2008–Jun 2009 (real, no BTC)", s["crisis_2008"]["Core & Shield (no Bitcoin)"]["Total %"],
-             s["crisis_2008"]["60/40"]["Total %"])]
+             s["crisis_2008"]["60/40"]["Total %"], s["crisis_2008"]["SPY"]["Total %"])]
     names = {"Crash day": "−20% crash day*", "Stocks and bonds": "Stocks & bonds fall*", "Stagflation": "Stagflation*"}
     for key, ev in t["shocks"].items():
         for k, lab in names.items():
             if key.startswith(k):
                 rows.append((lab, float(np.mean([e["loss %"] for e in ev])),
-                             float(np.mean([e["60/40 loss %"] for e in ev]))))
-    fig = plt.figure(figsize=(13, 6.2))
+                             float(np.mean([e["60/40 loss %"] for e in ev])),
+                             float(np.mean([e["SPY loss %"] for e in ev]))))
+    fig = plt.figure(figsize=(13, 7.4))
     fig.patch.set_facecolor(SURFACE)
     title(fig, "Losses in real and simulated crises",
           "* simulated: shock injected into real prices at 6 dates, full model re-run, average shown")
-    ax = fig.add_axes([0.25, 0.08, 0.72, 0.7])
+    ax = fig.add_axes([0.25, 0.07, 0.72, 0.74])
     style(ax, grid="x")
     ys = np.arange(len(rows))[::-1]
-    h = 0.36
-    ax.barh(ys + h / 2 + 0.015, [r[1] for r in rows], h, color=CS, label="Core & Shield")
-    ax.barh(ys - h / 2 - 0.015, [r[2] for r in rows], h, color=B6040, label="60/40")
-    for y, (_, a, b) in zip(ys, rows):
-        ax.text(a - 0.4, y + h / 2, pct(a), va="center", ha="right", fontsize=12, color=INK2)
-        ax.text(b - 0.4, y - h / 2, pct(b), va="center", ha="right", fontsize=12, color=INK2)
+    h = 0.27
+    for k, (lab, col) in enumerate((("Core & Shield", CS), ("60/40", B6040), ("SPY", SPY))):
+        off = (1 - k) * (h + 0.02)
+        ax.barh(ys + off, [r[1 + k] for r in rows], h, color=col, label=lab)
+        for y, r in zip(ys, rows):
+            ax.text(r[1 + k] - 0.4, y + off, pct(r[1 + k]), va="center", ha="right", fontsize=11, color=INK2)
     ax.set_yticks(ys, [r[0] for r in rows])
     ax.tick_params(axis="y", labelsize=LABEL, colors=INK)
-    ax.set_xlim(min(r[2] for r in rows) * 1.2, 0)
+    ax.set_xlim(min(min(r[1:]) for r in rows) * 1.18, 0)
     ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: pct(v, 0)))
     ax.legend(frameon=False, fontsize=LABEL, loc="lower left", labelcolor=INK2)
     save(fig, "stress.png")
