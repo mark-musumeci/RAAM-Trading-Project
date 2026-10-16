@@ -232,6 +232,56 @@ def years(p):
     save(fig, "calendar_years.png")
 
 
+def monthly_heatmap(p):
+    """Year x month grid of the live model's backtest returns, with each full year compounded on the right.
+    Diverging blue (gain) <-> red (loss) through a neutral grey at 0, symmetric; every cell carries its value."""
+    from matplotlib.colors import LinearSegmentedColormap, TwoSlopeNorm
+    q = p.assign(year=p["entry"].dt.year, month=p["entry"].dt.month)
+    grid = q.pivot_table(index="year", columns="month", values="ret", aggfunc="sum") * 100
+    grid = grid.reindex(columns=range(1, 13))
+    yearly = q.groupby("year")["ret"].apply(lambda r: ((1 + r).prod() - 1) * 100)
+    years = list(grid.index)
+    lim = float(np.ceil(np.nanmax(np.abs(grid.values))))
+    cmap = LinearSegmentedColormap.from_list("div", ["#e34948", "#f0efec", "#2a78d6"])
+    norm = TwoSlopeNorm(vmin=-lim, vcenter=0.0, vmax=lim)
+    fig = plt.figure(figsize=(13, 8.6))
+    fig.patch.set_facecolor(SURFACE)
+    last = p["exit"].iloc[-1]
+    title(fig, "Monthly returns: Core & Shield, live rules (backtest)",
+          f"QQQM trend Core + Shield, Bitcoin capped 5% · after costs · {years[0]} from {p['entry'].iloc[0]:%b} · {years[-1]} to {last:%d %b}")
+    ax = fig.add_axes([0.07, 0.03, 0.9, 0.76])
+    ax.set_facecolor(SURFACE)
+    ax.set_xlim(0, 13.4)
+    ax.set_ylim(len(years), 0)
+    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    gap = 0.06                                                    # surface gap between cells
+    for i, y in enumerate(years):
+        for j in range(12):
+            v = grid.at[y, j + 1]
+            if np.isnan(v):
+                ax.add_patch(plt.Rectangle((j + gap / 2, i + gap / 2), 1 - gap, 1 - gap, facecolor="#f5f4f1",
+                                           edgecolor="none"))
+                continue
+            rgba = cmap(norm(v))
+            ax.add_patch(plt.Rectangle((j + gap / 2, i + gap / 2), 1 - gap, 1 - gap, facecolor=rgba,
+                                       edgecolor="none"))
+            lum = 0.2126 * rgba[0] + 0.7152 * rgba[1] + 0.0722 * rgba[2]
+            ax.text(j + 0.5, i + 0.52, pct(v, 1).replace("%", ""), ha="center", va="center", fontsize=11.5,
+                    color="white" if lum < 0.55 else INK)
+        yv = yearly[y]
+        ax.add_patch(plt.Rectangle((12.25 + gap / 2, i + gap / 2), 1.15 - gap, 1 - gap, facecolor="#f2f1ee",
+                                   edgecolor="none"))
+        ax.text(12.825, i + 0.52, pct(yv, 1, signed=True), ha="center", va="center", fontsize=12,
+                fontweight="bold", color=INK)
+    ax.set_xticks([j + 0.5 for j in range(12)] + [12.825], months + ["Year"])
+    ax.set_yticks([i + 0.5 for i in range(len(years))], [str(y) for y in years])
+    ax.xaxis.tick_top()
+    ax.tick_params(colors=INK2, labelsize=TICK, length=0)
+    for s in ax.spines.values():
+        s.set_visible(False)
+    save(fig, "monthly_returns.png")
+
+
 def random_picks():
     r = json.load(open(RES / "robustness.json", encoding="utf-8"))
     fig = plt.figure(figsize=(13, 6.2))
@@ -448,6 +498,7 @@ def main():
     p = load_monthly()
     growth(p)
     years(p)
+    monthly_heatmap(p)
     random_picks()
     stress()
 

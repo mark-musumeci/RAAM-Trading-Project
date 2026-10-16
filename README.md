@@ -79,6 +79,12 @@
 - **Ahead of SPY in 4 of 11 years**: the two down years (2018, 2022) plus 2017 and 2020. In strong bull years such as 2019, 2021 and 2024, SPY was clearly ahead.
 - **Over any 12-month window**, it beat SPY 31% of the time. In the windows where SPY lost money, it beat SPY in **14 of 18**.
 
+### Month by month
+
+![Monthly returns of the live rules, backtest](docs/images/monthly_returns.png)
+
+Each cell is one month's return in the backtest of the current rules (%, after costs; a month runs from its first trading day's open to the next month's). The right-hand column compounds each year. The worst month was March 2020 (−8.8%), when the circuit breaker moved everything to T-bills; most losing months stay under −2%.
+
 ### In a crisis
 
 ![Losses in real and simulated crises](docs/images/stress.png)
