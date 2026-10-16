@@ -85,6 +85,31 @@
 
 Each cell is one month's return in the backtest of the current rules (%, after costs; a month runs from its first trading day's open to the next month's). The right-hand column compounds each year. The worst month was March 2020 (−8.8%), when the circuit breaker moved everything to T-bills; most losing months stay under −2%.
 
+### Trading-system metrics
+
+Each monthly rebalance counts as one trade. There is no stop-loss, so **1R = the average losing month**.
+
+| Metric | **Live rules 2015–26** | Live rules 2008–26, no Bitcoin | SPY 2015–26 |
+|---|---:|---:|---:|
+| **Profit factor** (sum of winning months ÷ sum of losing months) | **2.53** | 2.15 | 2.03 |
+| **Return / DD** (total return ÷ worst month-end drop) | **22.8** (266.7% ÷ 11.7%) | 30.6 (376.2% ÷ 12.3%) | 15.8 (368.0% ÷ 23.3%) |
+| **MAR** (return per year ÷ worst month-end drop) | **1.01** | 0.71 | 0.61 |
+| MAR using the worst *daily* drop | 0.76 | 0.54 | 0.42 |
+| **Winning months** | **66.4%** | 65.0% | 70.0% |
+| **Average month** | **+0.97%** (median +0.67%) | +0.73% | +1.21% |
+| Average winning / losing month | +2.42% / −1.89% | +2.11% / −1.82% | +3.41% / −3.92% |
+| Payoff ratio (average win ÷ average loss) | 1.28 | 1.16 | 0.87 |
+| **R expectancy** (per month) | **+0.51 R** | +0.40 R | +0.31 R |
+| **R expectancy score** (per year: 12 × monthly) | **+6.2 R** | +4.8 R | +3.7 R |
+| **SQN** (Van Tharp, N capped at 100) | **3.46** | 2.87 | 2.69 |
+| SQN using all months | 4.09 | 4.28 | 3.18 |
+
+At its growth rate, the average month on a $100,000 start was worth about **$930** (SPY: about $1,110).
+
+**Reading it:** SPY wins slightly more often (70% vs 66% of months), but its average losing month is twice as deep (−3.9% vs −1.9%). The strategy's average win is bigger than its average loss (payoff 1.28 vs SPY's 0.87). That is where its higher profit factor, MAR and SQN come from. An SQN of about 3.5 is in Van Tharp's "excellent" band, but monthly portfolio returns are not individual trades, so treat it as a guide.
+
+<sub>Source: `trade_stats` in [readme_metrics.json](backtest/results/readme_metrics.json), built by `docs/readme_metrics.py`.</sub>
+
 ### In a crisis
 
 ![Losses in real and simulated crises](docs/images/stress.png)

@@ -78,6 +78,37 @@ def attribution(y: np.ndarray, x: np.ndarray) -> dict:
             "alpha_t": round(float(coef[0] / se), 1)}
 
 
+def trade_stats(r: np.ndarray, daily_dd_pct: float) -> dict:
+    """Trading-system metrics with each monthly rebalance treated as one trade. There are no stops, so 1R is the
+    average losing month. SQN follows Van Tharp (N capped at 100); the 'R expectancy score' is his expectunity,
+    expectancy x opportunities a year (12)."""
+    r = np.asarray(r, float)
+    n = len(r)
+    eq = np.cumprod(1 + r)
+    cagr = eq[-1] ** (12 / n) - 1
+    dd = (eq / np.maximum.accumulate(np.maximum(eq, 1.0)) - 1).min()
+    wins, losses = r[r > 0], r[r < 0]
+    one_r = -losses.mean()
+    R = r / one_r
+    return {"months": n, "total_return_pct": round(float(eq[-1] - 1) * 100, 1),
+            "worst_month_end_dd_pct": round(float(dd) * 100, 1), "worst_daily_dd_pct": round(daily_dd_pct, 1),
+            "profit_factor": round(float(wins.sum() / -losses.sum()), 2),
+            "return_over_dd": round(float((eq[-1] - 1) / -dd), 1),
+            "mar": round(float(cagr / -dd), 2), "mar_daily_dd": round(float(cagr / (-daily_dd_pct / 100)), 2),
+            "winning_months_pct": round(float((r > 0).mean() * 100), 1),
+            "avg_month_pct": round(float(r.mean() * 100), 2), "median_month_pct": round(float(np.median(r) * 100), 2),
+            "avg_win_pct": round(float(wins.mean() * 100), 2), "avg_loss_pct": round(float(losses.mean() * 100), 2),
+            "payoff_ratio": round(float(wins.mean() / one_r), 2),
+            "r_expectancy": round(float(R.mean()), 2), "r_expectancy_per_year": round(float(R.mean() * 12), 1),
+            "sqn_capped_100": round(float(np.sqrt(min(n, 100)) * R.mean() / R.std(ddof=1)), 2),
+            "sqn_all": round(float(np.sqrt(n) * R.mean() / R.std(ddof=1)), 2),
+            "avg_month_usd_on_100k": round(float(100_000 * ((1 + cagr) ** (1 / 12) - 1)), 0)}
+
+
+def daily_dd(series: pd.Series) -> float:
+    return float((series / series.cummax().clip(lower=series.iloc[0]) - 1).min() * 100)
+
+
 def comparison(p: pd.DataFrame, cal_years: dict) -> dict:
     """Live rules vs 60/40 vs SPY in plain terms: money, years, rolling windows and loss sharing."""
     cols = {"Core & Shield": "ret", "60/40": "b6040", "SPY": "spy"}
@@ -141,7 +172,8 @@ def main() -> None:
 
     # long history without Bitcoin
     bars_b = bt.splice_igov(bars)
-    b = bt.run(bars_b, noibit, 5.0, breaker=bt.breaker_from_cfg(cfg))["periods"]
+    b_res = bt.run(bars_b, noibit, 5.0, breaker=bt.breaker_from_cfg(cfg))
+    b = b_res["periods"]
     rf_b = rf_series(b, bars_b)
     prev_nb = bt.variants(noibit)[bt.PREV][0]
     pb = bt.run(bars_b, prev_nb, 5.0, breaker=bt.breaker_from_cfg(cfg))["periods"]
@@ -170,6 +202,12 @@ def main() -> None:
         name: {int(y): round(float((np.prod(1 + r[years == y]) - 1) * 100), 1) for y in sorted(set(years))}
         for name, r in series.items()}
     out["comparison"] = comparison(p, out["calendar_years_pct"])
+    live_res = bt.run(bars, cfg, 5.0, breaker=bt.breaker_from_cfg(cfg))
+    spy_c = bars["SPY"]["c"]
+    spy_c = spy_c[(spy_c.index >= p["entry"].iloc[0]) & (spy_c.index <= p["exit"].iloc[-1])]
+    out["trade_stats"] = {"Live rules 2015-26": trade_stats(p["ret"].values, daily_dd(live_res["daily"])),
+                          "Live rules 2008-26, no Bitcoin": trade_stats(b["ret"].values, daily_dd(b_res["daily"])),
+                          "SPY 2015-26": trade_stats(p["spy"].values, daily_dd(spy_c))}
     path = RES / "readme_metrics.json"
     path.write_text(json.dumps(out, indent=1) + "\n", encoding="utf-8")
     sys.stdout.reconfigure(encoding="utf-8")
