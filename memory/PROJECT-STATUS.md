@@ -6,22 +6,22 @@
 - Circuit breaker: not tripped (source of truth: `memory/state.json`)
 
 ## Latest health
-- Date: 2026-10-27
-- Equity: $101,018.60 (day change: +0.214%)
-- Drawdown: -0.073% | High-water mark: $101,092.20
+- Date: 2026-10-28
+- Equity: $101,051.59 (day change: +0.069%)
+- Drawdown: -0.04% | High-water mark: $101,092.20
 - Circuit breaker: not tripped
 - Positions:
 
 | Symbol | Weight % | Target % | Drift % |
 |---|---|---|---|
-| SPY | 29.89 | 30.0 | -0.11 |
-| AGG | 20.12 | 20.0 | 0.12 |
+| SPY | 29.85 | 30.0 | -0.15 |
+| AGG | 20.10 | 20.0 | 0.10 |
 | BIL | 34.56 | 35.0 | -0.44 |
-| DBC | 10.18 | 10.0 | 0.18 |
-| IBIT | 4.75 | 5.0 | -0.25 |
+| DBC | 10.23 | 10.0 | 0.23 |
+| IBIT | 4.77 | 5.0 | -0.23 |
 
 - Alerts: none
-- Timestamp: 2026-10-27 UTC
+- Timestamp: 2026-10-28 UTC
 
 ## Milestones
 - [x] 2026-09-23 Repo scaffolded, engine + tests written
