@@ -31,3 +31,32 @@ The machine-readable version (with executed fills) is `memory/signals/YYYY-MM.js
 
 **Context:** First live-paper signal, so all Shield slots are new entries (no prior holdings). Drivers: DBC ranks best on correlation (-0.25) and 2nd on momentum (+7.8%); IBIT ranks 1st on momentum (+16.9%) but last on volatility (44%), selected on overall score; its 10% Shield-slice weight is capped to 5% and the excess goes to BIL. RWR, TIP and AGG were selected but their momentum is at or below the 1.17% BIL hurdle, so their slots went to BIL (60% of Shield).
 Macro: September saw a Treasury yield surge (10Y highest since 2007, 30Y 5.6%), REITs/materials about -7% and gold weakening, while tech and Bitcoin held up.
+
+## Signal 2026-10 (as of 2026-10-30) -> allocation for 2026-11
+
+| # | ETF | Mom % | Vol % | Avg corr | Trend | rM | rV | rC | Score | Weight |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | **SCHP** | -0.77 | 4.44 | 0.245 | -2 | 4 | 1 | 4 | 3.001 | 0% |
+| 2 | **DBC** | 26.50 | 15.13 | -0.315 | -2 | 1 | 10 | 1 | 3.973 | 20% |
+| 3 | **AGG** | -1.25 | 4.91 | 0.355 | -2 | 6 | 2 | 6 | 4.668 | 0% |
+| 4 | **VV** | 1.74 | 10.50 | 0.379 | -2 | 3 | 4 | 8 | 4.999 | 20% |
+| 5 | **BTC** | 24.80 | 31.35 | 0.229 | -2 | 2 | 12 | 3 | 5.642 | 20% |
+| 6 | IGOV | -2.00 | 6.47 | 0.429 | -2 | 8 | 3 | 9 | 6.669 | 0% |
+| 7 | VAW | -1.38 | 13.37 | 0.375 | -2 | 7 | 8 | 7 | 7.335 | 0% |
+| 8 | EFA | -0.96 | 11.12 | 0.464 | -2 | 5 | 5 | 12 | 7.335 | 0% |
+| 9 | RWR | -4.99 | 14.17 | 0.148 | -2 | 11 | 9 | 2 | 7.338 | 0% |
+| 10 | IJH | -3.33 | 12.04 | 0.442 | -2 | 9 | 6 | 11 | 8.670 | 0% |
+| 11 | IJR | -3.88 | 12.20 | 0.441 | -2 | 10 | 7 | 10 | 9.004 | 0% |
+| 12 | EEM | -7.09 | 21.16 | 0.307 | -2 | 12 | 11 | 5 | 9.340 | 0% |
+
+**Momentum hurdle:** 1.21% (SGOV 4-month momentum); selected ETFs at or below it gave their slot to SGOV.
+
+**Cap:** BTC capped at 5% of the portfolio (uncapped 10%); 5% moved to cash.
+
+**Shield (RAAM, 50% of portfolio):** VV 20%, DBC 20%, BTC 20%, SGOV 40%
+**Core:** QQQM 50%  ·  trend filter QQQM month-end 284.34 vs 10-month average 278.85 → **ON: held**
+
+**Core & Shield target allocation:** VV 10%, DBC 10%, BTC 5%, SGOV 25%, QQQM 50%
+
+**Context:** Versus the 2026-09 signal, this is the first month on the new Core & Shield rules, so everything is new: QQQM 50% (trend ON), VV, DBC and BTC, and SGOV 25%. SPY, BIL, IBIT and AGG are exits; the sell-only symbols are sold at the 2 Nov rebalance. DBC (momentum +26.5%, correlation -0.31) and BTC (momentum +24.8%) drove their selections; VV rode momentum +1.7%. SCHP and AGG were selected but their momentum is below the 1.21% SGOV hurdle, so their slots went to SGOV, and BTC's 10% was capped to 5%.
+Macro: October saw 10Y Treasury yields around 5.15-5.27%, oil volatile near $88-100, equities up while REITs lagged on yields.

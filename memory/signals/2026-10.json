@@ -1,0 +1,256 @@
+{
+  "as_of": "2026-10-30",
+  "month": "2026-10",
+  "effective_month": "2026-11",
+  "generated_at": "2026-10-30T21:44:48+00:00",
+  "params": {
+    "lookbacks": {
+      "momentum_days": 84,
+      "correlation_days": 84,
+      "ewma_lambda": 0.94,
+      "vol_smooth_days": 10,
+      "atr_days": 42,
+      "upper_band_close_days": 63,
+      "lower_band_low_days": 105,
+      "history_calendar_days": 800
+    },
+    "ranking": {
+      "top_n": 5,
+      "w_momentum": 0.3333,
+      "w_volatility": 0.3333,
+      "w_correlation": 0.3334,
+      "tiebreak_x": 1000,
+      "momentum_hurdle": "cash",
+      "w_trend": 0
+    },
+    "ambiguities": {
+      "rank_convention": "1_is_best",
+      "tiebreak_sign": -1,
+      "vol_estimator": "close",
+      "lower_band": "hhv_low_minus_atr",
+      "trend_signal_lag_days": 1
+    }
+  },
+  "portfolio": {
+    "name": "Core & Shield",
+    "core": {
+      "QQQM": 0.5
+    },
+    "shield_weight": 0.5
+  },
+  "core_trend": {
+    "symbol": "QQQM",
+    "month_end_close": 284.34,
+    "sma": 278.848,
+    "sma_months": 10,
+    "on": true,
+    "off_to": "SGOV"
+  },
+  "shield_targets": {
+    "VV": 0.2,
+    "IJH": 0.0,
+    "IJR": 0.0,
+    "EFA": 0.0,
+    "EEM": 0.0,
+    "RWR": 0.0,
+    "DBC": 0.2,
+    "VAW": 0.0,
+    "AGG": 0.0,
+    "SCHP": 0.0,
+    "IGOV": 0.0,
+    "BTC": 0.2,
+    "SGOV": 0.4
+  },
+  "momentum_hurdle": {
+    "mode": "cash",
+    "value_pct": 1.206,
+    "cash_asset": "SGOV"
+  },
+  "table": [
+    {
+      "symbol": "SCHP",
+      "momentum_pct": -0.771,
+      "vol_pct": 4.442,
+      "avg_corr": 0.2447,
+      "trend": -2,
+      "rank_M": 4.0,
+      "rank_V": 1.0,
+      "rank_C": 4.0,
+      "score": 3.0009,
+      "selected": true,
+      "weight": 0.0
+    },
+    {
+      "symbol": "DBC",
+      "momentum_pct": 26.496,
+      "vol_pct": 15.13,
+      "avg_corr": -0.3145,
+      "trend": -2,
+      "rank_M": 1.0,
+      "rank_V": 10.0,
+      "rank_C": 1.0,
+      "score": 3.9732,
+      "selected": true,
+      "weight": 0.2
+    },
+    {
+      "symbol": "AGG",
+      "momentum_pct": -1.25,
+      "vol_pct": 4.906,
+      "avg_corr": 0.3547,
+      "trend": -2,
+      "rank_M": 6.0,
+      "rank_V": 2.0,
+      "rank_C": 6.0,
+      "score": 4.6681,
+      "selected": true,
+      "weight": 0.0
+    },
+    {
+      "symbol": "VV",
+      "momentum_pct": 1.742,
+      "vol_pct": 10.496,
+      "avg_corr": 0.3791,
+      "trend": -2,
+      "rank_M": 3.0,
+      "rank_V": 4.0,
+      "rank_C": 8.0,
+      "score": 4.9986,
+      "selected": true,
+      "weight": 0.2
+    },
+    {
+      "symbol": "BTC",
+      "momentum_pct": 24.798,
+      "vol_pct": 31.353,
+      "avg_corr": 0.2289,
+      "trend": -2,
+      "rank_M": 2.0,
+      "rank_V": 12.0,
+      "rank_C": 3.0,
+      "score": 5.6416,
+      "selected": true,
+      "weight": 0.2
+    },
+    {
+      "symbol": "IGOV",
+      "momentum_pct": -1.998,
+      "vol_pct": 6.466,
+      "avg_corr": 0.4289,
+      "trend": -2,
+      "rank_M": 8.0,
+      "rank_V": 3.0,
+      "rank_C": 9.0,
+      "score": 6.6689,
+      "selected": false,
+      "weight": 0.0
+    },
+    {
+      "symbol": "VAW",
+      "momentum_pct": -1.376,
+      "vol_pct": 13.373,
+      "avg_corr": 0.3747,
+      "trend": -2,
+      "rank_M": 7.0,
+      "rank_V": 8.0,
+      "rank_C": 7.0,
+      "score": 7.3347,
+      "selected": false,
+      "weight": 0.0
+    },
+    {
+      "symbol": "EFA",
+      "momentum_pct": -0.958,
+      "vol_pct": 11.124,
+      "avg_corr": 0.4638,
+      "trend": -2,
+      "rank_M": 5.0,
+      "rank_V": 5.0,
+      "rank_C": 12.0,
+      "score": 7.3348,
+      "selected": false,
+      "weight": 0.0
+    },
+    {
+      "symbol": "RWR",
+      "momentum_pct": -4.994,
+      "vol_pct": 14.167,
+      "avg_corr": 0.1477,
+      "trend": -2,
+      "rank_M": 11.0,
+      "rank_V": 9.0,
+      "rank_C": 2.0,
+      "score": 7.3378,
+      "selected": false,
+      "weight": 0.0
+    },
+    {
+      "symbol": "IJH",
+      "momentum_pct": -3.335,
+      "vol_pct": 12.043,
+      "avg_corr": 0.4421,
+      "trend": -2,
+      "rank_M": 9.0,
+      "rank_V": 6.0,
+      "rank_C": 11.0,
+      "score": 8.6702,
+      "selected": false,
+      "weight": 0.0
+    },
+    {
+      "symbol": "IJR",
+      "momentum_pct": -3.878,
+      "vol_pct": 12.195,
+      "avg_corr": 0.4408,
+      "trend": -2,
+      "rank_M": 10.0,
+      "rank_V": 7.0,
+      "rank_C": 10.0,
+      "score": 9.004,
+      "selected": false,
+      "weight": 0.0
+    },
+    {
+      "symbol": "EEM",
+      "momentum_pct": -7.093,
+      "vol_pct": 21.161,
+      "avg_corr": 0.307,
+      "trend": -2,
+      "rank_M": 12.0,
+      "rank_V": 11.0,
+      "rank_C": 5.0,
+      "score": 9.34,
+      "selected": false,
+      "weight": 0.0
+    }
+  ],
+  "targets": {
+    "VV": 0.1,
+    "IJH": 0.0,
+    "IJR": 0.0,
+    "EFA": 0.0,
+    "EEM": 0.0,
+    "RWR": 0.0,
+    "DBC": 0.1,
+    "VAW": 0.0,
+    "AGG": 0.0,
+    "SCHP": 0.0,
+    "IGOV": 0.0,
+    "BTC": 0.05,
+    "SGOV": 0.25,
+    "QQQM": 0.5,
+    "SPY": 0.0,
+    "BIL": 0.0,
+    "TIP": 0.0,
+    "IBIT": 0.0
+  },
+  "caps_applied": {
+    "BTC": {
+      "uncapped": 0.1,
+      "cap": 0.05,
+      "to_cash": 0.05
+    }
+  },
+  "executed": null,
+  "data_feed": "sip"
+}

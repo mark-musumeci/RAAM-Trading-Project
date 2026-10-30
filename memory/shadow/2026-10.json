@@ -1,0 +1,113 @@
+{
+  "month": "2026-10",
+  "as_of": "2026-10-30",
+  "effective_month": "2026-11",
+  "recorded_at": "2026-10-30T21:44:56+00:00",
+  "variants": {
+    "Live model": {
+      "targets": {
+        "BTC": 0.05,
+        "DBC": 0.1,
+        "QQQM": 0.5,
+        "SGOV": 0.25,
+        "VV": 0.1
+      },
+      "shield_picks": [
+        "VV",
+        "DBC",
+        "BTC",
+        "SGOV"
+      ],
+      "source": "live signal file"
+    },
+    "Previous live (60/40 Core)": {
+      "targets": {
+        "AGG": 0.2,
+        "BTC": 0.05,
+        "DBC": 0.1,
+        "SGOV": 0.25,
+        "SPY": 0.3,
+        "VV": 0.1
+      },
+      "shield_picks": [
+        "VV",
+        "DBC",
+        "BTC",
+        "SGOV"
+      ]
+    },
+    "No Bitcoin": {
+      "targets": {
+        "DBC": 0.1,
+        "QQQM": 0.5,
+        "SGOV": 0.3,
+        "VV": 0.1
+      },
+      "shield_picks": [
+        "VV",
+        "DBC",
+        "SGOV"
+      ]
+    },
+    "Core 50% SPY": {
+      "targets": {
+        "BTC": 0.05,
+        "DBC": 0.1,
+        "SGOV": 0.25,
+        "SPY": 0.5,
+        "VV": 0.1
+      },
+      "shield_picks": [
+        "VV",
+        "DBC",
+        "BTC",
+        "SGOV"
+      ]
+    },
+    "Core 40% SPY / 10% AGG": {
+      "targets": {
+        "AGG": 0.1,
+        "BTC": 0.05,
+        "DBC": 0.1,
+        "SGOV": 0.25,
+        "SPY": 0.4,
+        "VV": 0.1
+      },
+      "shield_picks": [
+        "VV",
+        "DBC",
+        "BTC",
+        "SGOV"
+      ]
+    },
+    "Bitcoin satellite": {
+      "targets": {
+        "BTC": 0.05,
+        "DBC": 0.09,
+        "QQQM": 0.5,
+        "SGOV": 0.27,
+        "VV": 0.09
+      },
+      "shield_picks": [
+        "VV",
+        "DBC",
+        "SGOV"
+      ]
+    },
+    "+ Gold (13 candidates)": {
+      "targets": {
+        "BTC": 0.05,
+        "DBC": 0.1,
+        "QQQM": 0.5,
+        "SGOV": 0.25,
+        "VV": 0.1
+      },
+      "shield_picks": [
+        "VV",
+        "DBC",
+        "BTC",
+        "SGOV"
+      ]
+    }
+  }
+}

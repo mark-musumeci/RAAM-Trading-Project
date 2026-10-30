@@ -3,6 +3,25 @@
 Findings from Claude web research (WebSearch/WebFetch), newest first. Context only: research never changes RAAM signals or weights.
 Format per entry: `## YYYY-MM-DD — topic`, question asked, 3–6 bullet summary, flags (if any), sources.
 
+## 2026-10-30 — month-end scan (effective month 2026-11)
+
+Searched: iShares closures/changes (IJH, IJR, EFA, EEM, AGG, IGOV), Vanguard/Invesco/Schwab/SPDR (VV, VAW, QQQM, DBC, SCHP, RWR, SPY), Grayscale BTC, October macro. Research limited: search returned little ticker-specific news.
+
+- iShares: October closures (IBIC iBonds Oct 2026 Term TIPS, liquidated Oct 20; IBMO Dec 2026 Term Muni; Canadian CVD) are non-universe funds. Nothing found on IJH, IJR, EFA, EEM, AGG, IGOV.
+- Vanguard/Invesco/Schwab/SPDR: no closure, merger, ticker or index change found for universe tickers.
+- Grayscale BTC: no October 2026 news found; no halt or regulatory action found.
+- Macro: 10Y Treasury yield ~5.15-5.27% in October; oil volatile near $88-100; S&P 500 up ~2.4% month-to-date as of Oct 9; REITs/high-dividend sectors lagged on yields; Fed officials reportedly prepared to hike again.
+
+**Flags:** none
+
+Sources:
+- https://www.barchart.com/story/news/3859203/ishares-ibonds-etf-near-final-distribution-date
+- https://www.vermoegenszentrum.ch/en/stock-exchange-and-markets/news/blackrock-sets-liquidation-payout-timeline-ishares-ibonds-oct-2026
+- https://www.sec.gov/Archives/edgar/data/0001524513/000141783526000276/ruleprovision.txt
+- https://www.babypips.com/news/financial-forex-market-recap-2026-10-19
+- https://www.lpl.com/research/blog/weekly-market-performance-october-9-2026.html
+- https://investrade.com/market-review-october-07-2026/
+
 ## 2026-09-30 — month-end scan (effective month 2026-10)
 
 Searched: structural news for iShares (IJH, IJR, EFA, EEM, AGG, TIP, IGOV, IBIT), Vanguard (VV, VAW), SPDR (RWR, BIL, SPY), Invesco (DBC), plus September macro recap.
