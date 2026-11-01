@@ -53,6 +53,7 @@
 | | **Core & Shield** | 60/40 | SPY |
 |---|---:|---:|---:|
 | **CAGR** (compound annual growth rate) | **11.8%** | 9.2% | 14.1% |
+| **Total return** (Feb 2015 – Sep 2026) | **+266.7%** | +178.1% | +368.0% |
 | $100,000 grew to | **$367k** | $278k | $468k |
 | Volatility (how much it swings) | **9.7%** | 10.0% | 15.6% |
 | Worst drop from a peak | **−11.7%** | −19.2% | −23.3% |
