@@ -251,6 +251,19 @@
       "to_cash": 0.05
     }
   },
-  "executed": null,
+  "executed": {
+    "at": "2026-11-02T15:39:28+00:00",
+    "date": "2026-11-02",
+    "fills": [
+      {
+        "symbol": "AGG",
+        "side": "sell",
+        "status": "error: HTTPError",
+        "ref_price": 96.175,
+        "slippage_bps": null
+      }
+    ],
+    "error": "HTTPError: POST https://paper-api.alpaca.markets/v2/orders -> 403: {\"available\":\"211.477045696\",\"code\":40310000,\"existing_qty\":\"211.477045696\",\"held_for_orders\":\"0\",\"message\":\"insufficient qty available for order (requested: 211.477046, available: 211.477045696)\",\"symbol\":\"AGG\"}"
+  },
   "data_feed": "sip"
 }
