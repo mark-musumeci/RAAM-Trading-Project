@@ -6,8 +6,9 @@ Variant returns run from the open of the month's first trading day to the open o
 
 | Month | Live account | Live model | Previous live (60/40 Core) | No Bitcoin | Core 50% SPY | Core 40% SPY / 10% AGG | Bitcoin satellite | + Gold (13 candidates) | 60/40 |
 |---|---|---|---|---|---|---|---|---|---|
-| 2026-10 (to 2026-10-30) | +0.30% | +0.21% | n/a | +0.47% | −0.53% | −0.16% | +0.02% | n/a | +0.29% |
-| **Since start** | **+0.30%** | **+0.21%** | **n/a** | **+0.47%** | **−0.53%** | **−0.16%** | **+0.02%** | **n/a** | **+0.29%** |
+| 2026-10 | +0.27% | +0.20% | n/a | +0.45% | −0.48% | −0.14% | +0.08% | n/a | +0.66% |
+| 2026-11 (to 2026-11-02) | −1.11% | −1.37% | −0.61% | −1.29% | −0.79% | −0.69% | −1.34% | −1.33% | −0.59% |
+| **Since start** | **−0.84%** | **−1.17%** | **−0.61%** | **−0.85%** | **−1.26%** | **−0.83%** | **−1.26%** | **−1.33%** | **+0.06%** |
 
 *Since start* compounds each column from its first tracked month; n/a = not yet tracked.
 
