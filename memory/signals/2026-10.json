@@ -251,19 +251,135 @@
       "to_cash": 0.05
     }
   },
+  "data_feed": "sip",
+  "failed_attempts": [
+    {
+      "at": "2026-11-02T15:39:28+00:00",
+      "date": "2026-11-02",
+      "fills": [
+        {
+          "symbol": "AGG",
+          "side": "sell",
+          "status": "error: HTTPError",
+          "ref_price": 96.175,
+          "slippage_bps": null
+        }
+      ],
+      "error": "HTTPError: POST https://paper-api.alpaca.markets/v2/orders -> 403: {\"available\":\"211.477045696\",\"code\":40310000,\"existing_qty\":\"211.477045696\",\"held_for_orders\":\"0\",\"message\":\"insufficient qty available for order (requested: 211.477046, available: 211.477045696)\",\"symbol\":\"AGG\"}"
+    }
+  ],
   "executed": {
-    "at": "2026-11-02T15:39:28+00:00",
+    "at": "2026-11-02T17:24:00+00:00",
     "date": "2026-11-02",
     "fills": [
       {
+        "id": "815840a9-b245-4886-9ed5-9cf4a960ce48",
+        "symbol": "DBC",
+        "side": "sell",
+        "status": "filled",
+        "filled_qty": "0.917804",
+        "filled_avg_price": "32.612",
+        "notional": null,
+        "qty": "0.917804",
+        "ref_price": 32.62,
+        "slippage_bps": 2.5
+      },
+      {
+        "id": "a54f8a45-eed1-421c-8b53-77957ae853a3",
+        "symbol": "BIL",
+        "side": "sell",
+        "status": "filled",
+        "filled_qty": "380.975713816",
+        "filled_avg_price": "91.4",
+        "notional": null,
+        "qty": "380.975713816",
+        "ref_price": 91.405,
+        "slippage_bps": 0.5
+      },
+      {
+        "id": "6d422ce2-adf8-4b30-9bde-4919c410ee4b",
+        "symbol": "IBIT",
+        "side": "sell",
+        "status": "filled",
+        "filled_qty": "104.692550505",
+        "filled_avg_price": "43.639361",
+        "notional": null,
+        "qty": "104.692550505",
+        "ref_price": 43.6401,
+        "slippage_bps": 0.2
+      },
+      {
+        "id": "c705af29-10c7-4e10-a690-f591830883fd",
         "symbol": "AGG",
         "side": "sell",
-        "status": "error: HTTPError",
-        "ref_price": 96.175,
-        "slippage_bps": null
+        "status": "filled",
+        "filled_qty": "211.477045696",
+        "filled_avg_price": "96.29",
+        "notional": null,
+        "qty": "211.477045696",
+        "ref_price": 96.295,
+        "slippage_bps": 0.5
+      },
+      {
+        "id": "12df10c4-24c7-4215-8fa4-59111cff6667",
+        "symbol": "SPY",
+        "side": "sell",
+        "status": "filled",
+        "filled_qty": "39.207450511",
+        "filled_avg_price": "759.255101",
+        "notional": null,
+        "qty": "39.207450511",
+        "ref_price": 759.29,
+        "slippage_bps": 0.5
+      },
+      {
+        "id": "b6584111-27ac-4cde-be1f-7bb39946bef8",
+        "symbol": "BTC",
+        "side": "buy",
+        "status": "filled",
+        "filled_qty": "145.903519061",
+        "filled_avg_price": "34.1",
+        "notional": "4975.32",
+        "qty": null,
+        "ref_price": 34.17,
+        "slippage_bps": -20.5
+      },
+      {
+        "id": "51df43ef-3882-40fa-859c-d967afeddb92",
+        "symbol": "QQQM",
+        "side": "buy",
+        "status": "filled",
+        "filled_qty": "174.407508675",
+        "filled_avg_price": "285.27",
+        "notional": "49753.24",
+        "qty": null,
+        "ref_price": 285.53,
+        "slippage_bps": -9.1
+      },
+      {
+        "id": "a71a5590-0521-428c-81d1-7d328a3eada6",
+        "symbol": "SGOV",
+        "side": "buy",
+        "status": "filled",
+        "filled_qty": "247.700985761",
+        "filled_avg_price": "100.43",
+        "notional": "24876.62",
+        "qty": null,
+        "ref_price": 100.425,
+        "slippage_bps": 0.5
+      },
+      {
+        "id": "fdd60425-2cae-4c4b-bc6e-e39e674b6f52",
+        "symbol": "VV",
+        "side": "buy",
+        "status": "filled",
+        "filled_qty": "28.453976151",
+        "filled_avg_price": "349.71",
+        "notional": "9950.65",
+        "qty": null,
+        "ref_price": 349.98,
+        "slippage_bps": -7.7
       }
-    ],
-    "error": "HTTPError: POST https://paper-api.alpaca.markets/v2/orders -> 403: {\"available\":\"211.477045696\",\"code\":40310000,\"existing_qty\":\"211.477045696\",\"held_for_orders\":\"0\",\"message\":\"insufficient qty available for order (requested: 211.477046, available: 211.477045696)\",\"symbol\":\"AGG\"}"
-  },
-  "data_feed": "sip"
+    ]
+  }
 }

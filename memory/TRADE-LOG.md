@@ -12,3 +12,12 @@ Append-only. Rows are written by `scripts/raam.py rebalance` and by `/trade` (ma
 | 2026-10-01 | IBIT | buy | 104.692550505 | 47.52 | 47.57 | -10.5 | filled | RAAM rebalance (2026-09 signal) |
 | 2026-10-01 | SPY | buy | 39.207450511 | 761.334635 | 761.31 | 0.3 | filled | RAAM rebalance (2026-09 signal) |
 | 2026-11-02 | AGG | sell |  |  | 96.175 |  | error: HTTPError | RAAM rebalance (2026-10 signal) |
+| 2026-11-02 | DBC | sell | 0.917804 | 32.612 | 32.62 | 2.5 | filled | RAAM rebalance (2026-10 signal) |
+| 2026-11-02 | BIL | sell | 380.975713816 | 91.4 | 91.405 | 0.5 | filled | RAAM rebalance (2026-10 signal) |
+| 2026-11-02 | IBIT | sell | 104.692550505 | 43.639361 | 43.6401 | 0.2 | filled | RAAM rebalance (2026-10 signal) |
+| 2026-11-02 | AGG | sell | 211.477045696 | 96.29 | 96.295 | 0.5 | filled | RAAM rebalance (2026-10 signal) |
+| 2026-11-02 | SPY | sell | 39.207450511 | 759.255101 | 759.29 | 0.5 | filled | RAAM rebalance (2026-10 signal) |
+| 2026-11-02 | BTC | buy | 145.903519061 | 34.1 | 34.17 | -20.5 | filled | RAAM rebalance (2026-10 signal) |
+| 2026-11-02 | QQQM | buy | 174.407508675 | 285.27 | 285.53 | -9.1 | filled | RAAM rebalance (2026-10 signal) |
+| 2026-11-02 | SGOV | buy | 247.700985761 | 100.43 | 100.425 | 0.5 | filled | RAAM rebalance (2026-10 signal) |
+| 2026-11-02 | VV | buy | 28.453976151 | 349.71 | 349.98 | -7.7 | filled | RAAM rebalance (2026-10 signal) |
