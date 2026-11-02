@@ -419,7 +419,7 @@ def plan_orders(targets: dict, equity: float, positions: dict, prices: dict, cfg
                     raise Halt(f"no price for {sym}")
                 qty = math.floor((-delta / price) * 1e6) / 1e6
             if qty > 0:
-                sells.append({"symbol": sym, "side": "sell", "qty": round(qty, 6),
+                sells.append({"symbol": sym, "side": "sell", "qty": qty if w == 0 else round(qty, 6),
                               "est_value": round(-delta if w else pos["market_value"], 2),
                               "close_position": w == 0, "ref_price": prices.get(sym)})
         else:
@@ -490,6 +490,11 @@ class Alpaca:
 
     def submit_order(self, **order):
         return self._req("POST", f"{self.base}/v2/orders", json=order)
+
+    def close_position(self, symbol: str):
+        """Sell the whole position at market. Alpaca sizes the order from its own exact quantity, so a full exit
+        can never ask for more than is held (fractional shares carry up to 9 decimals)."""
+        return self._req("DELETE", f"{self.base}/v2/positions/{symbol}")
 
     def asset(self, symbol: str):
         return self._req("GET", f"{self.base}/v2/assets/{symbol}")
@@ -653,6 +658,13 @@ def slippage_bps(side: str, ref, fill) -> float | None:
     return round(s if side == "buy" else -s, 1)
 
 
+def _filled(f: dict) -> bool:
+    try:
+        return float(f.get("filled_qty") or 0) > 0
+    except (TypeError, ValueError):
+        return False
+
+
 def _fill_summary(o: dict, ref=None) -> dict:
     return {"id": o["id"], "symbol": o["symbol"], "side": o["side"], "status": o["status"],
             "filled_qty": o.get("filled_qty"), "filled_avg_price": o.get("filled_avg_price"),
@@ -716,8 +728,11 @@ def execute_plan(client: Alpaca, plan: dict, cfg: dict, whole_share: set | None 
                 if qty < 1:
                     continue
             current = o
-            r = client.submit_order(symbol=o["symbol"], qty=str(qty), side="sell",
-                                    type="market", time_in_force="day")
+            if o.get("close_position"):
+                r = client.close_position(o["symbol"])        # exact quantity, never rounded up
+            else:
+                r = client.submit_order(symbol=o["symbol"], qty=str(qty), side="sell",
+                                        type="market", time_in_force="day")
             current = None
             ids.append(r["id"])
         results += [_fill_summary(x, refs.get(x["symbol"])) for x in _wait(client, ids, wait).values()]
@@ -846,8 +861,16 @@ def cmd_rebalance(args, cfg):
         if path is None or not path.exists():
             raise Halt(f"no signal file for {prev_month_key(d)} - month-end signal did not run")
         sig = json.loads(path.read_text(encoding="utf-8"))
-        if sig.get("executed"):
-            return {"status": "noop", "reason": f"signal {sig['month']} already executed"}
+        prev = sig.get("executed")
+        if prev:
+            nothing_filled = bool(prev.get("error")) and not any(_filled(f) for f in prev.get("fills", []))
+            if not (getattr(args, "retry", False) and nothing_filled):
+                why = f"signal {sig['month']} already executed"
+                if nothing_filled:
+                    why += " (the last attempt failed with nothing filled; the owner can rerun with --retry)"
+                return {"status": "noop", "reason": why}
+            sig.setdefault("failed_attempts", []).append(prev)   # kept for the record
+            sig.pop("executed")
         targets, reason = sig["targets"], f"RAAM rebalance ({sig['month']} signal)"
 
     account = client.account()
@@ -1091,6 +1114,9 @@ def main(argv=None) -> int:
         if name != "calendar":
             sp.add_argument("--force", action="store_true")
             sp.add_argument("--dry-run", action="store_true")
+        if name == "rebalance":
+            sp.add_argument("--retry", action="store_true",
+                            help="owner only: rerun a signal whose last attempt failed with nothing filled")
     sp = sub.add_parser("health")
     sp.add_argument("--dry-run", action="store_true")
     sp = sub.add_parser("review")

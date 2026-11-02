@@ -71,6 +71,12 @@ class FakeAlpaca:
         self.submitted.append({**o, "id": oid})
         return {"id": oid}
 
+    def close_position(self, symbol):
+        pos = self._positions[symbol]
+        oid = f"id{len(self.submitted)}"
+        self.submitted.append({"symbol": symbol, "side": "sell", "qty": str(pos["qty"]), "close": True, "id": oid})
+        return {"id": oid, "symbol": symbol, "side": "sell", "qty": str(pos["qty"])}
+
     def get_order(self, oid):
         o = next(x for x in self.submitted if x["id"] == oid)
         return {"id": oid, "symbol": o["symbol"], "side": o["side"], "status": "filled",
@@ -330,3 +336,41 @@ def test_rebalance_swaps_replaced_funds(env):
         orders = [o for o in env.fake.submitted if o["symbol"] == sym]
         assert len(orders) == 1 and orders[0]["side"] == "sell", sym
     assert not any(o["side"] == "buy" and o["symbol"] in ("BIL", "TIP", "IBIT") for o in env.fake.submitted)
+
+
+def test_full_exit_sells_the_exact_fractional_position(env):
+    """2026-11-02: a full exit was sent as round(211.477045696, 6) = 211.477046, more than held, and Alpaca refused.
+    Full exits now go through close_position, which sells exactly what is held."""
+    raam.cmd_signal(args(date="2026-09-30"), CFG)
+    env.fake._positions = {"AGG": {"qty": 211.477045696, "market_value": 20_000.0}}
+    out = raam.cmd_rebalance(args(date="2026-10-01"), CFG)
+    assert out["status"] == "ok", out
+    agg = [o for o in env.fake.submitted if o["symbol"] == "AGG"]
+    assert len(agg) == 1 and agg[0].get("close") and float(agg[0]["qty"]) == 211.477045696
+
+
+def _failed_attempt(env, filled: bool):
+    raam.cmd_signal(args(date="2026-09-30"), CFG)
+    path = env.mem / "signals" / "2026-09.json"
+    sig = json.loads(path.read_text())
+    sig["executed"] = {"date": "2026-10-01", "error": "HTTPError: 403 insufficient qty",
+                       "fills": [{"symbol": "AGG", "side": "sell", "status": "filled" if filled else "error: HTTPError",
+                                  "filled_qty": "5" if filled else None}]}
+    path.write_text(json.dumps(sig))
+    return path
+
+
+def test_retry_after_a_failed_attempt_with_nothing_filled(env):
+    path = _failed_attempt(env, filled=False)
+    plain = raam.cmd_rebalance(args(date="2026-10-01"), CFG)
+    assert plain["status"] == "noop" and "--retry" in plain["reason"] and not env.fake.submitted
+    out = raam.cmd_rebalance(args(date="2026-10-01", retry=True), CFG)
+    assert out["status"] == "ok" and env.fake.submitted
+    sig = json.loads(path.read_text())
+    assert sig["executed"].get("error") is None and len(sig["failed_attempts"]) == 1
+
+
+def test_retry_refused_when_something_already_filled(env):
+    _failed_attempt(env, filled=True)
+    out = raam.cmd_rebalance(args(date="2026-10-01", retry=True), CFG)
+    assert out["status"] == "noop" and "--retry" not in out["reason"] and not env.fake.submitted

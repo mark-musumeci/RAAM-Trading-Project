@@ -30,7 +30,7 @@ The strategy rules are in `memory/TRADING-STRATEGY.md`. The parameters are in `c
 |---|---|
 | Trading-day facts | `python3 scripts/raam.py calendar [--date YYYY-MM-DD]` |
 | Month-end signal | `python3 scripts/raam.py signal [--date D] [--force] [--dry-run]` |
-| Rebalance | `python3 scripts/raam.py rebalance [--date D] [--force] [--dry-run]` |
+| Rebalance | `python3 scripts/raam.py rebalance [--date D] [--force] [--dry-run]` (`--retry`: owner only, after a failed attempt with nothing filled) |
 | Health / snapshot | `python3 scripts/raam.py health [--dry-run]` |
 | Month review numbers | `python3 scripts/raam.py review [--month YYYY-MM] [--force]` |
 | Pre-flight (read-only readiness check) | `python3 scripts/raam.py preflight` |
