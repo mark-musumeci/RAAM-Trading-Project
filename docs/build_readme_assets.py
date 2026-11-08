@@ -325,6 +325,50 @@ def monte_carlo():
     save(fig, "monte_carlo.png")
 
 
+def parameter_surface():
+    """Profit factor across the momentum-lookback x Core-trend grid, the live setting circled and 60/40 as a plane."""
+    from matplotlib.colors import LinearSegmentedColormap, Normalize
+    cells = json.load(open(RES / "param_sensitivity.json", encoding="utf-8"))["A"]
+    q = pd.DataFrame(cells["cells"])
+    q = q[q["grid"] == "G1"]
+    piv = q.pivot_table(index="y", columns="x", values="PF")
+    X, Y = np.meshgrid(piv.columns.values, piv.index.values)
+    Z = piv.values
+    ramp = LinearSegmentedColormap.from_list("seq", ["#d9f0e6", "#7fd3b4", AQUA, "#0f7a55"])
+    norm = Normalize(vmin=Z.min(), vmax=Z.max())
+    fig = plt.figure(figsize=(13, 8.4))
+    fig.patch.set_facecolor(SURFACE)
+    fig.text(0.05, 0.95, "Parameter sensitivity: profit factor", fontsize=21, fontweight="bold", color=INK, va="top")
+    fig.text(0.05, 0.895, f"Live rules, {pd.Timestamp(cells['first_month']):%b %Y} – Sep 2026, with Bitcoin · "
+                          f"{len(q)} settings of momentum lookback and Core trend length",
+             fontsize=14, color=INK2, va="top")
+    ax = fig.add_axes([0.03, 0.02, 0.94, 0.86], projection="3d", computed_zorder=False)
+    ax.set_facecolor(SURFACE)
+    ax.plot_surface(X, Y, Z, facecolors=ramp(norm(Z)), edgecolor="white", linewidth=0.8, shade=False, antialiased=True,
+                    zorder=2)
+    bench = float(q["b_PF"].iloc[0])
+    ax.plot_surface(X, Y, np.full_like(Z, bench), color=BLUE, alpha=0.22, edgecolor="none", shade=False, zorder=1)
+    ax.text(168, 5.6, bench - 0.03, f"60/40: {bench:.2f}", fontsize=13, color=INK, ha="left", zorder=6)
+    live = float(piv.loc[10, 84])
+    ax.scatter([84], [10], [live + 0.02], s=320, facecolors="none", edgecolors=INK, linewidths=2.6, depthshade=False,
+               zorder=5)
+    ax.text(84, 10, live + 0.16, f"Live: {live:.2f}", fontsize=14, fontweight="bold", color=INK, ha="center", zorder=6)
+    ax.set_zlim(1.5, 3.0)
+    ax.set_box_aspect((1.25, 1, 0.55), zoom=1.15)
+    ax.set_xticks(sorted(piv.columns))
+    ax.set_yticks(sorted(piv.index))
+    ax.set_xlabel("Shield momentum lookback (trading days)", fontsize=13, color=INK2, labelpad=12)
+    ax.set_ylabel("Core trend length (months)", fontsize=13, color=INK2, labelpad=12)
+    ax.set_zlabel("Profit factor", fontsize=13, color=INK2, labelpad=8)
+    ax.tick_params(colors=INK2, labelsize=11)
+    for a in (ax.xaxis, ax.yaxis, ax.zaxis):
+        a.set_pane_color((1, 1, 1, 0))
+    ax.view_init(elev=24, azim=-58)
+    fig.savefig(OUT / "parameter_sensitivity.png", dpi=130, facecolor=SURFACE)
+    plt.close(fig)
+    print("wrote", OUT / "parameter_sensitivity.png")
+
+
 def random_picks():
     r = json.load(open(RES / "robustness.json", encoding="utf-8"))
     fig = plt.figure(figsize=(13, 6.2))
@@ -543,6 +587,7 @@ def main():
     years(p)
     monthly_heatmap(p)
     monte_carlo()
+    parameter_surface()
     random_picks()
     stress()
 

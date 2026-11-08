@@ -238,6 +238,30 @@ The result depends on which history feeds it. **The 2000–26 row is the realist
 
 <sub>Source: `forward_monte_carlo` in [readme_metrics.json](backtest/results/readme_metrics.json), built by `docs/readme_metrics.py`; the 2000–26 history comes from `backtest/proxies.py`.</sub>
 
+### Parameter sensitivity
+
+![Profit factor across 63 settings, with the live setting circled](docs/images/parameter_sensitivity.png)
+
+Are the settings a lucky peak? This re-runs the full backtest on the headline data (Jun 2015 – Sep 2026, with Bitcoin) across **136 nearby settings**. A robust strategy sits on a broad plateau; an overfitted one sits on a narrow spike.
+
+| Settings varied | Profit factor: range | Live (rank) | Sharpe (rf = 0): range | Live |
+|---|---:|---:|---:|---:|
+| Momentum lookback × Core trend length (63 settings) | 2.17–2.55 | 2.51 (8th) | 0.99–1.22 | 1.19 |
+| Correlation lookback × number of holdings (36) | 2.30–2.59 | 2.51 (18th) | 1.10–1.23 | 1.19 |
+| Factor weights (22) | 1.99–2.79 | 2.51 (10th) | 0.89–1.30 | 1.19 |
+| Volatility decay × smoothing (15) | 2.45–2.59 | 2.51 (9th) | 1.16–1.23 | 1.19 |
+
+Over the same months 60/40 scored a profit factor of 1.99 and a Sharpe of 0.91. All 136 settings beat its profit factor and its worst drop, and 135 of 136 beat its Sharpe.
+
+- **The live setting is not the peak.** It sits on the plateau, in the upper half of most grids.
+- **The worst drop is the most fragile figure.** It ranges from −9.7% to −16.9% across the momentum and Core grid. The live −11.7% is better than its neighbours' average of −13.4%, so the headline MAR of 1.01 is somewhat flattered (neighbours average 0.88).
+- **The Core trend length has a cliff at 13 months.** From 6 to 12 months the profit factor barely moves; at 13–14 months it falls to about 2.24. The live 10 months is inside the flat part.
+- **A heavy volatility weight hurts.** At 45% or more the profit factor falls to 1.99–2.26. The live weight is ⅓.
+
+**What this can't show:** it tests only the numeric settings. The biggest hindsight choices, the Nasdaq-100 Core and Bitcoin, are not parameters here, so the whole plateau sits on top of them.
+
+<sub>Source: [param_sensitivity.json](backtest/results/param_sensitivity.json), built by `backtest/param_sensitivity.py`.</sub>
+
 <sub>Details: [ROBUSTNESS.md](backtest/results/ROBUSTNESS.md) · [STRESS.md](backtest/results/STRESS.md) · [backtest report](backtest/results/REPORT.md)</sub>
 
 ---
