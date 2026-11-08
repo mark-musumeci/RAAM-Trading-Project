@@ -105,22 +105,45 @@ def trade_stats(r: np.ndarray, daily_dd_pct: float) -> dict:
             "avg_month_usd_on_100k": round(float(100_000 * ((1 + cagr) ** (1 / 12) - 1)), 0)}
 
 
-def shuffle_monte_carlo(daily: pd.Series, n: int = 5000, seed: int = 20261108) -> dict:
-    """Reorder the strategy's actual daily returns at random, n times. Every path has the same returns, so every
-    path ends at the same total; only the route (and so the drawdown) differs. Shuffling also breaks up the
-    clustering of bad days, so these drawdowns understate real crises."""
-    r = pd.concat([pd.Series([1.0]), daily.reset_index(drop=True)]).pct_change().dropna().values
-    rng = np.random.default_rng(seed)
-    dds = np.empty(n)
-    for i in range(n):
-        eq = np.cumprod(1 + rng.permutation(r))
-        dds[i] = (eq / np.maximum.accumulate(np.maximum(eq, 1.0)) - 1).min() * 100
-    eq = np.cumprod(1 + r)
-    actual = float((eq / np.maximum.accumulate(np.maximum(eq, 1.0)) - 1).min() * 100)
-    return {"shuffles": n, "trading_days": len(r), "total_return_pct": round(float(eq[-1] - 1) * 100, 1),
-            "actual_worst_daily_dd_pct": round(actual, 1),
-            "shuffled_worst_daily_dd_pct_p5_p50_p95": [round(float(np.percentile(dds, q)), 1) for q in (5, 50, 95)],
-            "share_of_shuffles_with_a_deeper_drop_pct": round(float((dds < actual).mean() * 100), 1)}
+def stationary_indices(T: int, mean_block: float, n: int, rng: np.random.Generator) -> np.ndarray:
+    """n resampled index paths (stationary block bootstrap, Politis & Romano 1994): each step starts a new random
+    block with probability 1/mean_block, otherwise continues to the next month, wrapping around the end."""
+    out = np.empty((n, T), dtype=np.int64)
+    out[:, 0] = rng.integers(0, T, n)
+    new_block = rng.random((n, T)) < 1.0 / mean_block
+    fresh = rng.integers(0, T, (n, T))
+    for t in range(1, T):
+        out[:, t] = np.where(new_block[:, t], fresh[:, t], (out[:, t - 1] + 1) % T)
+    return out
+
+
+def forward_monte_carlo(r: np.ndarray, spy: np.ndarray, b6040: np.ndarray, years: int = 10, n: int = 20_000,
+                        block: int = 6, seed: int = 20261118, fan: bool = False) -> dict:
+    """Simulate the next `years` from $100,000: each future strings together random 6-month blocks of past months,
+    with SPY and 60/40 drawn from the same months so the comparisons are like for like."""
+    idx = stationary_indices(len(r), block, n, np.random.default_rng(seed))[:, :years * 12]
+    R, S, B = r[idx], spy[idx], b6040[idx]
+    eq, eq_s, eq_b = np.cumprod(1 + R, 1), np.cumprod(1 + S, 1), np.cumprod(1 + B, 1)
+    dd = lambda e: (e / np.maximum.accumulate(np.maximum(e, 1.0), axis=1) - 1).min(axis=1)
+    d, d_s = dd(eq), dd(eq_s)
+    q = lambda a, x: float(np.percentile(a, x))
+    end = eq[:, -1]
+    out = {"paths": n, "months_in_history": len(r), "start_usd": 100_000,
+           "end_usd_p5_p25_p50_p75_p95": [round(q(end, x) * 100_000, -2) for x in (5, 25, 50, 75, 95)],
+           "cagr_pct_p5_p50_p95": [round((q(end, x) ** (1 / years) - 1) * 100, 1) for x in (5, 50, 95)],
+           "worst_month_end_drop_pct_median_p5": [round(q(d, 50) * 100, 1), round(q(d, 5) * 100, 1)],
+           "chance_of_loss_pct": round(float((end < 1).mean() * 100), 0),
+           "chance_drop_beyond_20_pct": round(float((d < -0.20).mean() * 100), 0),
+           "chance_beats_spy_pct": round(float((end > eq_s[:, -1]).mean() * 100), 0),
+           "chance_beats_6040_pct": round(float((end > eq_b[:, -1]).mean() * 100), 0),
+           "chance_smaller_drop_than_spy_pct": round(float((d > d_s).mean() * 100), 0),
+           "spy_median_end_usd": round(q(eq_s[:, -1], 50) * 100_000, -2)}
+    if fan:
+        pct_path = lambda e, x: [100_000.0] + [round(float(v) * 100_000, 0) for v in np.percentile(e, x, axis=0)]
+        out["fan"] = {"p5": pct_path(eq, 5), "p25": pct_path(eq, 25), "p50": pct_path(eq, 50), "p75": pct_path(eq, 75),
+                      "p95": pct_path(eq, 95), "spy_p50": pct_path(eq_s, 50),
+                      "samples": [[100_000.0] + [round(float(v) * 100_000, 0) for v in row] for row in eq[:12]]}
+    return out
 
 
 def daily_dd(series: pd.Series) -> float:
@@ -226,8 +249,12 @@ def main() -> None:
     out["trade_stats"] = {"Live rules 2015-26": trade_stats(p["ret"].values, daily_dd(live_res["daily"])),
                           "Live rules 2008-26, no Bitcoin": trade_stats(b["ret"].values, daily_dd(b_res["daily"])),
                           "SPY 2015-26": trade_stats(p["spy"].values, daily_dd(spy_c))}
-    live_res["daily"].rename("value").to_csv(RES / "daily_live.csv", index_label="date")
-    out["shuffle_monte_carlo"] = shuffle_monte_carlo(live_res["daily"])
+    long_run = pd.read_csv(RES / "monthly_2000_no_bitcoin.csv")          # written by backtest/proxies.py
+    out["forward_monte_carlo"] = {
+        "2015-26, with Bitcoin": forward_monte_carlo(p["ret"].values, p["spy"].values, p["b6040"].values),
+        "2008-26, no Bitcoin": forward_monte_carlo(b["ret"].values, b["spy"].values, b["b6040"].values),
+        "2000-26, no Bitcoin": forward_monte_carlo(long_run["ret"].values, long_run["spy"].values,
+                                                   long_run["b6040"].values, fan=True)}
     path = RES / "readme_metrics.json"
     path.write_text(json.dumps(out, indent=1) + "\n", encoding="utf-8")
     sys.stdout.reconfigure(encoding="utf-8")

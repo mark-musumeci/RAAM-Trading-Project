@@ -212,15 +212,31 @@ A good backtest can be luck. These checks test that:
 
 ![Random-picks test](docs/images/random_picks.png)
 
-### Monte Carlo: same returns, different order
+### Monte Carlo: the next 10 years
 
-![Monte Carlo of the live rules' daily returns](docs/images/monte_carlo.png)
+![Monte Carlo simulation of the next 10 years](docs/images/monte_carlo.png)
 
-This takes the live rules' 2,930 actual daily returns (Feb 2015 – Sep 2026, backtest, after costs) and replays them in random order. Every path ends at the same +266.7%, so the test is about the **route**, not the destination.
+This simulates 20,000 possible futures for the live rules, starting from $100,000 today. Each future strings together random 6-month blocks of past months, so bad stretches stay together. SPY and 60/40 are drawn from the same months. Figures are after trading costs and before taxes; drops are month-end, so daily lows would be deeper.
 
-Across 5,000 reshuffles the worst drop from a peak had a median of **−16.0%**, and ranged from −11.7% to −23.8% (5th–95th percentile). The actual order's −15.4% is typical: 57% of reshuffles had a deeper drop, so the backtest's drawdown wasn't flattered by the order of its days.
+The result depends on which history feeds it. **The 2000–26 row is the realistic base case**, because it is the only one that includes a tech crash and doesn't rely on Bitcoin's run.
 
-**This is not a forecast.** It uses only returns that already happened, so it inherits the backtest's hindsight, including the Nasdaq-100 and Bitcoin. Shuffling also scatters bad days that really arrive together, so real crises can be worse than these drawdowns suggest.
+| History used | Unlucky (5th percentile) | **Median** | Lucky (95th) | Median per year | SPY median |
+|---|---:|---:|---:|---:|---:|
+| 2015–26, with Bitcoin | $184k | **$305k** | $511k | 11.8% | $380k |
+| 2008–26, no Bitcoin | $149k | **$232k** | $359k | 8.8% | $319k |
+| **2000–26, no Bitcoin (base case)** | $124k | **$205k** | $329k | 7.4% | $226k |
+
+| Over 10 years | Worst drop: median (bad case) | Chance of a drop beyond −20% | Beats 60/40 | Beats SPY | Smaller worst drop than SPY |
+|---|---:|---:|---:|---:|---:|
+| 2015–26, with Bitcoin | −11.7% (−18.5%) | 3% | 86% | 18% | 99% |
+| 2008–26, no Bitcoin | −12.3% (−20.2%) | 5% | 53% | 20% | 98% |
+| **2000–26, no Bitcoin (base case)** | −14.2% (−27.4%) | 24% | 59% | 40% | 93% |
+
+**Reading it:** the defence is the most reliable result, with a smaller worst drop than SPY in 93–99% of futures. The strategy will probably end with less money than SPY, and without Bitcoin its lead over 60/40 on final wealth is close to a coin flip.
+
+**This is not a prediction.** The simulation can only reuse months that have already happened, so a new kind of crisis isn't in these numbers, and today's market levels and interest rates aren't modelled.
+
+<sub>Source: `forward_monte_carlo` in [readme_metrics.json](backtest/results/readme_metrics.json), built by `docs/readme_metrics.py`; the 2000–26 history comes from `backtest/proxies.py`.</sub>
 
 <sub>Details: [ROBUSTNESS.md](backtest/results/ROBUSTNESS.md) · [STRESS.md](backtest/results/STRESS.md) · [backtest report](backtest/results/REPORT.md)</sub>
 

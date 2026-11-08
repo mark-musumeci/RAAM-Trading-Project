@@ -283,33 +283,45 @@ def monthly_heatmap(p):
 
 
 def monte_carlo():
-    """Spaghetti of the strategy's actual daily returns in random order, with the actual order in bold.
-    Hues are the palette's fixed slots in order; the shuffled paths are interchangeable, so one legend entry names them."""
-    d = pd.read_csv(RES / "daily_live.csv")["value"].values
-    r = np.diff(np.r_[1.0, d]) / np.r_[1.0, d][:-1]
-    rng = np.random.default_rng(20261108)
-    hues = [BLUE, ORANGE, AQUA, "#eda100", "#e87ba4", "#008300", "#6250d6"]      # slots 1-7; slot 8 (red) = actual
-    x = np.arange(1, len(r) + 1)
-    fig = plt.figure(figsize=(13, 7.2))
+    """Forward Monte Carlo: the next 10 years from $100,000. One hue for the strategy's range (it is one entity);
+    sample paths are interchangeable, so they stay neutral; every line is direct-labelled at the right."""
+    m = json.load(open(RES / "readme_metrics.json", encoding="utf-8"))["forward_monte_carlo"]["2000-26, no Bitcoin"]
+    f = m["fan"]
+    x = np.arange(len(f["p50"])) / 12
+    fig = plt.figure(figsize=(13, 7.6))
     fig.patch.set_facecolor(SURFACE)
-    total = (np.prod(1 + r) - 1) * 100
-    title(fig, "Monte Carlo: the live rules' daily returns, reshuffled",
-          f"The same {len(r):,} daily returns in random order · every path ends at {pct(total, 1, signed=True)} · "
-          "only the route differs")
-    ax = fig.add_axes([0.08, 0.1, 0.89, 0.72])
+    title(fig, "Monte Carlo: the next 10 years from $100,000",
+          f"{m['paths']:,} simulated futures of the live rules · random 6-month blocks of 2000–2026 (no Bitcoin) · "
+          "after costs, before taxes")
+    ax = fig.add_axes([0.08, 0.1, 0.74, 0.72])
     style(ax)
-    for c in hues:
-        ax.plot(x, (np.cumprod(1 + rng.permutation(r)) - 1) * 100, color=c, linewidth=1.3, alpha=0.8)
-    ax.plot(x, (np.cumprod(1 + r) - 1) * 100, color="#e34948", linewidth=3.2, solid_capstyle="round")
-    ax.axhline(0, color=INK, linewidth=1.4)
-    ax.set_xlim(0, len(r) * 1.01)
-    ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: pct(v, 0)))
-    ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
-    ax.set_xlabel("Trading days", fontsize=LABEL, color=INK2)
-    ax.set_ylabel("Total return", fontsize=LABEL, color=INK2)
-    ax.legend([plt.Line2D([], [], color="#e34948", linewidth=3.2), plt.Line2D([], [], color=MUTED, linewidth=1.5)],
-              ["Original: the actual order", f"Same returns, shuffled ({len(hues)} examples)"],
-              frameon=False, fontsize=LABEL, loc="upper left", labelcolor=INK2)
+    for path in f["samples"]:
+        ax.plot(x, path, color=MUTED, linewidth=0.8, alpha=0.45)
+    ax.fill_between(x, f["p5"], f["p95"], color=CS, alpha=0.13, linewidth=0)
+    ax.fill_between(x, f["p25"], f["p75"], color=CS, alpha=0.2, linewidth=0)
+    ax.plot(x, f["spy_p50"], color=SPY, linewidth=2.2, solid_capstyle="round")
+    ax.plot(x, f["p50"], color=CS, linewidth=3.2, solid_capstyle="round")
+    ax.set_yscale("log")
+    ax.set_xlim(0, 10)
+    ticks = [75_000, 100_000, 150_000, 200_000, 300_000, 400_000, 600_000]
+    ax.set_yticks(ticks)
+    ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"${v / 1000:,.0f}k"))
+    ax.yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
+    ax.set_xticks(range(0, 11))
+    ax.set_xlabel("Years from today", fontsize=LABEL, color=INK2)
+    ends = [("Lucky (95th)", f["p95"][-1], False), ("Median", f["p50"][-1], True), ("SPY median", f["spy_p50"][-1], False),
+            ("Unlucky (5th)", f["p5"][-1], False)]
+    logs = spread_labels([np.log10(e[1]) for e in ends], 0.05)
+    for (name, v, bold), ly in zip(ends, logs):
+        ax.text(10.12, 10 ** ly, f"{name}  ${v / 1000:,.0f}k", fontsize=LABEL, color=INK, va="center",
+                fontweight="bold" if bold else "normal", clip_on=False)
+    from matplotlib.patches import Patch
+    ax.legend([plt.Line2D([], [], color=CS, linewidth=3.2), plt.Line2D([], [], color=SPY, linewidth=2.2),
+               Patch(facecolor=CS, alpha=0.3), Patch(facecolor=CS, alpha=0.13),
+               plt.Line2D([], [], color=MUTED, linewidth=1.0)],
+              ["Core & Shield, median", "SPY, median", "Middle 50% of futures", "90% of futures",
+               f"{len(f['samples'])} example futures"],
+              frameon=False, fontsize=LABEL - 0.5, loc="upper left", labelcolor=INK2)
     save(fig, "monte_carlo.png")
 
 
