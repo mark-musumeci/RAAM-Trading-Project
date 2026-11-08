@@ -551,5 +551,17 @@
    "sqn_all": 3.18,
    "avg_month_usd_on_100k": 1108.0
   }
+ },
+ "shuffle_monte_carlo": {
+  "shuffles": 5000,
+  "trading_days": 2930,
+  "total_return_pct": 266.7,
+  "actual_worst_daily_dd_pct": -15.4,
+  "shuffled_worst_daily_dd_pct_p5_p50_p95": [
+   -23.8,
+   -16.0,
+   -11.7
+  ],
+  "share_of_shuffles_with_a_deeper_drop_pct": 56.9
  }
 }

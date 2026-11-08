@@ -212,6 +212,16 @@ A good backtest can be luck. These checks test that:
 
 ![Random-picks test](docs/images/random_picks.png)
 
+### Monte Carlo: same returns, different order
+
+![Monte Carlo of the live rules' daily returns](docs/images/monte_carlo.png)
+
+This takes the live rules' 2,930 actual daily returns (Feb 2015 – Sep 2026, backtest, after costs) and replays them in random order. Every path ends at the same +266.7%, so the test is about the **route**, not the destination.
+
+Across 5,000 reshuffles the worst drop from a peak had a median of **−16.0%**, and ranged from −11.7% to −23.8% (5th–95th percentile). The actual order's −15.4% is typical: 57% of reshuffles had a deeper drop, so the backtest's drawdown wasn't flattered by the order of its days.
+
+**This is not a forecast.** It uses only returns that already happened, so it inherits the backtest's hindsight, including the Nasdaq-100 and Bitcoin. Shuffling also scatters bad days that really arrive together, so real crises can be worse than these drawdowns suggest.
+
 <sub>Details: [ROBUSTNESS.md](backtest/results/ROBUSTNESS.md) · [STRESS.md](backtest/results/STRESS.md) · [backtest report](backtest/results/REPORT.md)</sub>
 
 ---

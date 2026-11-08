@@ -282,6 +282,37 @@ def monthly_heatmap(p):
     save(fig, "monthly_returns.png")
 
 
+def monte_carlo():
+    """Spaghetti of the strategy's actual daily returns in random order, with the actual order in bold.
+    Hues are the palette's fixed slots in order; the shuffled paths are interchangeable, so one legend entry names them."""
+    d = pd.read_csv(RES / "daily_live.csv")["value"].values
+    r = np.diff(np.r_[1.0, d]) / np.r_[1.0, d][:-1]
+    rng = np.random.default_rng(20261108)
+    hues = [BLUE, ORANGE, AQUA, "#eda100", "#e87ba4", "#008300", "#6250d6"]      # slots 1-7; slot 8 (red) = actual
+    x = np.arange(1, len(r) + 1)
+    fig = plt.figure(figsize=(13, 7.2))
+    fig.patch.set_facecolor(SURFACE)
+    total = (np.prod(1 + r) - 1) * 100
+    title(fig, "Monte Carlo: the live rules' daily returns, reshuffled",
+          f"The same {len(r):,} daily returns in random order · every path ends at {pct(total, 1, signed=True)} · "
+          "only the route differs")
+    ax = fig.add_axes([0.08, 0.1, 0.89, 0.72])
+    style(ax)
+    for c in hues:
+        ax.plot(x, (np.cumprod(1 + rng.permutation(r)) - 1) * 100, color=c, linewidth=1.3, alpha=0.8)
+    ax.plot(x, (np.cumprod(1 + r) - 1) * 100, color="#e34948", linewidth=3.2, solid_capstyle="round")
+    ax.axhline(0, color=INK, linewidth=1.4)
+    ax.set_xlim(0, len(r) * 1.01)
+    ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: pct(v, 0)))
+    ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
+    ax.set_xlabel("Trading days", fontsize=LABEL, color=INK2)
+    ax.set_ylabel("Total return", fontsize=LABEL, color=INK2)
+    ax.legend([plt.Line2D([], [], color="#e34948", linewidth=3.2), plt.Line2D([], [], color=MUTED, linewidth=1.5)],
+              ["Original: the actual order", f"Same returns, shuffled ({len(hues)} examples)"],
+              frameon=False, fontsize=LABEL, loc="upper left", labelcolor=INK2)
+    save(fig, "monte_carlo.png")
+
+
 def random_picks():
     r = json.load(open(RES / "robustness.json", encoding="utf-8"))
     fig = plt.figure(figsize=(13, 6.2))
@@ -499,6 +530,7 @@ def main():
     growth(p)
     years(p)
     monthly_heatmap(p)
+    monte_carlo()
     random_picks()
     stress()
 

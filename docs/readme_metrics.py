@@ -105,6 +105,24 @@ def trade_stats(r: np.ndarray, daily_dd_pct: float) -> dict:
             "avg_month_usd_on_100k": round(float(100_000 * ((1 + cagr) ** (1 / 12) - 1)), 0)}
 
 
+def shuffle_monte_carlo(daily: pd.Series, n: int = 5000, seed: int = 20261108) -> dict:
+    """Reorder the strategy's actual daily returns at random, n times. Every path has the same returns, so every
+    path ends at the same total; only the route (and so the drawdown) differs. Shuffling also breaks up the
+    clustering of bad days, so these drawdowns understate real crises."""
+    r = pd.concat([pd.Series([1.0]), daily.reset_index(drop=True)]).pct_change().dropna().values
+    rng = np.random.default_rng(seed)
+    dds = np.empty(n)
+    for i in range(n):
+        eq = np.cumprod(1 + rng.permutation(r))
+        dds[i] = (eq / np.maximum.accumulate(np.maximum(eq, 1.0)) - 1).min() * 100
+    eq = np.cumprod(1 + r)
+    actual = float((eq / np.maximum.accumulate(np.maximum(eq, 1.0)) - 1).min() * 100)
+    return {"shuffles": n, "trading_days": len(r), "total_return_pct": round(float(eq[-1] - 1) * 100, 1),
+            "actual_worst_daily_dd_pct": round(actual, 1),
+            "shuffled_worst_daily_dd_pct_p5_p50_p95": [round(float(np.percentile(dds, q)), 1) for q in (5, 50, 95)],
+            "share_of_shuffles_with_a_deeper_drop_pct": round(float((dds < actual).mean() * 100), 1)}
+
+
 def daily_dd(series: pd.Series) -> float:
     return float((series / series.cummax().clip(lower=series.iloc[0]) - 1).min() * 100)
 
@@ -208,6 +226,8 @@ def main() -> None:
     out["trade_stats"] = {"Live rules 2015-26": trade_stats(p["ret"].values, daily_dd(live_res["daily"])),
                           "Live rules 2008-26, no Bitcoin": trade_stats(b["ret"].values, daily_dd(b_res["daily"])),
                           "SPY 2015-26": trade_stats(p["spy"].values, daily_dd(spy_c))}
+    live_res["daily"].rename("value").to_csv(RES / "daily_live.csv", index_label="date")
+    out["shuffle_monte_carlo"] = shuffle_monte_carlo(live_res["daily"])
     path = RES / "readme_metrics.json"
     path.write_text(json.dumps(out, indent=1) + "\n", encoding="utf-8")
     sys.stdout.reconfigure(encoding="utf-8")
