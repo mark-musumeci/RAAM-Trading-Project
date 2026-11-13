@@ -6,22 +6,22 @@
 - Circuit breaker: not tripped (source of truth: `memory/state.json`)
 
 ## Latest health
-- Date: 2026-11-12
-- Equity: $98,998.65 (day change: -0.34%)
-- Drawdown: -2.07% | High-water mark: $101,092.20
+- Date: 2026-11-13
+- Equity: $97,726.10 (day change: -1.26%)
+- Drawdown: -3.33% | High-water mark: $101,092.20
 - Circuit breaker: not tripped
 - Positions:
 
 | Symbol | Weight % | Target % | Drift % |
 |---|---|---|---|
-| QQQM | 49.94 | 50.0 | -0.06 |
-| SGOV | 25.15 | 25.0 | 0.15 |
-| DBC | 9.52 | 10.0 | -0.48 |
-| VV | 10.03 | 10.0 | 0.03 |
-| BTC | 4.66 | 5.0 | -0.34 |
+| QQQM | 49.59 | 50.0 | -0.41 |
+| SGOV | 25.49 | 25.0 | 0.49 |
+| DBC | 9.61 | 10.0 | -0.39 |
+| VV | 10.12 | 10.0 | 0.12 |
+| BTC | 4.49 | 5.0 | -0.51 |
 
 - Alerts: none
-- Timestamp: 2026-11-12 21:50 UTC
+- Timestamp: 2026-11-13 21:43 UTC
 
 ## Milestones
 - [x] 2026-09-23 Repo scaffolded, engine + tests written
