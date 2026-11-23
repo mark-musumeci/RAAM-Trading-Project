@@ -6,23 +6,23 @@
 - Circuit breaker: not tripped (source of truth: `memory/state.json`)
 
 ## Latest health
-- Date: 2026-11-20
-- Equity: $91,527.24 (day change: -3.00%)
-- Drawdown: -9.46% | High-water mark: $101,092.20
+- Date: 2026-11-23
+- Equity: $94,609.69 (day change: +3.75%)
+- Drawdown: -6.41% | High-water mark: $101,092.20
 - Circuit breaker: not tripped (thresholds: -20% drawdown, -5% daily)
 - Positions:
 
 | Symbol | Weight % | Target % | Drift % |
 |---|---|---|---|
-| QQQM | 48.23 | 50.0 | -1.77 |
-| SGOV | 27.23 | 25.0 | 2.23 |
-| VV | 9.89 | 10.0 | -0.11 |
-| DBC | 9.75 | 10.0 | -0.25 |
-| BTC | 4.15 | 5.0 | -0.85 |
+| QQQM | 49.36 | 50.0 | -0.64 |
+| SGOV | 26.35 | 25.0 | 1.35 |
+| VV | 10.01 | 10.0 | 0.01 |
+| DBC | 9.39 | 10.0 | -0.61 |
+| BTC | 4.17 | 5.0 | -0.83 |
 
 - Alerts: none
-- Note: no position moved more than 5% today (est. vs yesterday's snapshot: QQQM ~-4.3%, BTC ~-4.2%, VV ~-3.5%, DBC ~-1.2%). Drawdown -9.46% is within the backtest's normal range (worst month-end -11.7%). Signal: not month-end (last trading day 2026-11-30). Review: noop (not first trading day).
-- Timestamp: 2026-11-20 UTC
+- Note: strong rebound day after Friday's -3.00%. Estimated moves vs the 11-20 snapshot: QQQM ~+5.8%, VV ~+4.6%, BTC ~+3.9%, DBC ~-0.5%. No position fell more than 5%. A quick web search found no dated coverage of today's rally, so the cause is unconfirmed (context only, no action). Drawdown -6.41% is within the backtest's normal range. Signal: not month-end (last trading day 2026-11-30). Review: noop (not first trading day).
+- Timestamp: 2026-11-23 UTC
 
 ## Milestones
 - [x] 2026-09-23 Repo scaffolded, engine + tests written
